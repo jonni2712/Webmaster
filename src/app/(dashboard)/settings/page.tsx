@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import {
   Plus,
   Trash2,
   Save,
+  RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -31,32 +32,33 @@ interface AlertChannel {
   enabled: boolean;
 }
 
+const channelIcons = {
+  email: Mail,
+  slack: MessageSquare,
+  telegram: MessageSquare,
+  discord: MessageSquare,
+  webhook: Webhook,
+};
+
 export default function SettingsPage() {
-  const { data: session, update } = useSession();
+  const sessionData = useSession();
+  const session = sessionData?.data;
+  const status = sessionData?.status ?? 'loading';
+  const update = sessionData?.update;
+
   const [loading, setLoading] = useState(false);
   const [channels, setChannels] = useState<AlertChannel[]>([]);
 
   // Profile form
-  const [name, setName] = useState(session?.user?.name || '');
-  const [email, setEmail] = useState(session?.user?.email || '');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
 
   // Password form
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  useEffect(() => {
-    fetchChannels();
-  }, []);
-
-  useEffect(() => {
-    if (session?.user) {
-      setName(session.user.name || '');
-      setEmail(session.user.email || '');
-    }
-  }, [session]);
-
-  const fetchChannels = async () => {
+  const fetchChannels = useCallback(async () => {
     try {
       const res = await fetch('/api/alert-channels');
       if (res.ok) {
@@ -66,7 +68,20 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('Error fetching channels:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      fetchChannels();
+    }
+  }, [status, fetchChannels]);
+
+  useEffect(() => {
+    if (session?.user) {
+      setName(session.user.name || '');
+      setEmail(session.user.email || '');
+    }
+  }, [session]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,7 +93,7 @@ export default function SettingsPage() {
         body: JSON.stringify({ name }),
       });
       if (res.ok) {
-        await update();
+        if (update) await update();
         toast.success('Profilo aggiornato');
       } else {
         toast.error('Errore nell\'aggiornamento del profilo');
@@ -156,13 +171,14 @@ export default function SettingsPage() {
     }
   };
 
-  const channelIcons = {
-    email: Mail,
-    slack: MessageSquare,
-    telegram: MessageSquare,
-    discord: MessageSquare,
-    webhook: Webhook,
-  };
+  // Show loading while session is being fetched
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
