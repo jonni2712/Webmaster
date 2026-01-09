@@ -54,14 +54,17 @@ export async function POST(
     if (type === 'uptime') {
       const checkResult = await checkUptime(site.url);
 
+      // Determine status string from isUp boolean
+      const status = checkResult.isUp ? 'up' : 'down';
+
       const { data, error } = await supabase
         .from('uptime_checks')
         .insert({
           site_id: id,
-          status: checkResult.status,
-          response_time: checkResult.responseTime,
+          status: status,
+          response_time: checkResult.responseTimeMs,
           status_code: checkResult.statusCode,
-          error_message: checkResult.error,
+          error_message: checkResult.errorMessage,
         })
         .select()
         .single();
@@ -73,7 +76,7 @@ export async function POST(
       await supabase
         .from('sites')
         .update({
-          status: checkResult.status === 'up' ? 'online' : checkResult.status === 'down' ? 'offline' : 'degraded',
+          status: checkResult.isUp ? 'online' : 'offline',
           last_check: new Date().toISOString(),
         })
         .eq('id', id);
@@ -84,11 +87,11 @@ export async function POST(
         .from('ssl_checks')
         .insert({
           site_id: id,
-          valid: checkResult.valid,
+          valid: checkResult.isValid,
           issuer: checkResult.issuer,
-          expires_at: checkResult.expiresAt,
+          expires_at: checkResult.validTo,
           days_until_expiry: checkResult.daysUntilExpiry,
-          error_message: checkResult.error,
+          error_message: checkResult.errorMessage,
         })
         .select()
         .single();
@@ -98,7 +101,7 @@ export async function POST(
 
       // Determine SSL status
       let sslStatus = 'invalid';
-      if (checkResult.valid) {
+      if (checkResult.isValid) {
         if (checkResult.daysUntilExpiry && checkResult.daysUntilExpiry <= 14) {
           sslStatus = 'expiring';
         } else {
@@ -113,7 +116,7 @@ export async function POST(
         .from('sites')
         .update({
           ssl_status: sslStatus,
-          ssl_expires_at: checkResult.expiresAt,
+          ssl_expires_at: checkResult.validTo,
         })
         .eq('id', id);
     } else if (type === 'performance') {
