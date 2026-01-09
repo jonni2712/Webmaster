@@ -1,0 +1,24 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/uptime",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/ssl",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/performance",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/updates",
+      "schedule": "0 */12 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}
