@@ -41,10 +41,7 @@ const channelIcons = {
 };
 
 export default function SettingsPage() {
-  const sessionData = useSession();
-  const session = sessionData?.data;
-  const status = sessionData?.status ?? 'loading';
-  const update = sessionData?.update;
+  const { data: session, status, update } = useSession();
 
   const [loading, setLoading] = useState(false);
   const [channels, setChannels] = useState<AlertChannel[]>([]);
@@ -93,7 +90,7 @@ export default function SettingsPage() {
         body: JSON.stringify({ name }),
       });
       if (res.ok) {
-        if (update) await update();
+        await update();
         toast.success('Profilo aggiornato');
       } else {
         toast.error('Errore nell\'aggiornamento del profilo');
