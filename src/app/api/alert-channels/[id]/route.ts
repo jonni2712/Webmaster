@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 const updateChannelSchema = z.object({
   name: z.string().min(1).optional(),
-  config: z.record(z.string()).optional(),
+  config: z.record(z.string(), z.string()).optional(),
   enabled: z.boolean().optional(),
 });
 

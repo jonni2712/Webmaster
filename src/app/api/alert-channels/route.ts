@@ -7,7 +7,7 @@ import { z } from 'zod';
 const channelSchema = z.object({
   name: z.string().min(1),
   type: z.enum(['email', 'slack', 'telegram', 'discord', 'webhook']),
-  config: z.record(z.string()),
+  config: z.record(z.string(), z.string()),
   enabled: z.boolean().optional().default(true),
 });
 
