@@ -4,6 +4,7 @@ import { getToken } from 'next-auth/jwt';
 
 // Routes che non richiedono autenticazione
 const publicRoutes = [
+  '/',
   '/login',
   '/register',
   '/verify-email',
@@ -16,8 +17,11 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Salta controllo per routes pubbliche e assets
+  const isPublicRoute = pathname === '/' ||
+    publicRoutes.slice(1).some((route) => pathname.startsWith(route));
+
   if (
-    publicRoutes.some((route) => pathname.startsWith(route)) ||
+    isPublicRoute ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/cron') ||
     pathname.includes('.')
