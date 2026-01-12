@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import { Bell, LogOut, User, Moon, Sun, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,13 +17,10 @@ import Link from 'next/link';
 import { MobileSidebar } from './sidebar';
 
 export function Header() {
-  const router = useRouter();
   const { theme, setTheme } = useTheme();
 
-  async function handleLogout() {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    router.push('/login');
-    router.refresh();
+  function handleLogout() {
+    signOut({ callbackUrl: '/login' });
   }
 
   return (
