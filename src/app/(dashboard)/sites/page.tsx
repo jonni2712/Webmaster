@@ -11,11 +11,31 @@ async function getSites(): Promise<SiteWithStatus[]> {
   const supabase = await createClient();
 
   const { data } = await supabase
-    .from('site_status_summary')
+    .from('sites')
     .select('*')
     .order('name');
 
-  return (data || []) as SiteWithStatus[];
+  // Map sites table columns to SiteWithStatus format expected by SitesGrid
+  return (data || []).map(site => ({
+    site_id: site.id,
+    tenant_id: site.tenant_id,
+    name: site.name,
+    url: site.url,
+    platform: site.platform,
+    is_active: site.is_active,
+    tags: site.tags,
+    created_at: site.created_at,
+    current_status: site.status === 'online' ? true : site.status === 'offline' ? false : null,
+    last_response_time: site.response_time_avg,
+    last_uptime_check: site.last_check,
+    uptime_30d: site.uptime_percentage,
+    ssl_valid: site.ssl_status === 'valid',
+    ssl_days_remaining: null, // Would need to calculate from ssl_expires_at
+    wp_updates_pending: 0,
+    ps_updates_pending: 0,
+    last_perf_score: site.performance_score,
+    last_lcp: null,
+  })) as SiteWithStatus[];
 }
 
 export default async function SitesPage() {
