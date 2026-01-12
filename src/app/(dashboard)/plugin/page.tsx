@@ -88,7 +88,7 @@ export default function PluginPage() {
   const [copied, setCopied] = useState(false);
 
   const handleDownload = () => {
-    window.location.href = '/downloads/webmaster-monitor-v1.0.0.zip';
+    window.location.href = '/downloads/webmaster-monitor.zip';
     toast.success('Download avviato!');
   };
 

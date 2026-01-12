@@ -1,6 +1,6 @@
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
-$zipPath = "C:\GitHub\Piattaforma WEBMASTER\webmaster-platform\public\downloads\webmaster-monitor-v1.0.0.zip"
+$zipPath = "C:\GitHub\Piattaforma WEBMASTER\webmaster-platform\public\downloads\webmaster-monitor.zip"
 $sourcePath = "C:\GitHub\Piattaforma WEBMASTER\webmaster-platform\wordpress-plugin\webmaster-monitor"
 $pluginFolderName = "webmaster-monitor"
 
