@@ -136,7 +136,7 @@ export default function PluginPage() {
       <Tabs defaultValue="install" className="space-y-4 sm:space-y-6">
         <TabsList className="w-full sm:w-auto flex flex-wrap h-auto gap-1 p-1">
           <TabsTrigger value="install" className="text-xs sm:text-sm px-2 sm:px-3">Installazione</TabsTrigger>
-          <TabsTrigger value="features" className="text-xs sm:text-sm px-2 sm:px-3">Funzionalita</TabsTrigger>
+          <TabsTrigger value="features" className="text-xs sm:text-sm px-2 sm:px-3">Funzionalita'</TabsTrigger>
           <TabsTrigger value="api" className="text-xs sm:text-sm px-2 sm:px-3">API Docs</TabsTrigger>
         </TabsList>
 

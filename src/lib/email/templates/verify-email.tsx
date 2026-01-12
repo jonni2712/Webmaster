@@ -46,7 +46,7 @@ export function VerifyEmailTemplate({
         </a>
       </div>
       <p style={{ color: '#888', fontSize: '14px', lineHeight: '1.5' }}>
-        Questo link scadra tra 24 ore. Se non hai richiesto questa email, puoi
+        Questo link scadra' tra 24 ore. Se non hai richiesto questa email, puoi
         ignorarla in sicurezza.
       </p>
       <p style={{ color: '#888', fontSize: '14px', lineHeight: '1.5' }}>

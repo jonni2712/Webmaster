@@ -47,8 +47,8 @@ export function ResetPasswordTemplate({
         </a>
       </div>
       <p style={{ color: '#888', fontSize: '14px', lineHeight: '1.5' }}>
-        Questo link scadra tra 1 ora. Se non hai richiesto questa email, puoi
-        ignorarla in sicurezza - la tua password rimarra invariata.
+        Questo link scadra' tra 1 ora. Se non hai richiesto questa email, puoi
+        ignorarla in sicurezza - la tua password rimarra' invariata.
       </p>
       <p style={{ color: '#888', fontSize: '14px', lineHeight: '1.5' }}>
         Se il pulsante non funziona, copia e incolla questo link nel tuo

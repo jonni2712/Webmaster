@@ -237,7 +237,7 @@ export default function SettingsPage() {
                     className="bg-muted h-9 sm:h-10"
                   />
                   <p className="text-[10px] sm:text-xs text-muted-foreground">
-                    L'email non puo essere modificata
+                    L'email non puo' essere modificata
                   </p>
                 </div>
                 <Button type="submit" disabled={loading} size="sm" className="sm:size-default">

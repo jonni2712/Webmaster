@@ -137,7 +137,7 @@ export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
-    { href: '#features', label: 'Funzionalita' },
+    { href: '#features', label: 'Funzionalita\'' },
     { href: '#pricing', label: 'Prezzi' },
     { href: '#benefits', label: 'Vantaggi' },
   ];

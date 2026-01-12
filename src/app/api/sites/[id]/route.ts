@@ -197,7 +197,7 @@ export async function DELETE(
 
   if (!membership || membership.role !== 'owner') {
     return NextResponse.json(
-      { error: 'Solo il proprietario puo eliminare i siti' },
+      { error: 'Solo il proprietario puo\' eliminare i siti' },
       { status: 403 }
     );
   }

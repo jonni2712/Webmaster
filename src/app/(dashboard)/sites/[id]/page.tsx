@@ -132,7 +132,7 @@ export default function SiteDetailPage({
   };
 
   const handleDelete = async () => {
-    if (!confirm('Sei sicuro di voler eliminare questo sito? Questa azione non puo essere annullata.')) {
+    if (!confirm('Sei sicuro di voler eliminare questo sito? Questa azione non puo\' essere annullata.')) {
       return;
     }
     setDeleting(true);
@@ -381,7 +381,7 @@ export default function SiteDetailPage({
                   </div>
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>Meno recente</span>
-                    <span>Piu recente</span>
+                    <span>Piu' recente</span>
                   </div>
                 </div>
               )}
@@ -540,7 +540,7 @@ export default function SiteDetailPage({
               </CardHeader>
               <CardContent>
                 <p className="text-center text-muted-foreground py-8">
-                  Funzionalita e-commerce in arrivo
+                  Funzionalita' e-commerce in arrivo
                 </p>
               </CardContent>
             </Card>
