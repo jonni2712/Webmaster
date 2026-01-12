@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
   }
 
   let query = supabase
-    .from('site_status_summary')
+    .from('sites')
     .select('*', { count: 'exact' })
     .eq('tenant_id', user.current_tenant_id);
 
@@ -65,8 +65,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // Map sites to expected frontend format
+  const mappedSites = (data || []).map(site => ({
+    ...site,
+    status: site.status || 'unknown',
+    ssl_status: site.ssl_status || null,
+    ssl_expiry: site.ssl_expiry || null,
+    uptime_percentage: site.uptime_percentage || null,
+    response_time_avg: site.response_time_avg || null,
+    last_check: site.last_check || site.last_sync || null,
+  }));
+
   return NextResponse.json({
-    sites: data,
+    sites: mappedSites,
     pagination: {
       page,
       limit,
