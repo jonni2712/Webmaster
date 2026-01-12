@@ -23,6 +23,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ChannelFormDialog } from '@/components/settings/channel-form-dialog';
 
 interface AlertChannel {
   id: string;
@@ -45,6 +46,7 @@ export default function SettingsPage() {
 
   const [loading, setLoading] = useState(false);
   const [channels, setChannels] = useState<AlertChannel[]>([]);
+  const [showChannelDialog, setShowChannelDialog] = useState(false);
 
   // Profile form
   const [name, setName] = useState('');
@@ -313,7 +315,7 @@ export default function SettingsPage() {
                       Configura dove ricevere gli avvisi
                     </CardDescription>
                   </div>
-                  <Button size="sm">
+                  <Button size="sm" onClick={() => setShowChannelDialog(true)}>
                     <Plus className="h-4 w-4 sm:mr-2" />
                     <span className="hidden sm:inline">Aggiungi canale</span>
                     <span className="sm:hidden">Aggiungi</span>
@@ -398,6 +400,13 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Channel Form Dialog */}
+      <ChannelFormDialog
+        open={showChannelDialog}
+        onOpenChange={setShowChannelDialog}
+        onSuccess={fetchChannels}
+      />
     </div>
   );
 }

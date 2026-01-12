@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { checkSSL } from '@/lib/monitoring/ssl-checker';
+import { createAlert, getSSLSeverity, resolveAlerts } from '@/lib/alerts/generator';
 
 export const runtime = 'edge';
 export const maxDuration = 60;
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     const { data: sites, error } = await supabase
       .from('sites')
-      .select('id, url, tenant_id')
+      .select('id, name, url, tenant_id, ssl_status')
       .eq('is_active', true)
       .eq('ssl_check_enabled', true);
 
@@ -65,6 +66,112 @@ export async function GET(request: NextRequest) {
 
           if (insertError) {
             throw new Error(`Failed to save SSL check for ${site.url}`);
+          }
+
+          // Update site SSL status
+          let sslStatus = 'valid';
+          if (!result.isValid) {
+            sslStatus = 'invalid';
+          } else if (result.daysUntilExpiry !== null && result.daysUntilExpiry <= 0) {
+            sslStatus = 'expired';
+          } else if (result.daysUntilExpiry !== null && result.daysUntilExpiry <= 14) {
+            sslStatus = 'expiring';
+          }
+
+          await supabase
+            .from('sites')
+            .update({
+              ssl_status: sslStatus,
+              ssl_expires_at: result.validTo,
+            })
+            .eq('id', site.id);
+
+          // Alert generation for SSL issues
+          const daysUntilExpiry = result.daysUntilExpiry;
+
+          // SSL Invalid
+          if (!result.isValid) {
+            await createAlert({
+              tenantId: site.tenant_id,
+              siteId: site.id,
+              siteName: site.name,
+              siteUrl: site.url,
+              triggerType: 'ssl_invalid',
+              severity: 'critical',
+              title: `SSL non valido per ${site.name}`,
+              message: `Il certificato SSL del sito ${site.url} non e' valido: ${result.errorMessage || 'Errore sconosciuto'}`,
+              details: {
+                errorMessage: result.errorMessage,
+              },
+              cooldownMinutes: 1440, // 24 hours
+            });
+          }
+          // SSL Expired
+          else if (daysUntilExpiry !== null && daysUntilExpiry <= 0) {
+            await createAlert({
+              tenantId: site.tenant_id,
+              siteId: site.id,
+              siteName: site.name,
+              siteUrl: site.url,
+              triggerType: 'ssl_expiring',
+              severity: 'critical',
+              title: `SSL SCADUTO per ${site.name}`,
+              message: `Il certificato SSL del sito ${site.url} e' scaduto!`,
+              details: {
+                expiryDate: result.validTo,
+                daysUntilExpiry: 0,
+              },
+              cooldownMinutes: 1440, // 24 hours
+            });
+          }
+          // SSL Expiring Soon (7 days or less)
+          else if (daysUntilExpiry !== null && daysUntilExpiry <= 7) {
+            await createAlert({
+              tenantId: site.tenant_id,
+              siteId: site.id,
+              siteName: site.name,
+              siteUrl: site.url,
+              triggerType: 'ssl_expiring',
+              severity: 'critical',
+              title: `SSL scade tra ${daysUntilExpiry} giorni - ${site.name}`,
+              message: `Il certificato SSL del sito ${site.url} scadra' tra ${daysUntilExpiry} giorni. Rinnova subito!`,
+              details: {
+                expiryDate: result.validTo,
+                daysUntilExpiry,
+              },
+              cooldownMinutes: 1440, // 24 hours
+            });
+          }
+          // SSL Expiring (14 days or less)
+          else if (daysUntilExpiry !== null && daysUntilExpiry <= 14) {
+            await createAlert({
+              tenantId: site.tenant_id,
+              siteId: site.id,
+              siteName: site.name,
+              siteUrl: site.url,
+              triggerType: 'ssl_expiring',
+              severity: 'warning',
+              title: `SSL scade tra ${daysUntilExpiry} giorni - ${site.name}`,
+              message: `Il certificato SSL del sito ${site.url} scadra' tra ${daysUntilExpiry} giorni.`,
+              details: {
+                expiryDate: result.validTo,
+                daysUntilExpiry,
+              },
+              cooldownMinutes: 1440, // 24 hours
+            });
+          }
+          // SSL is valid and not expiring soon - resolve any previous alerts
+          else if (result.isValid && daysUntilExpiry !== null && daysUntilExpiry > 14) {
+            await resolveAlerts({
+              tenantId: site.tenant_id,
+              siteId: site.id,
+              triggerType: 'ssl_expiring',
+            });
+            await resolveAlerts({
+              tenantId: site.tenant_id,
+              siteId: site.id,
+              triggerType: 'ssl_invalid',
+            });
           }
 
           return result;

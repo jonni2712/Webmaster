@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { checkUptime } from '@/lib/monitoring/uptime-checker';
+import { createAlert, resolveAlerts } from '@/lib/alerts/generator';
 
 export const runtime = 'edge';
 export const maxDuration = 60;
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
     // Get all active sites with uptime check enabled
     const { data: sites, error } = await supabase
       .from('sites')
-      .select('id, url, tenant_id')
+      .select('id, name, url, tenant_id, status')
       .eq('is_active', true)
       .eq('uptime_check_enabled', true);
 
@@ -86,16 +87,65 @@ export async function GET(request: NextRequest) {
           }
 
           // Update site status fields
+          const newStatus = result.isUp ? 'online' : 'offline';
           await supabase
             .from('sites')
             .update({
-              status: result.isUp ? 'online' : 'offline',
+              status: newStatus,
               response_time_avg: result.responseTimeMs,
               uptime_percentage: uptimePercentage,
               last_check: new Date().toISOString(),
               last_check_at: new Date().toISOString(),
             })
             .eq('id', site.id);
+
+          // Alert generation based on status change
+          const previousStatus = site.status;
+
+          // Site went DOWN: online -> offline
+          if (!result.isUp && previousStatus === 'online') {
+            await createAlert({
+              tenantId: site.tenant_id,
+              siteId: site.id,
+              siteName: site.name,
+              siteUrl: site.url,
+              triggerType: 'site_down',
+              severity: 'critical',
+              title: `${site.name} non raggiungibile`,
+              message: `Il sito ${site.url} non risponde. Errore: ${result.errorType || 'unknown'}`,
+              details: {
+                errorType: result.errorType,
+                errorMessage: result.errorMessage,
+                statusCode: result.statusCode,
+              },
+            });
+          }
+
+          // Site came back UP: offline -> online
+          if (result.isUp && previousStatus === 'offline') {
+            // Create recovery alert
+            await createAlert({
+              tenantId: site.tenant_id,
+              siteId: site.id,
+              siteName: site.name,
+              siteUrl: site.url,
+              triggerType: 'site_down', // Use same type for recovery notification
+              severity: 'info',
+              title: `${site.name} tornato online`,
+              message: `Il sito ${site.url} e' nuovamente raggiungibile`,
+              details: {
+                responseTime: result.responseTimeMs,
+              },
+              cooldownMinutes: 5, // Short cooldown for recovery
+            });
+
+            // Auto-resolve previous site_down alerts
+            await resolveAlerts({
+              tenantId: site.tenant_id,
+              siteId: site.id,
+              triggerType: 'site_down',
+            });
+          }
 
           return { siteId: site.id, url: site.url, ...result };
         })

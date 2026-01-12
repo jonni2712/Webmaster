@@ -1,6 +1,6 @@
 # Roadmap Piattaforma Webmaster Monitor
 
-## Versione Attuale: 1.0.0
+## Versione Attuale: 1.1.0
 
 ### v1.0.0 (Rilasciata)
 - [x] Autenticazione OAuth (GitHub, Google)
@@ -13,20 +13,26 @@
 - [x] Plugin WordPress per raccolta dati
 - [x] Sincronizzazione dati da plugin WP
 - [x] Sistema di alert base
+- [x] Gestione clienti (CRUD)
+- [x] Associazione siti a clienti
+
+---
+
+### v1.1.0 - Notifiche e Alert (In Corso)
+- [x] Notifiche email per downtime
+- [x] Notifiche email per SSL in scadenza
+- [ ] Notifiche email per aggiornamenti disponibili
+- [x] Notifiche Telegram
+- [x] Notifiche Slack
+- [x] Notifiche Discord
+- [x] Notifiche webhook personalizzati
+- [x] UI creazione canali notifica
+- [ ] Configurazione soglie alert per sito
+- [ ] Digest giornaliero/settimanale
 
 ---
 
 ## Prossime Versioni
-
-### v1.1.0 - Notifiche e Alert
-- [ ] Notifiche email per downtime
-- [ ] Notifiche email per SSL in scadenza
-- [ ] Notifiche email per aggiornamenti disponibili
-- [ ] Notifiche Telegram
-- [ ] Notifiche Slack
-- [ ] Notifiche webhook personalizzati
-- [ ] Configurazione soglie alert per sito
-- [ ] Digest giornaliero/settimanale
 
 ### v1.2.0 - Gestione Aggiornamenti
 - [ ] Lista aggiornamenti disponibili per sito
