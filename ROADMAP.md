@@ -18,17 +18,17 @@
 
 ---
 
-### v1.1.0 - Notifiche e Alert (In Corso)
+### v1.1.0 - Notifiche e Alert (Rilasciata)
 - [x] Notifiche email per downtime
 - [x] Notifiche email per SSL in scadenza
-- [ ] Notifiche email per aggiornamenti disponibili
+- [ ] Notifiche email per aggiornamenti disponibili (v1.2.0)
 - [x] Notifiche Telegram
 - [x] Notifiche Slack
 - [x] Notifiche Discord
 - [x] Notifiche webhook personalizzati
 - [x] UI creazione canali notifica
-- [ ] Configurazione soglie alert per sito
-- [ ] Digest giornaliero/settimanale
+- [x] Configurazione soglie alert per sito
+- [x] Digest giornaliero/settimanale
 
 ---
 

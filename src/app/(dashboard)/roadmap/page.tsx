@@ -60,8 +60,8 @@ const roadmapData: RoadmapVersion[] = [
     version: 'v1.1.0',
     title: 'Notifiche e Alert',
     icon: Bell,
-    status: 'in-progress',
-    progress: 75,
+    status: 'released',
+    progress: 100,
     features: [
       { name: 'Notifiche email per downtime', completed: true },
       { name: 'Notifiche email per SSL in scadenza', completed: true },
@@ -69,8 +69,8 @@ const roadmapData: RoadmapVersion[] = [
       { name: 'Notifiche Slack', completed: true },
       { name: 'Notifiche Discord', completed: true },
       { name: 'Webhook personalizzati', completed: true },
-      { name: 'Configurazione soglie per sito', completed: false },
-      { name: 'Digest giornaliero/settimanale', completed: false },
+      { name: 'Configurazione soglie per sito', completed: true },
+      { name: 'Digest giornaliero/settimanale', completed: true },
     ],
   },
   {

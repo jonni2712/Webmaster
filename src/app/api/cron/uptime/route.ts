@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { checkUptime } from '@/lib/monitoring/uptime-checker';
-import { createAlert, resolveAlerts } from '@/lib/alerts/generator';
+import { createAlert, resolveAlerts, getCooldownMinutes, shouldNotifyRecovery } from '@/lib/alerts/generator';
+import type { SiteAlertSettings } from '@/types/database';
 
 export const runtime = 'edge';
 export const maxDuration = 60;
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
     // Get all active sites with uptime check enabled
     const { data: sites, error } = await supabase
       .from('sites')
-      .select('id, name, url, tenant_id, status')
+      .select('id, name, url, tenant_id, status, alert_settings')
       .eq('is_active', true)
       .eq('uptime_check_enabled', true);
 
@@ -101,6 +102,7 @@ export async function GET(request: NextRequest) {
 
           // Alert generation based on status change
           const previousStatus = site.status;
+          const alertSettings = site.alert_settings as SiteAlertSettings | null;
 
           // Site went DOWN: online -> offline
           if (!result.isUp && previousStatus === 'online') {
@@ -118,33 +120,38 @@ export async function GET(request: NextRequest) {
                 errorMessage: result.errorMessage,
                 statusCode: result.statusCode,
               },
+              cooldownMinutes: getCooldownMinutes('site_down', alertSettings),
+              alertSettings,
             });
           }
 
           // Site came back UP: offline -> online
           if (result.isUp && previousStatus === 'offline') {
-            // Create recovery alert
-            await createAlert({
-              tenantId: site.tenant_id,
-              siteId: site.id,
-              siteName: site.name,
-              siteUrl: site.url,
-              triggerType: 'site_down', // Use same type for recovery notification
-              severity: 'info',
-              title: `${site.name} tornato online`,
-              message: `Il sito ${site.url} e' nuovamente raggiungibile`,
-              details: {
-                responseTime: result.responseTimeMs,
-              },
-              cooldownMinutes: 5, // Short cooldown for recovery
-            });
-
-            // Auto-resolve previous site_down alerts
+            // Auto-resolve previous site_down alerts first
             await resolveAlerts({
               tenantId: site.tenant_id,
               siteId: site.id,
               triggerType: 'site_down',
             });
+
+            // Create recovery alert if enabled
+            if (shouldNotifyRecovery(alertSettings)) {
+              await createAlert({
+                tenantId: site.tenant_id,
+                siteId: site.id,
+                siteName: site.name,
+                siteUrl: site.url,
+                triggerType: 'site_down', // Use same type for recovery notification
+                severity: 'info',
+                title: `${site.name} tornato online`,
+                message: `Il sito ${site.url} e' nuovamente raggiungibile`,
+                details: {
+                  responseTime: result.responseTimeMs,
+                },
+                cooldownMinutes: 5, // Short cooldown for recovery
+                alertSettings,
+              });
+            }
           }
 
           return { siteId: site.id, url: site.url, ...result };

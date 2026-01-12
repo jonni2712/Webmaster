@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { dispatchNotification, type NotificationPayload } from '@/lib/notifications/dispatcher';
-import type { AlertTriggerType, AlertSeverity } from '@/types/database';
+import type { AlertTriggerType, AlertSeverity, SiteAlertSettings } from '@/types/database';
+import { DEFAULT_ALERT_SETTINGS } from '@/types/database';
 
 interface CreateAlertParams {
   tenantId: string;
@@ -13,6 +14,7 @@ interface CreateAlertParams {
   message: string;
   details?: Record<string, unknown>;
   cooldownMinutes?: number;
+  alertSettings?: SiteAlertSettings | null;
 }
 
 interface AlertResult {
@@ -30,6 +32,15 @@ const DEFAULT_COOLDOWN_MINUTES = 60;
  */
 export async function createAlert(params: CreateAlertParams): Promise<AlertResult> {
   const supabase = createAdminClient();
+  const settings = params.alertSettings ?? DEFAULT_ALERT_SETTINGS;
+
+  // Check if alerts are enabled for this site
+  if (!settings.alerts_enabled) {
+    console.log(`Alerts disabled for site ${params.siteId}, skipping`);
+    return { created: false, reason: 'alerts_disabled' };
+  }
+
+  // Use site-specific cooldown or default
   const cooldownMinutes = params.cooldownMinutes ?? DEFAULT_COOLDOWN_MINUTES;
 
   try {
@@ -168,13 +179,57 @@ function mapTriggerTypeToNotificationType(
 }
 
 /**
- * Get severity based on days until SSL expiry
+ * Get severity based on days until SSL expiry with custom thresholds
  */
-export function getSSLSeverity(daysUntilExpiry: number): AlertSeverity {
+export function getSSLSeverity(
+  daysUntilExpiry: number,
+  settings?: SiteAlertSettings | null
+): AlertSeverity {
+  const warningDays = settings?.ssl_warning_days ?? DEFAULT_ALERT_SETTINGS.ssl_warning_days;
+  const criticalDays = settings?.ssl_critical_days ?? DEFAULT_ALERT_SETTINGS.ssl_critical_days;
+
   if (daysUntilExpiry <= 0) return 'critical';
-  if (daysUntilExpiry <= 7) return 'critical';
-  if (daysUntilExpiry <= 14) return 'warning';
+  if (daysUntilExpiry <= criticalDays) return 'critical';
+  if (daysUntilExpiry <= warningDays) return 'warning';
   return 'info';
+}
+
+/**
+ * Check if SSL alert should be triggered based on custom thresholds
+ */
+export function shouldTriggerSSLAlert(
+  daysUntilExpiry: number,
+  settings?: SiteAlertSettings | null
+): boolean {
+  const warningDays = settings?.ssl_warning_days ?? DEFAULT_ALERT_SETTINGS.ssl_warning_days;
+  return daysUntilExpiry <= warningDays;
+}
+
+/**
+ * Get cooldown minutes for a specific trigger type
+ */
+export function getCooldownMinutes(
+  triggerType: AlertTriggerType,
+  settings?: SiteAlertSettings | null
+): number {
+  const s = settings ?? DEFAULT_ALERT_SETTINGS;
+
+  switch (triggerType) {
+    case 'site_down':
+      return s.uptime_cooldown_minutes;
+    case 'ssl_expiring':
+    case 'ssl_invalid':
+      return s.ssl_cooldown_minutes;
+    default:
+      return DEFAULT_COOLDOWN_MINUTES;
+  }
+}
+
+/**
+ * Check if recovery notifications are enabled
+ */
+export function shouldNotifyRecovery(settings?: SiteAlertSettings | null): boolean {
+  return settings?.notify_on_recovery ?? DEFAULT_ALERT_SETTINGS.notify_on_recovery;
 }
 
 /**

@@ -22,7 +22,10 @@ import {
   XCircle,
   AlertTriangle,
   Clock,
+  Bell,
 } from 'lucide-react';
+import { AlertSettingsForm } from '@/components/sites/alert-settings-form';
+import type { SiteAlertSettings } from '@/types/database';
 import { formatDistanceToNow, format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -44,6 +47,7 @@ interface Site {
   performance_check_enabled: boolean;
   updates_check_enabled: boolean;
   ecommerce_check_enabled: boolean;
+  alert_settings: SiteAlertSettings | null;
 }
 
 interface UptimeCheck {
@@ -340,6 +344,10 @@ export default function SiteDetailPage({
               <span className="hidden xs:inline">E-com.</span>
             </TabsTrigger>
           )}
+          <TabsTrigger value="alerts" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+            <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Alert</span>
+          </TabsTrigger>
         </TabsList>
 
         {/* Uptime Tab */}
@@ -546,6 +554,25 @@ export default function SiteDetailPage({
             </Card>
           </TabsContent>
         )}
+
+        {/* Alert Settings Tab */}
+        <TabsContent value="alerts">
+          <Card>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg">Impostazioni Alert</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Configura le soglie e le preferenze di notifica per questo sito
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+              <AlertSettingsForm
+                siteId={site.id}
+                initialSettings={site.alert_settings}
+                onUpdate={fetchSite}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );

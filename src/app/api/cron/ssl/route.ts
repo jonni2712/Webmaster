@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { checkSSL } from '@/lib/monitoring/ssl-checker';
-import { createAlert, getSSLSeverity, resolveAlerts } from '@/lib/alerts/generator';
+import { createAlert, getSSLSeverity, resolveAlerts, getCooldownMinutes, shouldTriggerSSLAlert } from '@/lib/alerts/generator';
+import { DEFAULT_ALERT_SETTINGS, type SiteAlertSettings } from '@/types/database';
 
 export const runtime = 'edge';
 export const maxDuration = 60;
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     const { data: sites, error } = await supabase
       .from('sites')
-      .select('id, name, url, tenant_id, ssl_status')
+      .select('id, name, url, tenant_id, ssl_status, alert_settings')
       .eq('is_active', true)
       .eq('ssl_check_enabled', true);
 
@@ -68,13 +69,19 @@ export async function GET(request: NextRequest) {
             throw new Error(`Failed to save SSL check for ${site.url}`);
           }
 
-          // Update site SSL status
+          // Get site-specific alert settings
+          const alertSettings = site.alert_settings as SiteAlertSettings | null;
+          const warningDays = alertSettings?.ssl_warning_days ?? DEFAULT_ALERT_SETTINGS.ssl_warning_days;
+          const criticalDays = alertSettings?.ssl_critical_days ?? DEFAULT_ALERT_SETTINGS.ssl_critical_days;
+          const sslCooldown = getCooldownMinutes('ssl_expiring', alertSettings);
+
+          // Update site SSL status using site-specific thresholds
           let sslStatus = 'valid';
           if (!result.isValid) {
             sslStatus = 'invalid';
           } else if (result.daysUntilExpiry !== null && result.daysUntilExpiry <= 0) {
             sslStatus = 'expired';
-          } else if (result.daysUntilExpiry !== null && result.daysUntilExpiry <= 14) {
+          } else if (result.daysUntilExpiry !== null && result.daysUntilExpiry <= warningDays) {
             sslStatus = 'expiring';
           }
 
@@ -86,7 +93,7 @@ export async function GET(request: NextRequest) {
             })
             .eq('id', site.id);
 
-          // Alert generation for SSL issues
+          // Alert generation for SSL issues using site-specific thresholds
           const daysUntilExpiry = result.daysUntilExpiry;
 
           // SSL Invalid
@@ -103,7 +110,8 @@ export async function GET(request: NextRequest) {
               details: {
                 errorMessage: result.errorMessage,
               },
-              cooldownMinutes: 1440, // 24 hours
+              cooldownMinutes: sslCooldown,
+              alertSettings,
             });
           }
           // SSL Expired
@@ -121,11 +129,12 @@ export async function GET(request: NextRequest) {
                 expiryDate: result.validTo,
                 daysUntilExpiry: 0,
               },
-              cooldownMinutes: 1440, // 24 hours
+              cooldownMinutes: sslCooldown,
+              alertSettings,
             });
           }
-          // SSL Expiring Soon (7 days or less)
-          else if (daysUntilExpiry !== null && daysUntilExpiry <= 7) {
+          // SSL Expiring - Critical (using site-specific threshold)
+          else if (daysUntilExpiry !== null && daysUntilExpiry <= criticalDays) {
             await createAlert({
               tenantId: site.tenant_id,
               siteId: site.id,
@@ -139,11 +148,12 @@ export async function GET(request: NextRequest) {
                 expiryDate: result.validTo,
                 daysUntilExpiry,
               },
-              cooldownMinutes: 1440, // 24 hours
+              cooldownMinutes: sslCooldown,
+              alertSettings,
             });
           }
-          // SSL Expiring (14 days or less)
-          else if (daysUntilExpiry !== null && daysUntilExpiry <= 14) {
+          // SSL Expiring - Warning (using site-specific threshold)
+          else if (daysUntilExpiry !== null && daysUntilExpiry <= warningDays) {
             await createAlert({
               tenantId: site.tenant_id,
               siteId: site.id,
@@ -157,11 +167,12 @@ export async function GET(request: NextRequest) {
                 expiryDate: result.validTo,
                 daysUntilExpiry,
               },
-              cooldownMinutes: 1440, // 24 hours
+              cooldownMinutes: sslCooldown,
+              alertSettings,
             });
           }
           // SSL is valid and not expiring soon - resolve any previous alerts
-          else if (result.isValid && daysUntilExpiry !== null && daysUntilExpiry > 14) {
+          else if (result.isValid && daysUntilExpiry !== null && daysUntilExpiry > warningDays) {
             await resolveAlerts({
               tenantId: site.tenant_id,
               siteId: site.id,

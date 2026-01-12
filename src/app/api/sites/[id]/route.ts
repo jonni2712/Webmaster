@@ -4,6 +4,15 @@ import { authOptions } from '@/lib/auth/config';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { z } from 'zod';
 
+const alertSettingsSchema = z.object({
+  alerts_enabled: z.boolean(),
+  ssl_warning_days: z.number().min(1).max(90),
+  ssl_critical_days: z.number().min(1).max(30),
+  uptime_cooldown_minutes: z.number().min(5).max(1440),
+  ssl_cooldown_minutes: z.number().min(60).max(10080),
+  notify_on_recovery: z.boolean(),
+}).partial();
+
 const updateSiteSchema = z.object({
   name: z.string().min(1).optional(),
   url: z.string().url().optional(),
@@ -18,6 +27,7 @@ const updateSiteSchema = z.object({
   ecommerce_check_enabled: z.boolean().optional(),
   tags: z.array(z.string()).optional(),
   notes: z.string().optional(),
+  alert_settings: alertSettingsSchema.optional(),
 });
 
 export async function GET(
@@ -130,7 +140,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Site not found' }, { status: 404 });
     }
 
-    const { api_key, api_secret, client_id, ...updateData } = validation.data;
+    const { api_key, api_secret, client_id, alert_settings, ...updateData } = validation.data;
 
     const updatePayload: Record<string, unknown> = { ...updateData };
     if (api_key !== undefined) {
@@ -141,6 +151,17 @@ export async function PUT(
     }
     if (client_id !== undefined) {
       updatePayload.client_id = client_id || null;
+    }
+    if (alert_settings !== undefined) {
+      // Merge with existing settings if partial update
+      const { data: currentSite } = await supabase
+        .from('sites')
+        .select('alert_settings')
+        .eq('id', id)
+        .single();
+
+      const currentSettings = currentSite?.alert_settings || {};
+      updatePayload.alert_settings = { ...currentSettings, ...alert_settings };
     }
 
     const { data, error } = await supabase

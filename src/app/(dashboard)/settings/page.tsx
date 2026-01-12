@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ChannelFormDialog } from '@/components/settings/channel-form-dialog';
+import { DigestPreferencesForm } from '@/components/settings/digest-preferences-form';
 
 interface AlertChannel {
   id: string;
@@ -374,6 +375,19 @@ export default function SettingsPage() {
                     })}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Digest Preferences */}
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-base sm:text-lg">Digest Email</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  Configura il riepilogo periodico dei tuoi siti
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                <DigestPreferencesForm userEmail={session?.user?.email || ''} />
               </CardContent>
             </Card>
           </div>

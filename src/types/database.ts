@@ -61,6 +61,24 @@ export interface ClientWithStats extends Client {
   sites_down: number;
 }
 
+export interface SiteAlertSettings {
+  alerts_enabled: boolean;
+  ssl_warning_days: number;      // Days before SSL expiry to warn (default 14)
+  ssl_critical_days: number;     // Days before SSL expiry for critical alert (default 7)
+  uptime_cooldown_minutes: number;  // Cooldown for uptime alerts (default 60)
+  ssl_cooldown_minutes: number;     // Cooldown for SSL alerts (default 1440 = 24h)
+  notify_on_recovery: boolean;      // Send notification when site comes back online
+}
+
+export const DEFAULT_ALERT_SETTINGS: SiteAlertSettings = {
+  alerts_enabled: true,
+  ssl_warning_days: 14,
+  ssl_critical_days: 7,
+  uptime_cooldown_minutes: 60,
+  ssl_cooldown_minutes: 1440,
+  notify_on_recovery: true,
+};
+
 export interface Site {
   id: string;
   tenant_id: string;
@@ -81,6 +99,7 @@ export interface Site {
   last_check_at: string | null;
   tags: string[];
   notes: string | null;
+  alert_settings: SiteAlertSettings | null;
   created_at: string;
   updated_at: string;
 }
@@ -243,3 +262,21 @@ export interface Alert {
   channels_notified: AlertChannelType[];
   created_at: string;
 }
+
+export type DigestFrequency = 'daily' | 'weekly' | 'none';
+
+export interface DigestPreferences {
+  enabled: boolean;
+  frequency: DigestFrequency;
+  day_of_week: number;  // 0-6 (Sunday-Saturday), only used for weekly
+  hour: number;         // 0-23, hour to send digest
+  email: string | null; // Override email, null = use account email
+}
+
+export const DEFAULT_DIGEST_PREFERENCES: DigestPreferences = {
+  enabled: false,
+  frequency: 'daily',
+  day_of_week: 1, // Monday
+  hour: 8,        // 8 AM
+  email: null,
+};
