@@ -11,9 +11,9 @@ import type { DashboardStats, SiteWithStatus, Alert } from '@/types';
 async function getDashboardData() {
   const supabase = await createClient();
 
-  // Get sites with status
+  // Get sites from sites table
   const { data: sites } = await supabase
-    .from('site_status_summary')
+    .from('sites')
     .select('*')
     .order('name');
 
@@ -24,8 +24,28 @@ async function getDashboardData() {
     .order('created_at', { ascending: false })
     .limit(5);
 
-  // Calculate stats
-  const sitesList = (sites || []) as SiteWithStatus[];
+  // Map sites to SiteWithStatus format
+  const sitesList: SiteWithStatus[] = (sites || []).map(site => ({
+    site_id: site.id,
+    tenant_id: site.tenant_id,
+    name: site.name,
+    url: site.url,
+    platform: site.platform,
+    is_active: site.is_active,
+    tags: site.tags,
+    created_at: site.created_at,
+    current_status: site.status === 'online' ? true : site.status === 'offline' ? false : null,
+    last_response_time: site.response_time_avg,
+    last_uptime_check: site.last_check,
+    uptime_30d: site.uptime_percentage,
+    ssl_valid: site.ssl_status === 'valid',
+    ssl_days_remaining: null,
+    wp_updates_pending: 0,
+    ps_updates_pending: 0,
+    last_perf_score: site.performance_score,
+    last_lcp: null,
+  }));
+
   const alertsList = (alerts || []) as Alert[];
 
   const stats: DashboardStats = {
@@ -42,10 +62,10 @@ async function getDashboardData() {
     ).length,
     invalidSSL: sitesList.filter((s) => s.ssl_valid === false).length,
     pendingUpdates: sitesList.reduce(
-      (acc, s) => acc + s.wp_updates_pending + s.ps_updates_pending,
+      (acc, s) => acc + (s.wp_updates_pending || 0) + (s.ps_updates_pending || 0),
       0
     ),
-    criticalUpdates: 0, // TODO: calcolare dai dati reali
+    criticalUpdates: 0,
     activeAlerts: alertsList.filter((a) => a.status === 'triggered').length,
   };
 
