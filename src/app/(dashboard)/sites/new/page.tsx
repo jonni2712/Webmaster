@@ -1,4 +1,16 @@
+import { Suspense } from 'react';
 import { SiteForm } from '@/components/sites/site-form';
+import { Skeleton } from '@/components/ui/skeleton';
+
+function SiteFormSkeleton() {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-64 w-full" />
+      <Skeleton className="h-48 w-full" />
+      <Skeleton className="h-64 w-full" />
+    </div>
+  );
+}
 
 export default function NewSitePage() {
   return (
@@ -10,7 +22,9 @@ export default function NewSitePage() {
         </p>
       </div>
 
-      <SiteForm />
+      <Suspense fallback={<SiteFormSkeleton />}>
+        <SiteForm />
+      </Suspense>
     </div>
   );
 }

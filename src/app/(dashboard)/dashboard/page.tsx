@@ -63,6 +63,8 @@ async function getDashboardData() {
   const sitesList: SiteWithStatus[] = (sites || []).map(site => ({
     site_id: site.id,
     tenant_id: site.tenant_id,
+    client_id: site.client_id || null,
+    client_name: null,
     name: site.name,
     url: site.url,
     platform: site.platform,
