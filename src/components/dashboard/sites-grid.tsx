@@ -17,6 +17,7 @@ import {
   Zap,
   RefreshCw,
   Building2,
+  Settings,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -138,10 +139,20 @@ function SiteCard({ site }: { site: SiteWithStatus }) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link href={`/sites/${site.site_id}`}>Dettagli</Link>
+                  <Link href={`/sites/${site.site_id}`}>
+                    <Activity className="h-4 w-4 mr-2" />
+                    Dettagli
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href={`/sites/${site.site_id}/edit`}>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Modifica
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <a href={site.url} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4 mr-2" />
                     Visita sito
                   </a>
                 </DropdownMenuItem>
