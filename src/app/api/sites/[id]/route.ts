@@ -43,7 +43,7 @@ export async function GET(
   }
 
   const { data: site, error } = await supabase
-    .from('site_status_summary')
+    .from('sites')
     .select('*')
     .eq('id', id)
     .eq('tenant_id', user.current_tenant_id)
@@ -53,7 +53,18 @@ export async function GET(
     return NextResponse.json({ error: 'Site not found' }, { status: 404 });
   }
 
-  return NextResponse.json(site);
+  // Map database fields to expected frontend fields
+  const mappedSite = {
+    ...site,
+    status: site.status || 'unknown',
+    ssl_status: site.ssl_status || null,
+    ssl_expiry: site.ssl_expiry || null,
+    uptime_percentage: site.uptime_percentage || null,
+    response_time_avg: site.response_time_avg || null,
+    last_check: site.last_check || site.last_sync || null,
+  };
+
+  return NextResponse.json(mappedSite);
 }
 
 export async function PUT(
