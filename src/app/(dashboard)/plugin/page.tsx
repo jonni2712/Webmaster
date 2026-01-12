@@ -178,20 +178,6 @@ export default function PluginPage() {
               direttamente dalla pagina impostazioni di WordPress prima di aggiungere il sito alla piattaforma.
             </AlertDescription>
           </Alert>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Video Tutorial</CardTitle>
-              <CardDescription>
-                Guarda come installare e configurare il plugin in 2 minuti
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
-                <p className="text-muted-foreground">Video tutorial in arrivo</p>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         {/* Features Tab */}
