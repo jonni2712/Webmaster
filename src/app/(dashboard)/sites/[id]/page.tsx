@@ -24,6 +24,10 @@ import {
   Clock,
   Bell,
   Package,
+  Server,
+  Database,
+  HardDrive,
+  Cpu,
 } from 'lucide-react';
 import { AlertSettingsForm } from '@/components/sites/alert-settings-form';
 import { UpdatesList } from '@/components/sites/updates-list';
@@ -31,6 +35,71 @@ import type { SiteAlertSettings } from '@/types/database';
 import { formatDistanceToNow, format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { toast } from 'sonner';
+
+interface WPInfo {
+  core?: {
+    version: string;
+    update_available: boolean;
+    latest_version?: string;
+    site_url?: string;
+    home_url?: string;
+    language?: string;
+  };
+  plugins?: {
+    total: number;
+    active: number;
+    inactive: number;
+    updates_available: number;
+    list?: Array<{
+      name: string;
+      slug: string;
+      version: string;
+      active: boolean;
+      update_available: boolean;
+    }>;
+  };
+  themes?: {
+    total: number;
+    updates_available: number;
+    active?: {
+      name: string;
+      version: string;
+    };
+  };
+  site_health?: {
+    status: string;
+  };
+}
+
+interface ServerInfo {
+  php?: {
+    version: string;
+    memory_limit?: string;
+    max_execution_time?: string;
+    upload_max_filesize?: string;
+  };
+  database?: {
+    type: string;
+    version: string;
+    charset?: string;
+    total_size?: string;
+    tables_count?: number;
+  };
+  server?: {
+    software?: string;
+    web_server?: string;
+    os?: string;
+    hostname?: string;
+    https?: boolean;
+  };
+  disk?: {
+    total?: string;
+    free?: string;
+    used?: string;
+    used_percentage?: number;
+    wordpress_size?: string;
+  };
+}
 
 interface Site {
   id: string;
@@ -50,6 +119,14 @@ interface Site {
   updates_check_enabled: boolean;
   ecommerce_check_enabled: boolean;
   alert_settings: SiteAlertSettings | null;
+  // WordPress specific
+  wp_version?: string | null;
+  php_version?: string | null;
+  wp_info?: WPInfo | null;
+  server_info?: ServerInfo | null;
+  last_sync?: string | null;
+  plugin_version?: string | null;
+  api_key_encrypted?: string | null;
 }
 
 interface UptimeCheck {
@@ -90,6 +167,7 @@ export default function SiteDetailPage({
   const [performanceChecks, setPerformanceChecks] = useState<PerformanceCheck[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     fetchSite();
@@ -154,6 +232,32 @@ export default function SiteDetailPage({
       toast.error('Errore nell\'eliminazione del sito');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const runSync = async () => {
+    if (!site?.api_key_encrypted) {
+      toast.error('API Key non configurata. Installa e configura il plugin WordPress.');
+      return;
+    }
+    setSyncing(true);
+    toast.info('Sincronizzazione in corso...');
+    try {
+      const res = await fetch(`/api/sites/${id}/sync`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        toast.success('Sincronizzazione completata');
+        fetchSite();
+      } else {
+        toast.error(data.error || 'Errore durante la sincronizzazione');
+      }
+    } catch (error) {
+      toast.error('Errore durante la sincronizzazione');
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -344,6 +448,12 @@ export default function SiteDetailPage({
             <TabsTrigger value="updates" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
               <Package className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden xs:inline">Update</span>
+            </TabsTrigger>
+          )}
+          {site.platform === 'wordpress' && (
+            <TabsTrigger value="wordpress" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+              <Server className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Server</span>
             </TabsTrigger>
           )}
           {site.ecommerce_check_enabled && (
@@ -560,6 +670,282 @@ export default function SiteDetailPage({
                 <UpdatesList siteId={site.id} onSync={fetchSite} />
               </CardContent>
             </Card>
+          </TabsContent>
+        )}
+
+        {/* WordPress/Server Tab */}
+        {site.platform === 'wordpress' && (
+          <TabsContent value="wordpress">
+            <div className="grid gap-4 md:grid-cols-2">
+              {/* WordPress Info Card */}
+              <Card>
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                    <Globe className="h-5 w-5" />
+                    WordPress
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                  {site.wp_info?.core ? (
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Versione</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{site.wp_info.core.version}</span>
+                          {site.wp_info.core.update_available && (
+                            <Badge variant="destructive" className="text-xs">
+                              Aggiornamento disponibile
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      {site.wp_info.core.site_url && (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Site URL</span>
+                          <span className="text-sm truncate max-w-[200px]">{site.wp_info.core.site_url}</span>
+                        </div>
+                      )}
+                      {site.wp_info.core.language && (
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Lingua</span>
+                          <span className="text-sm">{site.wp_info.core.language}</span>
+                        </div>
+                      )}
+                      {site.wp_info.plugins && (
+                        <>
+                          <hr className="my-2" />
+                          <div className="flex justify-between">
+                            <span className="text-sm text-muted-foreground">Plugin totali</span>
+                            <span className="font-medium">{site.wp_info.plugins.total}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-muted-foreground">Plugin attivi</span>
+                            <span className="text-sm">{site.wp_info.plugins.active}</span>
+                          </div>
+                          {site.wp_info.plugins.updates_available > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-sm text-muted-foreground">Aggiornamenti plugin</span>
+                              <Badge variant="secondary">{site.wp_info.plugins.updates_available}</Badge>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      {site.wp_info.themes && (
+                        <>
+                          <hr className="my-2" />
+                          <div className="flex justify-between">
+                            <span className="text-sm text-muted-foreground">Temi installati</span>
+                            <span className="font-medium">{site.wp_info.themes.total}</span>
+                          </div>
+                          {site.wp_info.themes.active && (
+                            <div className="flex justify-between">
+                              <span className="text-sm text-muted-foreground">Tema attivo</span>
+                              <span className="text-sm">{site.wp_info.themes.active.name} v{site.wp_info.themes.active.version}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      {site.wp_info.site_health && (
+                        <>
+                          <hr className="my-2" />
+                          <div className="flex justify-between">
+                            <span className="text-sm text-muted-foreground">Site Health</span>
+                            <Badge variant={
+                              site.wp_info.site_health.status === 'good' ? 'default' :
+                              site.wp_info.site_health.status === 'recommended' ? 'secondary' : 'destructive'
+                            }>
+                              {site.wp_info.site_health.status}
+                            </Badge>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-8">
+                      <Globe className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>Dati WordPress non disponibili</p>
+                      <p className="text-xs mt-1 mb-3">
+                        {site.api_key_encrypted
+                          ? 'Sincronizza il sito per ottenere i dati'
+                          : 'Installa il plugin Webmaster Monitor e configura l\'API Key'}
+                      </p>
+                      {site.api_key_encrypted && (
+                        <Button variant="outline" size="sm" onClick={runSync} disabled={syncing}>
+                          <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+                          Sincronizza ora
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Server Info Card */}
+              <Card>
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                    <Server className="h-5 w-5" />
+                    Server
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                  {site.server_info ? (
+                    <div className="space-y-3">
+                      {site.server_info.php && (
+                        <>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Cpu className="h-3 w-3" /> PHP
+                            </span>
+                            <span className="font-medium">{site.server_info.php.version}</span>
+                          </div>
+                          {site.server_info.php.memory_limit && (
+                            <div className="flex justify-between">
+                              <span className="text-sm text-muted-foreground">Memory Limit</span>
+                              <span className="text-sm">{site.server_info.php.memory_limit}</span>
+                            </div>
+                          )}
+                          {site.server_info.php.max_execution_time && (
+                            <div className="flex justify-between">
+                              <span className="text-sm text-muted-foreground">Max Execution</span>
+                              <span className="text-sm">{site.server_info.php.max_execution_time}s</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      {site.server_info.database && (
+                        <>
+                          <hr className="my-2" />
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Database className="h-3 w-3" /> Database
+                            </span>
+                            <span className="font-medium">{site.server_info.database.type} {site.server_info.database.version}</span>
+                          </div>
+                          {site.server_info.database.total_size && (
+                            <div className="flex justify-between">
+                              <span className="text-sm text-muted-foreground">Dimensione DB</span>
+                              <span className="text-sm">{site.server_info.database.total_size}</span>
+                            </div>
+                          )}
+                          {site.server_info.database.tables_count && (
+                            <div className="flex justify-between">
+                              <span className="text-sm text-muted-foreground">Tabelle</span>
+                              <span className="text-sm">{site.server_info.database.tables_count}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      {site.server_info.disk && (
+                        <>
+                          <hr className="my-2" />
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted-foreground flex items-center gap-1">
+                              <HardDrive className="h-3 w-3" /> Disco
+                            </span>
+                            {site.server_info.disk.used_percentage !== undefined && (
+                              <span className="font-medium">{site.server_info.disk.used_percentage}% usato</span>
+                            )}
+                          </div>
+                          {site.server_info.disk.total && site.server_info.disk.free && (
+                            <div className="space-y-1">
+                              <Progress value={site.server_info.disk.used_percentage || 0} className="h-2" />
+                              <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>Libero: {site.server_info.disk.free}</span>
+                                <span>Totale: {site.server_info.disk.total}</span>
+                              </div>
+                            </div>
+                          )}
+                          {site.server_info.disk.wordpress_size && (
+                            <div className="flex justify-between">
+                              <span className="text-sm text-muted-foreground">Dimensione WP</span>
+                              <span className="text-sm">{site.server_info.disk.wordpress_size}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      {site.server_info.server && (
+                        <>
+                          <hr className="my-2" />
+                          {site.server_info.server.web_server && (
+                            <div className="flex justify-between">
+                              <span className="text-sm text-muted-foreground">Web Server</span>
+                              <span className="text-sm">{site.server_info.server.web_server}</span>
+                            </div>
+                          )}
+                          {site.server_info.server.os && (
+                            <div className="flex justify-between">
+                              <span className="text-sm text-muted-foreground">Sistema Op.</span>
+                              <span className="text-sm">{site.server_info.server.os}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-8">
+                      <Server className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>Dati server non disponibili</p>
+                      <p className="text-xs mt-1 mb-3">
+                        {site.api_key_encrypted
+                          ? 'Sincronizza il sito per ottenere i dati'
+                          : 'Installa il plugin e configura l\'API Key'}
+                      </p>
+                      {site.api_key_encrypted && (
+                        <Button variant="outline" size="sm" onClick={runSync} disabled={syncing}>
+                          <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+                          Sincronizza ora
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Sync Info Card */}
+              <Card className="md:col-span-2">
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                    <RefreshCw className="h-5 w-5" />
+                    Sincronizzazione
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="space-y-1">
+                      <p className="text-sm">
+                        <span className="text-muted-foreground">Ultima sincronizzazione: </span>
+                        <span className="font-medium">
+                          {site.last_sync
+                            ? formatDistanceToNow(new Date(site.last_sync), { addSuffix: true, locale: it })
+                            : 'Mai sincronizzato'}
+                        </span>
+                      </p>
+                      {site.plugin_version && (
+                        <p className="text-sm">
+                          <span className="text-muted-foreground">Versione plugin: </span>
+                          <Badge variant="outline">{site.plugin_version}</Badge>
+                        </p>
+                      )}
+                      {site.api_key_encrypted && (
+                        <p className="text-sm text-green-600 flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3" />
+                          Plugin collegato
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={runSync}
+                      disabled={syncing || !site.api_key_encrypted}
+                    >
+                      <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+                      {syncing ? 'Sincronizzazione...' : 'Sincronizza'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         )}
 
