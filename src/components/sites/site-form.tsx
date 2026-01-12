@@ -101,13 +101,19 @@ export function SiteForm({ initialData, siteId }: SiteFormProps) {
   async function onSubmit(values: SiteFormValues) {
     setIsLoading(true);
 
+    // Convert empty client_id to null
+    const payload = {
+      ...values,
+      client_id: values.client_id || null,
+    };
+
     try {
       const response = await fetch(
         siteId ? `/api/sites/${siteId}` : '/api/sites',
         {
           method: siteId ? 'PUT' : 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(values),
+          body: JSON.stringify(payload),
         }
       );
 
@@ -193,11 +199,14 @@ export function SiteForm({ initialData, siteId }: SiteFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-sm">Cliente</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    onValueChange={(value) => field.onChange(value === 'none' ? '' : value)}
+                    value={field.value || 'none'}
+                  >
                     <FormControl>
                       <SelectTrigger className="h-9 sm:h-10">
                         <SelectValue placeholder="Seleziona cliente (opzionale)">
-                          {field.value ? (
+                          {field.value && field.value !== 'none' ? (
                             <div className="flex items-center gap-2">
                               <Building2 className="h-4 w-4" />
                               {clients.find(c => c.id === field.value)?.name || 'Cliente'}
@@ -209,7 +218,7 @@ export function SiteForm({ initialData, siteId }: SiteFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Nessun cliente</SelectItem>
+                      <SelectItem value="none">Nessun cliente</SelectItem>
                       {clients.map((client) => (
                         <SelectItem key={client.id} value={client.id}>
                           <div className="flex items-center gap-2">
