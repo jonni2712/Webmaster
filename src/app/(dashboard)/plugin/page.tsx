@@ -88,7 +88,7 @@ export default function PluginPage() {
   const [copied, setCopied] = useState(false);
 
   const handleDownload = () => {
-    window.location.href = '/downloads/webmaster-monitor.zip';
+    window.location.href = 'https://github.com/jonni2712/webmaster-monitor-plugin/releases/download/v1.0.1/webmaster-monitor.zip';
     toast.success('Download avviato!');
   };
 
@@ -119,7 +119,7 @@ export default function PluginPage() {
               <div>
                 <h2 className="text-lg sm:text-xl font-semibold">Webmaster Monitor</h2>
                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1">
-                  <Badge variant="secondary" className="text-xs">v1.0.0</Badge>
+                  <Badge variant="secondary" className="text-xs">v1.0.1</Badge>
                   <span className="text-xs sm:text-sm text-muted-foreground">WordPress 5.0+</span>
                   <span className="text-xs sm:text-sm text-muted-foreground">PHP 7.4+</span>
                 </div>
@@ -329,7 +329,7 @@ export default function PluginPage() {
             <CardContent>
               <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-xs">
 {`{
-  "plugin_version": "1.0.0",
+  "plugin_version": "1.0.1",
   "timestamp": "2025-01-13T10:30:00+01:00",
   "server": {
     "php": {
