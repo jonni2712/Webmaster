@@ -13,23 +13,69 @@ const publicRoutes = [
   '/api/auth',
 ];
 
+// Estensioni file statici pubblici (immagini, font, ecc.)
+const publicFileExtensions = [
+  '.ico',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.svg',
+  '.webp',
+  '.woff',
+  '.woff2',
+  '.ttf',
+  '.eot',
+  '.css',
+  '.js',
+];
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Salta controllo per routes pubbliche e assets
-  const isPublicRoute = pathname === '/' ||
-    publicRoutes.slice(1).some((route) => pathname.startsWith(route));
-
-  if (
-    isPublicRoute ||
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/api/cron') ||
-    pathname.includes('.')
-  ) {
+  // Salta controllo per assets Next.js
+  if (pathname.startsWith('/_next')) {
     return NextResponse.next();
   }
 
-  // Get NextAuth token
+  // Salta controllo per cron jobs (protetti da CRON_SECRET)
+  if (pathname.startsWith('/api/cron')) {
+    return NextResponse.next();
+  }
+
+  // Controlla se è un file statico pubblico (solo estensioni specifiche)
+  const isPublicStaticFile = publicFileExtensions.some(ext =>
+    pathname.toLowerCase().endsWith(ext)
+  );
+  if (isPublicStaticFile) {
+    return NextResponse.next();
+  }
+
+  // Controlla se è una route pubblica
+  const isPublicRoute = pathname === '/' ||
+    publicRoutes.slice(1).some((route) => pathname.startsWith(route));
+
+  if (isPublicRoute) {
+    return NextResponse.next();
+  }
+
+  // BLOCCA download di file protetti (es. plugin ZIP)
+  if (pathname.startsWith('/downloads')) {
+    const token = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET,
+    });
+
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Autenticazione richiesta per scaricare questo file' },
+        { status: 401 }
+      );
+    }
+    return NextResponse.next();
+  }
+
+  // Get NextAuth token per tutte le altre routes
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,

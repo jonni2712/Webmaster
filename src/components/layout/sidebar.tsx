@@ -11,6 +11,7 @@ import {
   Upload,
   ChevronLeft,
   ChevronRight,
+  Puzzle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,11 @@ const navigation = [
     name: 'Alert',
     href: '/alerts',
     icon: Bell,
+  },
+  {
+    name: 'Plugin WP',
+    href: '/plugin',
+    icon: Puzzle,
   },
   {
     name: 'Impostazioni',

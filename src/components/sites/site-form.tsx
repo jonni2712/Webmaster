@@ -26,8 +26,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2, Info, ExternalLink, CheckCircle2 } from 'lucide-react';
+import Link from 'next/link';
 
 const siteFormSchema = z.object({
   name: z.string().min(1, 'Nome richiesto'),
@@ -183,47 +185,80 @@ export function SiteForm({ initialData, siteId }: SiteFormProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Credenziali API (opzionale)</CardTitle>
+            <CardTitle>Plugin Webmaster Monitor</CardTitle>
+            <CardDescription>
+              Per monitorare informazioni server, plugin e aggiornamenti
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {form.watch('platform') === 'wordpress' && (
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription className="ml-2">
+                  <span className="font-medium">Per WordPress:</span> Installa il nostro plugin gratuito per abilitare il monitoraggio avanzato.{' '}
+                  <Link href="/plugin" className="text-primary hover:underline inline-flex items-center gap-1">
+                    Scarica plugin <ExternalLink className="h-3 w-3" />
+                  </Link>
+                </AlertDescription>
+              </Alert>
+            )}
+
             <FormField
               control={form.control}
               name="api_key"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>API Key</FormLabel>
+                  <FormLabel>
+                    {form.watch('platform') === 'wordpress' ? 'API Key (dal plugin)' : 'API Key'}
+                  </FormLabel>
                   <FormControl>
                     <Input
-                      type="password"
-                      placeholder="Inserisci API key..."
+                      placeholder={
+                        form.watch('platform') === 'wordpress'
+                          ? 'wm_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+                          : 'Inserisci API key...'
+                      }
                       {...field}
                     />
                   </FormControl>
                   <FormDescription>
-                    Per WordPress: Application Password. Per PrestaShop: Web Service Key.
+                    {form.watch('platform') === 'wordpress'
+                      ? 'Trovi l\'API Key in WordPress > Impostazioni > Webmaster Monitor'
+                      : form.watch('platform') === 'prestashop'
+                      ? 'Web Service Key dal backoffice PrestaShop'
+                      : 'Chiave API per accesso ai dati del sito'}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="api_secret"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>API Secret (opzionale)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      placeholder="Inserisci API secret..."
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {form.watch('platform') !== 'wordpress' && (
+              <FormField
+                control={form.control}
+                name="api_secret"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>API Secret (opzionale)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="Inserisci API secret..."
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {form.watch('api_key') && form.watch('platform') === 'wordpress' && (
+              <div className="flex items-center gap-2 text-sm text-green-600">
+                <CheckCircle2 className="h-4 w-4" />
+                <span>API Key inserita - la connessione sara verificata al salvataggio</span>
+              </div>
+            )}
           </CardContent>
         </Card>
 
