@@ -8,6 +8,7 @@ const siteSchema = z.object({
   name: z.string().min(1),
   url: z.string().url(),
   platform: z.enum(['wordpress', 'prestashop', 'other']),
+  client_id: z.string().uuid().optional().nullable(),
   api_key: z.string().optional(),
   api_secret: z.string().optional(),
   ssl_check_enabled: z.boolean().optional().default(true),
@@ -144,13 +145,14 @@ export async function POST(request: NextRequest) {
     }
 
     // TODO: Encrypt API keys before storing
-    const { api_key, api_secret, ...siteData } = validation.data;
+    const { api_key, api_secret, client_id, ...siteData } = validation.data;
 
     const { data, error } = await supabase
       .from('sites')
       .insert({
         ...siteData,
         tenant_id: user.current_tenant_id,
+        client_id: client_id || null,
         api_key_encrypted: api_key || null,
         api_secret_encrypted: api_secret || null,
       })

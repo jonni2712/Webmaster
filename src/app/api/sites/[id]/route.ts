@@ -8,6 +8,7 @@ const updateSiteSchema = z.object({
   name: z.string().min(1).optional(),
   url: z.string().url().optional(),
   platform: z.enum(['wordpress', 'prestashop', 'other']).optional(),
+  client_id: z.string().uuid().optional().nullable(),
   api_key: z.string().optional(),
   api_secret: z.string().optional(),
   ssl_check_enabled: z.boolean().optional(),
@@ -129,7 +130,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Site not found' }, { status: 404 });
     }
 
-    const { api_key, api_secret, ...updateData } = validation.data;
+    const { api_key, api_secret, client_id, ...updateData } = validation.data;
 
     const updatePayload: Record<string, unknown> = { ...updateData };
     if (api_key !== undefined) {
@@ -137,6 +138,9 @@ export async function PUT(
     }
     if (api_secret !== undefined) {
       updatePayload.api_secret_encrypted = api_secret || null;
+    }
+    if (client_id !== undefined) {
+      updatePayload.client_id = client_id || null;
     }
 
     const { data, error } = await supabase

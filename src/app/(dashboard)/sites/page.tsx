@@ -4,15 +4,20 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { SitesGrid } from '@/components/dashboard/sites-grid';
+import { SitesFilters } from '@/components/sites/sites-filters';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Plus, Upload, Search } from 'lucide-react';
-import type { SiteWithStatus } from '@/types';
+import { Plus, Upload } from 'lucide-react';
+import type { SiteWithStatus, Client } from '@/types';
 
-async function getSites(): Promise<SiteWithStatus[]> {
+interface SitesData {
+  sites: SiteWithStatus[];
+  clients: Client[];
+}
+
+async function getSitesData(): Promise<SitesData> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    return [];
+    return { sites: [], clients: [] };
   }
 
   const supabase = createAdminClient();
@@ -25,19 +30,33 @@ async function getSites(): Promise<SiteWithStatus[]> {
     .single();
 
   if (!user?.current_tenant_id) {
-    return [];
+    return { sites: [], clients: [] };
   }
 
-  const { data } = await supabase
+  // Fetch sites with client info
+  const { data: sitesData } = await supabase
     .from('sites')
-    .select('*')
+    .select(`
+      *,
+      clients(id, name, company_name)
+    `)
     .eq('tenant_id', user.current_tenant_id)
     .order('name');
 
+  // Fetch clients for filter
+  const { data: clientsData } = await supabase
+    .from('clients')
+    .select('*')
+    .eq('tenant_id', user.current_tenant_id)
+    .eq('is_active', true)
+    .order('name');
+
   // Map sites table columns to SiteWithStatus format expected by SitesGrid
-  return (data || []).map(site => ({
+  const sites = (sitesData || []).map(site => ({
     site_id: site.id,
     tenant_id: site.tenant_id,
+    client_id: site.client_id,
+    client_name: site.clients?.name || null,
     name: site.name,
     url: site.url,
     platform: site.platform,
@@ -55,10 +74,12 @@ async function getSites(): Promise<SiteWithStatus[]> {
     last_perf_score: site.performance_score,
     last_lcp: null,
   })) as SiteWithStatus[];
+
+  return { sites, clients: clientsData || [] };
 }
 
 export default async function SitesPage() {
-  const sites = await getSites();
+  const { sites, clients } = await getSitesData();
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -86,17 +107,9 @@ export default async function SitesPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row">
-        <div className="relative flex-1 sm:max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Cerca siti..." className="pl-9 h-9 sm:h-10" />
-        </div>
-      </div>
-
-      {/* Sites Grid */}
+      {/* Filters and Grid */}
       <Suspense fallback={<SitesGrid sites={[]} isLoading />}>
-        <SitesGrid sites={sites} />
+        <SitesFilters sites={sites} clients={clients} />
       </Suspense>
     </div>
   );

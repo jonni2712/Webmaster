@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -28,13 +28,15 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Info, ExternalLink, CheckCircle2 } from 'lucide-react';
+import { Loader2, Info, ExternalLink, CheckCircle2, Building2 } from 'lucide-react';
 import Link from 'next/link';
+import type { Client } from '@/types';
 
 const siteFormSchema = z.object({
   name: z.string().min(1, 'Nome richiesto'),
   url: z.string().url('URL non valido'),
   platform: z.enum(['wordpress', 'prestashop', 'other']),
+  client_id: z.string().optional(),
   api_key: z.string().optional(),
   api_secret: z.string().optional(),
   ssl_check_enabled: z.boolean(),
@@ -48,14 +50,35 @@ const siteFormSchema = z.object({
 type SiteFormValues = z.infer<typeof siteFormSchema>;
 
 interface SiteFormProps {
-  initialData?: Partial<SiteFormValues>;
+  initialData?: Partial<SiteFormValues & { client_id?: string | null }>;
   siteId?: string;
 }
 
 export function SiteForm({ initialData, siteId }: SiteFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
+  const [clients, setClients] = useState<Client[]>([]);
   const isEditing = !!siteId;
+
+  // Get client_id from URL params (for creating from client detail page)
+  const urlClientId = searchParams.get('client_id');
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  const fetchClients = async () => {
+    try {
+      const res = await fetch('/api/clients?is_active=true');
+      if (res.ok) {
+        const data = await res.json();
+        setClients(data.clients || []);
+      }
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+    }
+  };
 
   const form = useForm<SiteFormValues>({
     resolver: zodResolver(siteFormSchema),
@@ -63,6 +86,7 @@ export function SiteForm({ initialData, siteId }: SiteFormProps) {
       name: initialData?.name || '',
       url: initialData?.url || '',
       platform: initialData?.platform || 'wordpress',
+      client_id: initialData?.client_id || urlClientId || '',
       api_key: '',
       api_secret: '',
       ssl_check_enabled: initialData?.ssl_check_enabled ?? true,
@@ -158,6 +182,52 @@ export function SiteForm({ initialData, siteId }: SiteFormProps) {
                       <SelectItem value="other">Altro</SelectItem>
                     </SelectContent>
                   </Select>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="client_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm">Cliente</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="h-9 sm:h-10">
+                        <SelectValue placeholder="Seleziona cliente (opzionale)">
+                          {field.value ? (
+                            <div className="flex items-center gap-2">
+                              <Building2 className="h-4 w-4" />
+                              {clients.find(c => c.id === field.value)?.name || 'Cliente'}
+                            </div>
+                          ) : (
+                            'Nessun cliente'
+                          )}
+                        </SelectValue>
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="">Nessun cliente</SelectItem>
+                      {clients.map((client) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4" />
+                            {client.name}
+                            {client.company_name && (
+                              <span className="text-muted-foreground">
+                                ({client.company_name})
+                              </span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription className="text-xs">
+                    Associa questo sito a un cliente per una gestione organizzata
+                  </FormDescription>
                   <FormMessage className="text-xs" />
                 </FormItem>
               )}

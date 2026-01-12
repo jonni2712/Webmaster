@@ -16,6 +16,7 @@ import {
   Clock,
   Zap,
   RefreshCw,
+  Building2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -119,6 +120,15 @@ function SiteCard({ site }: { site: SiteWithStatus }) {
                 <span className="truncate">{new URL(site.url).hostname}</span>
                 <ExternalLink className="h-3 w-3 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
               </a>
+              {site.client_name && (
+                <Link
+                  href={`/clients/${site.client_id}`}
+                  className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 mt-1"
+                >
+                  <Building2 className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">{site.client_name}</span>
+                </Link>
+              )}
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

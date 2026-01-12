@@ -35,9 +35,36 @@ export interface User {
   updated_at: string;
 }
 
+export interface Client {
+  id: string;
+  tenant_id: string;
+  name: string;
+  company_name: string | null;
+  email: string | null;
+  phone: string | null;
+  referent_name: string | null;
+  referent_email: string | null;
+  referent_phone: string | null;
+  address: string | null;
+  vat_number: string | null;
+  fiscal_code: string | null;
+  logo_url: string | null;
+  notes: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClientWithStats extends Client {
+  sites_count: number;
+  sites_up: number;
+  sites_down: number;
+}
+
 export interface Site {
   id: string;
   tenant_id: string;
+  client_id: string | null;
   url: string;
   name: string;
   platform: Platform;
@@ -62,6 +89,8 @@ export interface Site {
 export interface SiteWithStatus {
   site_id: string;
   tenant_id: string;
+  client_id: string | null;
+  client_name: string | null;
   name: string;
   url: string;
   platform: Platform;

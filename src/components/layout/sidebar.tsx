@@ -14,6 +14,7 @@ import {
   Puzzle,
   Menu,
   X,
+  Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,15 @@ const navigation = [
       { name: 'Tutti i siti', href: '/sites' },
       { name: 'Aggiungi sito', href: '/sites/new', icon: Plus },
       { name: 'Importa CSV', href: '/sites/import', icon: Upload },
+    ],
+  },
+  {
+    name: 'Clienti',
+    href: '/clients',
+    icon: Users,
+    children: [
+      { name: 'Tutti i clienti', href: '/clients' },
+      { name: 'Nuovo cliente', href: '/clients/new', icon: Plus },
     ],
   },
   {
