@@ -77,10 +77,10 @@ const roadmapData: RoadmapVersion[] = [
     version: 'v1.2.0',
     title: 'Gestione Aggiornamenti',
     icon: RefreshCw,
-    status: 'planned',
-    progress: 0,
+    status: 'in-progress',
+    progress: 17,
     features: [
-      { name: 'Lista aggiornamenti disponibili', completed: false },
+      { name: 'Lista aggiornamenti disponibili', completed: true },
       { name: 'Aggiornamento singolo plugin da remoto', completed: false },
       { name: 'Aggiornamento massivo plugin', completed: false },
       { name: 'Aggiornamento temi da remoto', completed: false },

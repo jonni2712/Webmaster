@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { processWordPressUpdates } from '@/lib/updates/processor';
 
 interface WordPressStatus {
   plugin_version: string;
@@ -188,6 +189,25 @@ export async function POST(
 
     if (updateError) {
       console.error('Error updating site data:', updateError);
+    }
+
+    // Process WordPress updates into wp_updates table
+    if (wpData.wordpress) {
+      try {
+        const updateResult = await processWordPressUpdates({
+          siteId: id,
+          tenantId: user.current_tenant_id,
+          wpData: {
+            core: wpData.wordpress.core,
+            plugins: wpData.wordpress.plugins,
+            themes: wpData.wordpress.themes,
+          },
+        });
+        console.log(`Processed ${updateResult.processed} updates (${updateResult.critical} critical) for site ${id}`);
+      } catch (updateError) {
+        console.error('Error processing WordPress updates:', updateError);
+        // Don't fail the sync if update processing fails
+      }
     }
 
     return NextResponse.json({

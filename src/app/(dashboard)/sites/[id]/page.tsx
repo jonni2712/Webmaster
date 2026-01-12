@@ -23,8 +23,10 @@ import {
   AlertTriangle,
   Clock,
   Bell,
+  Package,
 } from 'lucide-react';
 import { AlertSettingsForm } from '@/components/sites/alert-settings-form';
+import { UpdatesList } from '@/components/sites/updates-list';
 import type { SiteAlertSettings } from '@/types/database';
 import { formatDistanceToNow, format } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -338,6 +340,12 @@ export default function SiteDetailPage({
             <Zap className="h-3 w-3 sm:h-4 sm:w-4" />
             <span className="hidden xs:inline">Perf.</span>
           </TabsTrigger>
+          {site.platform === 'wordpress' && (
+            <TabsTrigger value="updates" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+              <Package className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Update</span>
+            </TabsTrigger>
+          )}
           {site.ecommerce_check_enabled && (
             <TabsTrigger value="ecommerce" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
               <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -537,6 +545,23 @@ export default function SiteDetailPage({
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Updates Tab */}
+        {site.platform === 'wordpress' && (
+          <TabsContent value="updates">
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-base sm:text-lg">Aggiornamenti</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  Plugin, temi e core WordPress disponibili per l'aggiornamento
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                <UpdatesList siteId={site.id} onSync={fetchSite} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
         {/* E-commerce Tab */}
         {site.ecommerce_check_enabled && (

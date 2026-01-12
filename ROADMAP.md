@@ -34,8 +34,8 @@
 
 ## Prossime Versioni
 
-### v1.2.0 - Gestione Aggiornamenti
-- [ ] Lista aggiornamenti disponibili per sito
+### v1.2.0 - Gestione Aggiornamenti (In Sviluppo)
+- [x] Lista aggiornamenti disponibili per sito
 - [ ] Aggiornamento singolo plugin da remoto
 - [ ] Aggiornamento massivo plugin
 - [ ] Aggiornamento temi da remoto

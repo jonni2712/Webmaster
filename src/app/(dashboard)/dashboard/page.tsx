@@ -51,6 +51,22 @@ async function getDashboardData() {
     .eq('tenant_id', user.current_tenant_id)
     .order('name');
 
+  // Get update counts per site
+  const { data: updateCounts } = await supabase
+    .from('wp_updates')
+    .select('site_id, is_critical')
+    .eq('status', 'available')
+    .in('site_id', (sites || []).map(s => s.id));
+
+  // Build map of site_id -> { total, critical }
+  const updateCountsMap = new Map<string, { total: number; critical: number }>();
+  for (const update of updateCounts || []) {
+    const current = updateCountsMap.get(update.site_id) || { total: 0, critical: 0 };
+    current.total++;
+    if (update.is_critical) current.critical++;
+    updateCountsMap.set(update.site_id, current);
+  }
+
   // Get recent alerts
   const { data: alerts } = await supabase
     .from('alerts')
@@ -60,28 +76,31 @@ async function getDashboardData() {
     .limit(5);
 
   // Map sites to SiteWithStatus format
-  const sitesList: SiteWithStatus[] = (sites || []).map(site => ({
-    site_id: site.id,
-    tenant_id: site.tenant_id,
-    client_id: site.client_id || null,
-    client_name: null,
-    name: site.name,
-    url: site.url,
-    platform: site.platform,
-    is_active: site.is_active,
-    tags: site.tags,
-    created_at: site.created_at,
-    current_status: site.status === 'online' ? true : site.status === 'offline' ? false : null,
-    last_response_time: site.response_time_avg,
-    last_uptime_check: site.last_check,
-    uptime_30d: site.uptime_percentage,
-    ssl_valid: site.ssl_status === 'valid',
-    ssl_days_remaining: null,
-    wp_updates_pending: 0,
-    ps_updates_pending: 0,
-    last_perf_score: site.performance_score,
-    last_lcp: null,
-  }));
+  const sitesList: SiteWithStatus[] = (sites || []).map(site => {
+    const siteUpdates = updateCountsMap.get(site.id) || { total: 0, critical: 0 };
+    return {
+      site_id: site.id,
+      tenant_id: site.tenant_id,
+      client_id: site.client_id || null,
+      client_name: null,
+      name: site.name,
+      url: site.url,
+      platform: site.platform,
+      is_active: site.is_active,
+      tags: site.tags,
+      created_at: site.created_at,
+      current_status: site.status === 'online' ? true : site.status === 'offline' ? false : null,
+      last_response_time: site.response_time_avg,
+      last_uptime_check: site.last_check,
+      uptime_30d: site.uptime_percentage,
+      ssl_valid: site.ssl_status === 'valid',
+      ssl_days_remaining: null,
+      wp_updates_pending: site.platform === 'wordpress' ? siteUpdates.total : 0,
+      ps_updates_pending: 0,
+      last_perf_score: site.performance_score,
+      last_lcp: null,
+    };
+  });
 
   const alertsList = (alerts || []) as Alert[];
 
@@ -102,7 +121,7 @@ async function getDashboardData() {
       (acc, s) => acc + (s.wp_updates_pending || 0) + (s.ps_updates_pending || 0),
       0
     ),
-    criticalUpdates: 0,
+    criticalUpdates: Array.from(updateCountsMap.values()).reduce((acc, v) => acc + v.critical, 0),
     activeAlerts: alertsList.filter((a) => a.status === 'triggered').length,
   };
 
