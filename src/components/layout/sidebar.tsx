@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   Users,
+  Map,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -55,6 +56,11 @@ const navigation = [
     name: 'Plugin WP',
     href: '/plugin',
     icon: Puzzle,
+  },
+  {
+    name: 'Roadmap',
+    href: '/roadmap',
+    icon: Map,
   },
   {
     name: 'Impostazioni',
