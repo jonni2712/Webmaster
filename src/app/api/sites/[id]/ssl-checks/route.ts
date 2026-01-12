@@ -45,12 +45,21 @@ export async function GET(
     .from('ssl_checks')
     .select('*')
     .eq('site_id', id)
-    .order('created_at', { ascending: false })
+    .order('checked_at', { ascending: false })
     .limit(limit);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ checks });
+  // Map to frontend expected format
+  const mappedChecks = (checks || []).map(check => ({
+    id: check.id,
+    valid: check.is_valid,
+    issuer: check.issuer,
+    expires_at: check.valid_to,
+    created_at: check.checked_at,
+  }));
+
+  return NextResponse.json({ checks: mappedChecks });
 }

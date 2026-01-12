@@ -45,12 +45,21 @@ export async function GET(
     .from('uptime_checks')
     .select('*')
     .eq('site_id', id)
-    .order('created_at', { ascending: false })
+    .order('checked_at', { ascending: false })
     .limit(limit);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ checks });
+  // Map to frontend expected format
+  const mappedChecks = (checks || []).map(check => ({
+    id: check.id,
+    status: check.is_up ? 'up' : 'down',
+    response_time: check.response_time_ms,
+    status_code: check.status_code,
+    created_at: check.checked_at,
+  }));
+
+  return NextResponse.json({ checks: mappedChecks });
 }

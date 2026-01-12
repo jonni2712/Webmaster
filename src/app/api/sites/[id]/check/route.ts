@@ -54,15 +54,12 @@ export async function POST(
     if (type === 'uptime') {
       const checkResult = await checkUptime(site.url);
 
-      // Determine status string from isUp boolean
-      const status = checkResult.isUp ? 'up' : 'down';
-
       const { data, error } = await supabase
         .from('uptime_checks')
         .insert({
           site_id: id,
-          status: status,
-          response_time: checkResult.responseTimeMs,
+          is_up: checkResult.isUp,
+          response_time_ms: checkResult.responseTimeMs,
           status_code: checkResult.statusCode,
           error_message: checkResult.errorMessage,
         })
@@ -77,6 +74,7 @@ export async function POST(
         .from('sites')
         .update({
           status: checkResult.isUp ? 'online' : 'offline',
+          response_time_avg: checkResult.responseTimeMs,
           last_check: new Date().toISOString(),
         })
         .eq('id', id);
@@ -87,9 +85,9 @@ export async function POST(
         .from('ssl_checks')
         .insert({
           site_id: id,
-          valid: checkResult.isValid,
+          is_valid: checkResult.isValid,
           issuer: checkResult.issuer,
-          expires_at: checkResult.validTo,
+          valid_to: checkResult.validTo,
           days_until_expiry: checkResult.daysUntilExpiry,
           error_message: checkResult.errorMessage,
         })
