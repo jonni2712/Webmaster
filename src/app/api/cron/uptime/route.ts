@@ -69,10 +69,32 @@ export async function GET(request: NextRequest) {
             throw new Error(`Failed to save check for ${site.url}: ${insertError.message}`);
           }
 
-          // Update last_check_at on site
+          // Calculate uptime percentage from last 30 days
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+          const { data: recentChecks } = await supabase
+            .from('uptime_checks')
+            .select('is_up')
+            .eq('site_id', site.id)
+            .gte('checked_at', thirtyDaysAgo.toISOString());
+
+          let uptimePercentage = null;
+          if (recentChecks && recentChecks.length > 0) {
+            const upCount = recentChecks.filter(c => c.is_up).length;
+            uptimePercentage = (upCount / recentChecks.length) * 100;
+          }
+
+          // Update site status fields
           await supabase
             .from('sites')
-            .update({ last_check_at: new Date().toISOString() })
+            .update({
+              status: result.isUp ? 'online' : 'offline',
+              response_time_avg: result.responseTimeMs,
+              uptime_percentage: uptimePercentage,
+              last_check: new Date().toISOString(),
+              last_check_at: new Date().toISOString(),
+            })
             .eq('id', site.id);
 
           return { siteId: site.id, url: site.url, ...result };

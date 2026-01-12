@@ -69,12 +69,29 @@ export async function POST(
       if (error) throw error;
       result = data;
 
+      // Calculate uptime percentage from last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const { data: recentChecks } = await supabase
+        .from('uptime_checks')
+        .select('is_up')
+        .eq('site_id', id)
+        .gte('checked_at', thirtyDaysAgo.toISOString());
+
+      let uptimePercentage = null;
+      if (recentChecks && recentChecks.length > 0) {
+        const upCount = recentChecks.filter(c => c.is_up).length;
+        uptimePercentage = (upCount / recentChecks.length) * 100;
+      }
+
       // Update site status
       await supabase
         .from('sites')
         .update({
           status: checkResult.isUp ? 'online' : 'offline',
           response_time_avg: checkResult.responseTimeMs,
+          uptime_percentage: uptimePercentage,
           last_check: new Date().toISOString(),
         })
         .eq('id', id);
