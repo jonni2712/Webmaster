@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth/config';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { checkUptime } from '@/lib/monitoring/uptime-checker';
 import { checkSSL } from '@/lib/monitoring/ssl-checker';
+import { checkPerformance } from '@/lib/monitoring/performance-checker';
 
 export async function POST(
   request: NextRequest,
@@ -135,9 +136,43 @@ export async function POST(
         })
         .eq('id', id);
     } else if (type === 'performance') {
-      // Performance check would use PageSpeed API
-      // For now, return a placeholder
-      result = { message: 'Performance check requires PageSpeed API key' };
+      const checkResult = await checkPerformance(site.url);
+
+      if (!checkResult.success) {
+        return NextResponse.json(
+          { error: checkResult.errorMessage || 'Performance check failed' },
+          { status: 400 }
+        );
+      }
+
+      const { data, error } = await supabase
+        .from('performance_checks')
+        .insert({
+          site_id: id,
+          performance_score: checkResult.performanceScore,
+          lcp_ms: checkResult.lcpMs,
+          fid_ms: checkResult.fidMs,
+          cls: checkResult.cls,
+          fcp_ms: checkResult.fcpMs,
+          ttfb_ms: checkResult.ttfbMs,
+          tti_ms: checkResult.ttiMs,
+          tbt_ms: checkResult.tbtMs,
+          speed_index: checkResult.speedIndex,
+          total_bytes: checkResult.totalBytes,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      result = data;
+
+      // Update site performance score
+      await supabase
+        .from('sites')
+        .update({
+          performance_score: checkResult.performanceScore,
+        })
+        .eq('id', id);
     }
 
     return NextResponse.json({ success: true, result });
