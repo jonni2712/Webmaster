@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     ...site,
     status: site.status || 'unknown',
     ssl_status: site.ssl_status || null,
-    ssl_expiry: site.ssl_expiry || null,
+    ssl_expiry: site.ssl_expires_at || null,
     uptime_percentage: site.uptime_percentage || null,
     response_time_avg: site.response_time_avg || null,
     last_check: site.last_check || site.last_sync || null,
