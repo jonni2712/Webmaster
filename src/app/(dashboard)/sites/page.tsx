@@ -61,36 +61,36 @@ export default async function SitesPage() {
   const sites = await getSites();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Siti</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">Siti</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Gestisci tutti i tuoi siti monitorati ({sites.length} siti)
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" asChild>
+          <Button variant="outline" size="sm" className="sm:size-default" asChild>
             <Link href="/sites/import">
-              <Upload className="h-4 w-4 mr-2" />
-              Importa CSV
+              <Upload className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Importa CSV</span>
             </Link>
           </Button>
-          <Button asChild>
+          <Button size="sm" className="sm:size-default" asChild>
             <Link href="/sites/new">
-              <Plus className="h-4 w-4 mr-2" />
-              Aggiungi Sito
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Aggiungi Sito</span>
             </Link>
           </Button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col gap-4 md:flex-row">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row">
+        <div className="relative flex-1 sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Cerca siti..." className="pl-9" />
+          <Input placeholder="Cerca siti..." className="pl-9 h-9 sm:h-10" />
         </div>
       </div>
 

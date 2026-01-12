@@ -112,57 +112,57 @@ export default function AlertsPage() {
   ).length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold">Alerts</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">Alerts</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Gestisci gli avvisi dei tuoi siti
           </p>
         </div>
         <Button onClick={fetchAlerts} variant="outline" size="sm">
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Aggiorna
+          <RefreshCw className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Aggiorna</span>
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 sm:gap-4 grid-cols-3">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Alert Attivi</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-500" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6 sm:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium">Alert Attivi</CardTitle>
+            <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-500" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeAlerts}</div>
+          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+            <div className="text-xl sm:text-2xl font-bold">{activeAlerts}</div>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">In Gestione</CardTitle>
-            <Clock className="h-4 w-4 text-yellow-500" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6 sm:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium">In Gestione</CardTitle>
+            <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-yellow-500" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{acknowledgedAlerts}</div>
+          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+            <div className="text-xl sm:text-2xl font-bold">{acknowledgedAlerts}</div>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Totale</CardTitle>
-            <Bell className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6 sm:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium">Totale</CardTitle>
+            <Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{alerts.length}</div>
+          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+            <div className="text-xl sm:text-2xl font-bold">{alerts.length}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4">
+      <div className="flex flex-wrap gap-2 sm:gap-4">
         <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Filter className="h-4 w-4 text-muted-foreground hidden sm:block" />
           <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-[120px] sm:w-[150px] h-9">
               <SelectValue placeholder="Stato" />
             </SelectTrigger>
             <SelectContent>
@@ -174,7 +174,7 @@ export default function AlertsPage() {
           </Select>
         </div>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-[150px]">
+          <SelectTrigger className="w-[120px] sm:w-[150px] h-9">
             <SelectValue placeholder="Tipo" />
           </SelectTrigger>
           <SelectContent>
@@ -189,19 +189,19 @@ export default function AlertsPage() {
       </div>
 
       {/* Alerts List */}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {loading ? (
           <Card>
-            <CardContent className="py-8 text-center text-muted-foreground">
+            <CardContent className="py-6 sm:py-8 text-center text-muted-foreground text-sm">
               Caricamento...
             </CardContent>
           </Card>
         ) : alerts.length === 0 ? (
           <Card>
-            <CardContent className="py-8 text-center">
-              <CheckCircle className="mx-auto h-12 w-12 text-green-500 mb-4" />
-              <p className="text-lg font-medium">Nessun alert</p>
-              <p className="text-muted-foreground">
+            <CardContent className="py-6 sm:py-8 text-center">
+              <CheckCircle className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-green-500 mb-3 sm:mb-4" />
+              <p className="text-base sm:text-lg font-medium">Nessun alert</p>
+              <p className="text-sm text-muted-foreground">
                 Tutti i tuoi siti stanno funzionando correttamente
               </p>
             </CardContent>
@@ -218,18 +218,18 @@ export default function AlertsPage() {
                   alert.status === 'resolved' ? 'opacity-60' : undefined
                 }
               >
-                <CardContent className="py-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-4">
+                <CardContent className="p-3 sm:py-4 sm:px-6">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+                    <div className="flex items-start gap-2 sm:gap-4">
                       <div
-                        className={`rounded-full p-2 ${config.color} text-white`}
+                        className={`rounded-full p-1.5 sm:p-2 ${config.color} text-white flex-shrink-0`}
                       >
-                        <Icon className="h-4 w-4" />
+                        <Icon className="h-3 w-3 sm:h-4 sm:w-4" />
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-semibold">{alert.title}</span>
-                          <Badge variant="outline">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
+                          <span className="font-semibold text-sm sm:text-base">{alert.title}</span>
+                          <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2">
                             {typeLabels[alert.type]}
                           </Badge>
                           <Badge
@@ -240,6 +240,7 @@ export default function AlertsPage() {
                                   ? 'secondary'
                                   : 'outline'
                             }
+                            className="text-[10px] sm:text-xs px-1.5 sm:px-2"
                           >
                             {alert.status === 'active'
                               ? 'Attivo'
@@ -248,10 +249,10 @@ export default function AlertsPage() {
                                 : 'Risolto'}
                           </Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground mb-1">
+                        <p className="text-xs sm:text-sm text-muted-foreground mb-1 line-clamp-2">
                           {alert.message}
                         </p>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-[10px] sm:text-xs text-muted-foreground">
                           <span>{alert.site_name}</span>
                           <span>
                             {formatDistanceToNow(new Date(alert.created_at), {
@@ -262,20 +263,23 @@ export default function AlertsPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 ml-7 sm:ml-0 flex-shrink-0">
                       {alert.status === 'active' && (
                         <Button
                           size="sm"
                           variant="outline"
+                          className="text-xs h-8"
                           onClick={() => acknowledgeAlert(alert.id)}
                         >
-                          Prendi in carico
+                          <span className="hidden sm:inline">Prendi in carico</span>
+                          <span className="sm:hidden">Gestisci</span>
                         </Button>
                       )}
                       {alert.status !== 'resolved' && (
                         <Button
                           size="sm"
                           variant="default"
+                          className="text-xs h-8"
                           onClick={() => resolveAlert(alert.id)}
                         >
                           Risolvi

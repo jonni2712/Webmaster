@@ -178,70 +178,72 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Impostazioni</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-bold">Impostazioni</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
           Gestisci il tuo profilo e le preferenze
         </p>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="profile" className="flex items-center gap-2">
-            <User className="h-4 w-4" />
-            Profilo
+      <Tabs defaultValue="profile" className="space-y-4 sm:space-y-6">
+        <TabsList className="w-full sm:w-auto flex flex-wrap h-auto gap-1 p-1">
+          <TabsTrigger value="profile" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+            <User className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Profilo</span>
           </TabsTrigger>
-          <TabsTrigger value="security" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            Sicurezza
+          <TabsTrigger value="security" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+            <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Sicurezza</span>
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
-            <Bell className="h-4 w-4" />
-            Notifiche
+          <TabsTrigger value="notifications" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+            <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Notifiche</span>
           </TabsTrigger>
-          <TabsTrigger value="workspace" className="flex items-center gap-2">
-            <Building className="h-4 w-4" />
-            Workspace
+          <TabsTrigger value="workspace" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+            <Building className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Workspace</span>
           </TabsTrigger>
         </TabsList>
 
         {/* Profile Tab */}
         <TabsContent value="profile">
           <Card>
-            <CardHeader>
-              <CardTitle>Informazioni Profilo</CardTitle>
-              <CardDescription>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg">Informazioni Profilo</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 Aggiorna le tue informazioni personali
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
               <form onSubmit={handleUpdateProfile} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Nome</Label>
+                  <Label htmlFor="name" className="text-sm">Nome</Label>
                   <Input
                     id="name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Il tuo nome"
+                    className="h-9 sm:h-10"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email" className="text-sm">Email</Label>
                   <Input
                     id="email"
                     type="email"
                     value={email}
                     disabled
-                    className="bg-muted"
+                    className="bg-muted h-9 sm:h-10"
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">
                     L'email non puo essere modificata
                   </p>
                 </div>
-                <Button type="submit" disabled={loading}>
-                  <Save className="mr-2 h-4 w-4" />
-                  Salva modifiche
+                <Button type="submit" disabled={loading} size="sm" className="sm:size-default">
+                  <Save className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Salva modifiche</span>
+                  <span className="sm:hidden">Salva</span>
                 </Button>
               </form>
             </CardContent>
@@ -251,44 +253,48 @@ export default function SettingsPage() {
         {/* Security Tab */}
         <TabsContent value="security">
           <Card>
-            <CardHeader>
-              <CardTitle>Cambia Password</CardTitle>
-              <CardDescription>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg">Cambia Password</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 Aggiorna la tua password di accesso
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
               <form onSubmit={handleUpdatePassword} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="currentPassword">Password attuale</Label>
+                  <Label htmlFor="currentPassword" className="text-sm">Password attuale</Label>
                   <Input
                     id="currentPassword"
                     type="password"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="h-9 sm:h-10"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="newPassword">Nuova password</Label>
+                  <Label htmlFor="newPassword" className="text-sm">Nuova password</Label>
                   <Input
                     id="newPassword"
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
+                    className="h-9 sm:h-10"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Conferma password</Label>
+                  <Label htmlFor="confirmPassword" className="text-sm">Conferma password</Label>
                   <Input
                     id="confirmPassword"
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="h-9 sm:h-10"
                   />
                 </div>
-                <Button type="submit" disabled={loading}>
-                  <Shield className="mr-2 h-4 w-4" />
-                  Aggiorna password
+                <Button type="submit" disabled={loading} size="sm" className="sm:size-default">
+                  <Shield className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Aggiorna password</span>
+                  <span className="sm:hidden">Aggiorna</span>
                 </Button>
               </form>
             </CardContent>
@@ -297,54 +303,55 @@ export default function SettingsPage() {
 
         {/* Notifications Tab */}
         <TabsContent value="notifications">
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
+              <CardHeader className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <CardTitle>Canali di Notifica</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-base sm:text-lg">Canali di Notifica</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">
                       Configura dove ricevere gli avvisi
                     </CardDescription>
                   </div>
                   <Button size="sm">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Aggiungi canale
+                    <Plus className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Aggiungi canale</span>
+                    <span className="sm:hidden">Aggiungi</span>
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
                 {channels.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Bell className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                    <p>Nessun canale configurato</p>
-                    <p className="text-sm">
+                  <div className="text-center py-6 sm:py-8 text-muted-foreground">
+                    <Bell className="mx-auto h-10 w-10 sm:h-12 sm:w-12 mb-3 sm:mb-4 opacity-50" />
+                    <p className="text-sm sm:text-base">Nessun canale configurato</p>
+                    <p className="text-xs sm:text-sm">
                       Aggiungi un canale per ricevere notifiche
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     {channels.map((channel) => {
                       const Icon = channelIcons[channel.type];
                       return (
                         <div
                           key={channel.id}
-                          className="flex items-center justify-between p-4 border rounded-lg"
+                          className="flex items-center justify-between p-3 sm:p-4 border rounded-lg gap-3"
                         >
-                          <div className="flex items-center gap-4">
-                            <div className="p-2 bg-muted rounded-lg">
-                              <Icon className="h-5 w-5" />
+                          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                            <div className="p-1.5 sm:p-2 bg-muted rounded-lg flex-shrink-0">
+                              <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
                             </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">{channel.name}</span>
-                                <Badge variant="outline" className="capitalize">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                                <span className="font-medium text-sm sm:text-base truncate">{channel.name}</span>
+                                <Badge variant="outline" className="capitalize text-[10px] sm:text-xs">
                                   {channel.type}
                                 </Badge>
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
                             <Switch
                               checked={channel.enabled}
                               onCheckedChange={(checked) =>
@@ -354,6 +361,7 @@ export default function SettingsPage() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              className="h-8 w-8"
                               onClick={() => deleteChannel(channel.id)}
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
@@ -372,17 +380,17 @@ export default function SettingsPage() {
         {/* Workspace Tab */}
         <TabsContent value="workspace">
           <Card>
-            <CardHeader>
-              <CardTitle>Workspace</CardTitle>
-              <CardDescription>
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-base sm:text-lg">Workspace</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 Gestisci il tuo workspace e i membri del team
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <Building className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                <p>Gestione team in arrivo</p>
-                <p className="text-sm">
+            <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+              <div className="text-center py-6 sm:py-8 text-muted-foreground">
+                <Building className="mx-auto h-10 w-10 sm:h-12 sm:w-12 mb-3 sm:mb-4 opacity-50" />
+                <p className="text-sm sm:text-base">Gestione team in arrivo</p>
+                <p className="text-xs sm:text-sm">
                   Presto potrai invitare membri e gestire i ruoli
                 </p>
               </div>

@@ -111,26 +111,26 @@ export default async function DashboardPage() {
   const { sites, alerts, stats } = await getDashboardData();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">Dashboard</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Panoramica di tutti i tuoi siti web
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" asChild>
+          <Button variant="outline" size="sm" className="sm:size-default" asChild>
             <Link href="/sites/import">
-              <Upload className="h-4 w-4 mr-2" />
-              Importa
+              <Upload className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Importa</span>
             </Link>
           </Button>
-          <Button asChild>
+          <Button size="sm" className="sm:size-default" asChild>
             <Link href="/sites/new">
-              <Plus className="h-4 w-4 mr-2" />
-              Aggiungi Sito
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Aggiungi Sito</span>
             </Link>
           </Button>
         </div>
@@ -142,10 +142,10 @@ export default async function DashboardPage() {
       </Suspense>
 
       {/* Main Content */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Siti Monitorati</h2>
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h2 className="text-lg sm:text-xl font-semibold">Siti Monitorati</h2>
             <Button variant="ghost" size="sm" asChild>
               <Link href="/sites">Vedi tutti</Link>
             </Button>

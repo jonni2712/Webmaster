@@ -146,80 +146,83 @@ export default function ImportPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Importa Siti da CSV</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-bold">Importa Siti da CSV</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
           Importa multipli siti contemporaneamente da un file CSV
         </p>
       </div>
 
       {/* Instructions */}
       <Card>
-        <CardHeader>
-          <CardTitle>Formato CSV</CardTitle>
-          <CardDescription>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg">Formato CSV</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
             Il file CSV deve contenere le seguenti colonne
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Colonna</TableHead>
-                <TableHead>Richiesta</TableHead>
-                <TableHead>Descrizione</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow>
-                <TableCell className="font-mono">name</TableCell>
-                <TableCell>
-                  <Badge>Si</Badge>
-                </TableCell>
-                <TableCell>Nome identificativo del sito</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-mono">url</TableCell>
-                <TableCell>
-                  <Badge>Si</Badge>
-                </TableCell>
-                <TableCell>URL completo del sito (es. https://esempio.com)</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-mono">platform</TableCell>
-                <TableCell>
-                  <Badge variant="secondary">No</Badge>
-                </TableCell>
-                <TableCell>wordpress, prestashop, o other (default: other)</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-mono">tags</TableCell>
-                <TableCell>
-                  <Badge variant="secondary">No</Badge>
-                </TableCell>
-                <TableCell>Tag separati da virgola</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
+        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs sm:text-sm">Colonna</TableHead>
+                  <TableHead className="text-xs sm:text-sm">Richiesta</TableHead>
+                  <TableHead className="text-xs sm:text-sm">Descrizione</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-mono text-xs sm:text-sm">name</TableCell>
+                  <TableCell>
+                    <Badge className="text-[10px] sm:text-xs">Si</Badge>
+                  </TableCell>
+                  <TableCell className="text-xs sm:text-sm">Nome identificativo del sito</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-mono text-xs sm:text-sm">url</TableCell>
+                  <TableCell>
+                    <Badge className="text-[10px] sm:text-xs">Si</Badge>
+                  </TableCell>
+                  <TableCell className="text-xs sm:text-sm">URL completo del sito</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-mono text-xs sm:text-sm">platform</TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="text-[10px] sm:text-xs">No</Badge>
+                  </TableCell>
+                  <TableCell className="text-xs sm:text-sm">wordpress, prestashop, o other</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-mono text-xs sm:text-sm">tags</TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="text-[10px] sm:text-xs">No</Badge>
+                  </TableCell>
+                  <TableCell className="text-xs sm:text-sm">Tag separati da virgola</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
 
-          <Button variant="outline" className="mt-4" onClick={downloadTemplate}>
-            <Download className="h-4 w-4 mr-2" />
-            Scarica Template
+          <Button variant="outline" className="mt-4" size="sm" onClick={downloadTemplate}>
+            <Download className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Scarica Template</span>
+            <span className="sm:hidden">Template</span>
           </Button>
         </CardContent>
       </Card>
 
       {/* Upload Area */}
       <Card>
-        <CardHeader>
-          <CardTitle>Carica File</CardTitle>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg">Carica File</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
           <div
             {...getRootProps()}
             className={`
-              border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
+              border-2 border-dashed rounded-lg p-4 sm:p-8 text-center cursor-pointer
               transition-colors
               ${
                 isDragActive
@@ -231,18 +234,18 @@ export default function ImportPage() {
             <input {...getInputProps()} />
             {file ? (
               <div className="flex items-center justify-center gap-2">
-                <FileSpreadsheet className="h-8 w-8 text-green-500" />
+                <FileSpreadsheet className="h-6 w-6 sm:h-8 sm:w-8 text-green-500" />
                 <div>
-                  <span className="font-medium">{file.name}</span>
-                  <p className="text-sm text-muted-foreground">
+                  <span className="font-medium text-sm sm:text-base">{file.name}</span>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     {parsedData.length} siti trovati
                   </p>
                 </div>
               </div>
             ) : (
               <div className="space-y-2">
-                <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
+                <Upload className="h-6 w-6 sm:h-8 sm:w-8 mx-auto text-muted-foreground" />
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   Trascina qui il file CSV o clicca per selezionarlo
                 </p>
               </div>
@@ -254,34 +257,34 @@ export default function ImportPage() {
       {/* Preview */}
       {parsedData.length > 0 && !result && (
         <Card>
-          <CardHeader>
-            <CardTitle>Anteprima ({parsedData.length} siti)</CardTitle>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">Anteprima ({parsedData.length} siti)</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="max-h-64 overflow-auto">
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+            <div className="max-h-64 overflow-auto -mx-4 sm:mx-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>#</TableHead>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>URL</TableHead>
-                    <TableHead>Piattaforma</TableHead>
+                    <TableHead className="text-xs sm:text-sm">#</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Nome</TableHead>
+                    <TableHead className="text-xs sm:text-sm">URL</TableHead>
+                    <TableHead className="text-xs sm:text-sm hidden sm:table-cell">Piattaforma</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {parsedData.slice(0, 10).map((row, i) => (
                     <TableRow key={i}>
-                      <TableCell>{i + 1}</TableCell>
-                      <TableCell>{row.name || '-'}</TableCell>
-                      <TableCell className="font-mono text-xs">
+                      <TableCell className="text-xs sm:text-sm">{i + 1}</TableCell>
+                      <TableCell className="text-xs sm:text-sm">{row.name || '-'}</TableCell>
+                      <TableCell className="font-mono text-[10px] sm:text-xs max-w-[120px] sm:max-w-none truncate">
                         {row.url || '-'}
                       </TableCell>
-                      <TableCell>{row.platform || 'other'}</TableCell>
+                      <TableCell className="text-xs sm:text-sm hidden sm:table-cell">{row.platform || 'other'}</TableCell>
                     </TableRow>
                   ))}
                   {parsedData.length > 10 && (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground">
+                      <TableCell colSpan={4} className="text-center text-muted-foreground text-xs sm:text-sm">
                         ... e altri {parsedData.length - 10} siti
                       </TableCell>
                     </TableRow>
@@ -292,19 +295,21 @@ export default function ImportPage() {
 
             {importing && (
               <div className="mt-4 space-y-2">
-                <Progress value={progress} />
-                <p className="text-sm text-center text-muted-foreground">
+                <Progress value={progress} className="h-2" />
+                <p className="text-xs sm:text-sm text-center text-muted-foreground">
                   Importazione in corso... {progress}%
                 </p>
               </div>
             )}
 
             <div className="mt-4 flex gap-2">
-              <Button onClick={handleImport} disabled={importing}>
+              <Button onClick={handleImport} disabled={importing} size="sm" className="sm:size-default">
                 {importing ? 'Importazione...' : 'Avvia Importazione'}
               </Button>
               <Button
                 variant="outline"
+                size="sm"
+                className="sm:size-default"
                 onClick={() => {
                   setFile(null);
                   setParsedData([]);
@@ -320,40 +325,40 @@ export default function ImportPage() {
       {/* Results */}
       {result && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
               {result.failed === 0 ? (
-                <CheckCircle className="h-5 w-5 text-green-500" />
+                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
               ) : result.imported === 0 ? (
-                <XCircle className="h-5 w-5 text-red-500" />
+                <XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" />
               ) : (
-                <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500" />
               )}
               Risultato Importazione
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="p-4 rounded-lg bg-muted">
-                <div className="text-2xl font-bold">{result.total}</div>
-                <div className="text-sm text-muted-foreground">Totali</div>
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0 space-y-4">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
+              <div className="p-2 sm:p-4 rounded-lg bg-muted">
+                <div className="text-lg sm:text-2xl font-bold">{result.total}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Totali</div>
               </div>
-              <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950">
-                <div className="text-2xl font-bold text-green-600">{result.imported}</div>
-                <div className="text-sm text-muted-foreground">Importati</div>
+              <div className="p-2 sm:p-4 rounded-lg bg-green-50 dark:bg-green-950">
+                <div className="text-lg sm:text-2xl font-bold text-green-600">{result.imported}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Importati</div>
               </div>
-              <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950">
-                <div className="text-2xl font-bold text-red-600">{result.failed}</div>
-                <div className="text-sm text-muted-foreground">Falliti</div>
+              <div className="p-2 sm:p-4 rounded-lg bg-red-50 dark:bg-red-950">
+                <div className="text-lg sm:text-2xl font-bold text-red-600">{result.failed}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Falliti</div>
               </div>
             </div>
 
             {result.errors.length > 0 && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Errori durante l&apos;importazione</AlertTitle>
+                <AlertTitle className="text-sm sm:text-base">Errori durante l&apos;importazione</AlertTitle>
                 <AlertDescription>
-                  <ul className="mt-2 list-disc list-inside text-sm">
+                  <ul className="mt-2 list-disc list-inside text-xs sm:text-sm">
                     {result.errors.slice(0, 5).map((err, i) => (
                       <li key={i}>
                         Riga {err.row}: {err.error}
@@ -368,11 +373,13 @@ export default function ImportPage() {
             )}
 
             <div className="flex gap-2">
-              <Button onClick={() => router.push('/sites')}>
+              <Button onClick={() => router.push('/sites')} size="sm" className="sm:size-default">
                 Vai ai Siti
               </Button>
               <Button
                 variant="outline"
+                size="sm"
+                className="sm:size-default"
                 onClick={() => {
                   setFile(null);
                   setParsedData([]);

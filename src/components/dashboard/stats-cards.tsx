@@ -13,16 +13,16 @@ interface StatsCardsProps {
 export function StatsCards({ stats, isLoading }: StatsCardsProps) {
   if (isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         {[...Array(4)].map((_, i) => (
           <Card key={i}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-4 w-4" />
+            <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6 sm:pb-2">
+              <Skeleton className="h-3 sm:h-4 w-16 sm:w-24" />
+              <Skeleton className="h-3 sm:h-4 w-3 sm:w-4" />
             </CardHeader>
-            <CardContent>
-              <Skeleton className="h-8 w-16" />
-              <Skeleton className="h-3 w-32 mt-2" />
+            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+              <Skeleton className="h-6 sm:h-8 w-12 sm:w-16" />
+              <Skeleton className="h-2 sm:h-3 w-24 sm:w-32 mt-2" />
             </CardContent>
           </Card>
         ))}
@@ -64,15 +64,15 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
       {cards.map((card) => (
         <Card key={card.title}>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+          <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6 sm:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
               {card.title}
             </CardTitle>
             <card.icon
-              className={`h-4 w-4 ${
+              className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${
                 card.trend === 'positive'
                   ? 'text-green-500'
                   : card.trend === 'warning'
@@ -83,9 +83,9 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
               }`}
             />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{card.value}</div>
-            <p className="text-xs text-muted-foreground mt-1">{card.subtitle}</p>
+          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+            <div className="text-xl sm:text-2xl font-bold">{card.value}</div>
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">{card.subtitle}</p>
           </CardContent>
         </Card>
       ))}
