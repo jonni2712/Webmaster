@@ -28,6 +28,10 @@ import {
   Database,
   HardDrive,
   Cpu,
+  Puzzle,
+  Palette,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { AlertSettingsForm } from '@/components/sites/alert-settings-form';
 import { UpdatesList } from '@/components/sites/updates-list';
@@ -65,6 +69,13 @@ interface WPInfo {
       name: string;
       version: string;
     };
+    list?: Array<{
+      name: string;
+      slug: string;
+      version: string;
+      active: boolean;
+      update_available: boolean;
+    }>;
   };
   site_health?: {
     status: string;
@@ -168,6 +179,8 @@ export default function SiteDetailPage({
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [pluginsExpanded, setPluginsExpanded] = useState(false);
+  const [themesExpanded, setThemesExpanded] = useState(false);
 
   useEffect(() => {
     fetchSite();
@@ -714,17 +727,46 @@ export default function SiteDetailPage({
                       {site.wp_info.plugins && (
                         <>
                           <hr className="my-2" />
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Plugin totali</span>
-                            <span className="font-medium">{site.wp_info.plugins.total}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Plugin attivi</span>
-                            <span className="text-sm">{site.wp_info.plugins.active}</span>
-                          </div>
-                          {site.wp_info.plugins.updates_available > 0 && (
-                            <div className="flex justify-between">
-                              <span className="text-sm text-muted-foreground">Aggiornamenti plugin</span>
+                          <button
+                            onClick={() => setPluginsExpanded(!pluginsExpanded)}
+                            className="w-full flex justify-between items-center py-1 hover:bg-muted/50 rounded -mx-1 px-1"
+                          >
+                            <span className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Puzzle className="h-3 w-3" /> Plugin ({site.wp_info.plugins.total})
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">
+                                {site.wp_info.plugins.active} attivi, {site.wp_info.plugins.inactive} inattivi
+                              </span>
+                              {pluginsExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            </div>
+                          </button>
+                          {pluginsExpanded && site.wp_info.plugins.list && (
+                            <div className="mt-2 space-y-1 max-h-64 overflow-y-auto">
+                              {site.wp_info.plugins.list.map((plugin, idx) => (
+                                <div
+                                  key={idx}
+                                  className={`flex justify-between items-center p-2 rounded text-sm ${
+                                    plugin.active ? 'bg-green-50 dark:bg-green-950/20' : 'bg-muted/30'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${plugin.active ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                    <span className="truncate">{plugin.name}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                    <span className="text-xs text-muted-foreground">v{plugin.version}</span>
+                                    {plugin.update_available && (
+                                      <Badge variant="destructive" className="text-[10px] px-1">Update</Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {site.wp_info.plugins.updates_available > 0 && !pluginsExpanded && (
+                            <div className="flex justify-between mt-1">
+                              <span className="text-sm text-muted-foreground">Aggiornamenti disponibili</span>
                               <Badge variant="secondary">{site.wp_info.plugins.updates_available}</Badge>
                             </div>
                           )}
@@ -733,14 +775,50 @@ export default function SiteDetailPage({
                       {site.wp_info.themes && (
                         <>
                           <hr className="my-2" />
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Temi installati</span>
-                            <span className="font-medium">{site.wp_info.themes.total}</span>
-                          </div>
-                          {site.wp_info.themes.active && (
-                            <div className="flex justify-between">
-                              <span className="text-sm text-muted-foreground">Tema attivo</span>
-                              <span className="text-sm">{site.wp_info.themes.active.name} v{site.wp_info.themes.active.version}</span>
+                          <button
+                            onClick={() => setThemesExpanded(!themesExpanded)}
+                            className="w-full flex justify-between items-center py-1 hover:bg-muted/50 rounded -mx-1 px-1"
+                          >
+                            <span className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Palette className="h-3 w-3" /> Temi ({site.wp_info.themes.total})
+                            </span>
+                            <div className="flex items-center gap-2">
+                              {site.wp_info.themes.active && (
+                                <span className="text-xs text-muted-foreground">
+                                  Attivo: {site.wp_info.themes.active.name}
+                                </span>
+                              )}
+                              {themesExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            </div>
+                          </button>
+                          {themesExpanded && site.wp_info.themes.list && (
+                            <div className="mt-2 space-y-1 max-h-64 overflow-y-auto">
+                              {site.wp_info.themes.list.map((theme, idx) => (
+                                <div
+                                  key={idx}
+                                  className={`flex justify-between items-center p-2 rounded text-sm ${
+                                    theme.active ? 'bg-green-50 dark:bg-green-950/20' : 'bg-muted/30'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${theme.active ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                    <span className="truncate">{theme.name}</span>
+                                    {theme.active && <Badge variant="outline" className="text-[10px]">Attivo</Badge>}
+                                  </div>
+                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                    <span className="text-xs text-muted-foreground">v{theme.version}</span>
+                                    {theme.update_available && (
+                                      <Badge variant="destructive" className="text-[10px] px-1">Update</Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {site.wp_info.themes.updates_available > 0 && !themesExpanded && (
+                            <div className="flex justify-between mt-1">
+                              <span className="text-sm text-muted-foreground">Aggiornamenti disponibili</span>
+                              <Badge variant="secondary">{site.wp_info.themes.updates_available}</Badge>
                             </div>
                           )}
                         </>
