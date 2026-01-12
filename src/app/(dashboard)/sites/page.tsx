@@ -1,6 +1,8 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/config';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { SitesGrid } from '@/components/dashboard/sites-grid';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,11 +10,28 @@ import { Plus, Upload, Search } from 'lucide-react';
 import type { SiteWithStatus } from '@/types';
 
 async function getSites(): Promise<SiteWithStatus[]> {
-  const supabase = await createClient();
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return [];
+  }
+
+  const supabase = createAdminClient();
+
+  // Get user's current tenant
+  const { data: user } = await supabase
+    .from('users')
+    .select('current_tenant_id')
+    .eq('id', session.user.id)
+    .single();
+
+  if (!user?.current_tenant_id) {
+    return [];
+  }
 
   const { data } = await supabase
     .from('sites')
     .select('*')
+    .eq('tenant_id', user.current_tenant_id)
     .order('name');
 
   // Map sites table columns to SiteWithStatus format expected by SitesGrid
@@ -30,7 +49,7 @@ async function getSites(): Promise<SiteWithStatus[]> {
     last_uptime_check: site.last_check,
     uptime_30d: site.uptime_percentage,
     ssl_valid: site.ssl_status === 'valid',
-    ssl_days_remaining: null, // Would need to calculate from ssl_expires_at
+    ssl_days_remaining: null,
     wp_updates_pending: 0,
     ps_updates_pending: 0,
     last_perf_score: site.performance_score,

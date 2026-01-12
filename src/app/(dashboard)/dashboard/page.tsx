@@ -1,5 +1,7 @@
 import { Suspense } from 'react';
-import { createClient } from '@/lib/supabase/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/config';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { StatsCards } from '@/components/dashboard/stats-cards';
 import { SitesGrid } from '@/components/dashboard/sites-grid';
 import { AlertsFeed } from '@/components/dashboard/alerts-feed';
@@ -8,19 +10,52 @@ import { Plus, Upload } from 'lucide-react';
 import Link from 'next/link';
 import type { DashboardStats, SiteWithStatus, Alert } from '@/types';
 
+function getEmptyStats(): DashboardStats {
+  return {
+    totalSites: 0,
+    sitesUp: 0,
+    sitesDown: 0,
+    avgUptime: 0,
+    validSSL: 0,
+    expiringSSL: 0,
+    invalidSSL: 0,
+    pendingUpdates: 0,
+    criticalUpdates: 0,
+    activeAlerts: 0,
+  };
+}
+
 async function getDashboardData() {
-  const supabase = await createClient();
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return { sites: [], alerts: [], stats: getEmptyStats() };
+  }
+
+  const supabase = createAdminClient();
+
+  // Get user's current tenant
+  const { data: user } = await supabase
+    .from('users')
+    .select('current_tenant_id')
+    .eq('id', session.user.id)
+    .single();
+
+  if (!user?.current_tenant_id) {
+    return { sites: [], alerts: [], stats: getEmptyStats() };
+  }
 
   // Get sites from sites table
   const { data: sites } = await supabase
     .from('sites')
     .select('*')
+    .eq('tenant_id', user.current_tenant_id)
     .order('name');
 
   // Get recent alerts
   const { data: alerts } = await supabase
     .from('alerts')
     .select('*')
+    .eq('tenant_id', user.current_tenant_id)
     .order('created_at', { ascending: false })
     .limit(5);
 
