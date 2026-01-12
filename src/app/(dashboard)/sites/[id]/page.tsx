@@ -159,12 +159,20 @@ export default function SiteDetailPage({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type }),
       });
-      if (res.ok) {
+      const data = await res.json();
+
+      if (data.success) {
         toast.success('Controllo completato');
         fetchSite();
         fetchChecks();
-      } else {
+      } else if (data.error) {
+        toast.error(data.error);
+      } else if (!res.ok) {
         toast.error('Errore nel controllo');
+      } else {
+        toast.success('Controllo completato');
+        fetchSite();
+        fetchChecks();
       }
     } catch (error) {
       toast.error('Errore nel controllo');

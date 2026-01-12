@@ -139,9 +139,14 @@ export async function POST(
       const checkResult = await checkPerformance(site.url);
 
       if (!checkResult.success) {
+        console.error('Performance check failed:', checkResult.errorMessage);
         return NextResponse.json(
-          { error: checkResult.errorMessage || 'Performance check failed' },
-          { status: 400 }
+          {
+            success: false,
+            error: checkResult.errorMessage || 'Performance check failed',
+            details: 'Verifica che PAGESPEED_API_KEY sia configurata correttamente in Vercel'
+          },
+          { status: 200 } // Return 200 so frontend can show the error message
         );
       }
 
