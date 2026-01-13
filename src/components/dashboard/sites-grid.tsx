@@ -74,7 +74,7 @@ function PlatformBadge({ platform }: { platform: string }) {
 function UpdatesBadge({ pending, critical }: { pending: number; critical?: number }) {
   if (pending === 0) return null;
 
-  const hasCritical = critical && critical > 0;
+  const hasCritical = critical !== undefined && critical > 0;
 
   return (
     <Badge
@@ -87,7 +87,7 @@ function UpdatesBadge({ pending, critical }: { pending: number; critical?: numbe
     >
       <Download className="h-3 w-3" />
       {pending}
-      {hasCritical && ` (${critical} critici)`}
+      {hasCritical ? ` (${critical} critici)` : null}
     </Badge>
   );
 }
