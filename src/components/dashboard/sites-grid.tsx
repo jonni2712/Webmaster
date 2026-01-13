@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Building2,
   Settings,
+  Download,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -66,6 +67,27 @@ function PlatformBadge({ platform }: { platform: string }) {
   return (
     <Badge variant="secondary" className={`${className} text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5`}>
       {label}
+    </Badge>
+  );
+}
+
+function UpdatesBadge({ pending, critical }: { pending: number; critical?: number }) {
+  if (pending === 0) return null;
+
+  const hasCritical = critical && critical > 0;
+
+  return (
+    <Badge
+      variant={hasCritical ? 'destructive' : 'secondary'}
+      className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 flex items-center gap-1 ${
+        hasCritical
+          ? ''
+          : 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300'
+      }`}
+    >
+      <Download className="h-3 w-3" />
+      {pending}
+      {hasCritical && ` (${critical} critici)`}
     </Badge>
   );
 }
@@ -163,8 +185,11 @@ function SiteCard({ site }: { site: SiteWithStatus }) {
 
         {/* Stats */}
         <div className="p-3 sm:p-4">
-          <div className="flex items-center justify-between mb-3">
-            <PlatformBadge platform={site.platform} />
+          <div className="flex items-center justify-between flex-wrap gap-1.5 mb-3">
+            <div className="flex items-center gap-1.5">
+              <PlatformBadge platform={site.platform} />
+              <UpdatesBadge pending={site.wp_updates_pending} critical={site.wp_updates_critical} />
+            </div>
             {site.ssl_valid && (
               <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 text-green-600 border-green-300 dark:text-green-400 dark:border-green-800">
                 SSL Valido

@@ -19,6 +19,7 @@ import {
   Bell,
   Filter,
   RefreshCw,
+  Download,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -36,6 +37,8 @@ interface Alert {
   created_at: string;
   acknowledged_at: string | null;
   resolved_at: string | null;
+  pending_updates: number;
+  critical_updates: number;
 }
 
 const severityConfig = {
@@ -254,6 +257,20 @@ export default function AlertsPage() {
                         </p>
                         <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-[10px] sm:text-xs text-muted-foreground">
                           <span>{alert.site_name}</span>
+                          {alert.pending_updates > 0 && (
+                            <Badge
+                              variant={alert.critical_updates > 0 ? 'destructive' : 'secondary'}
+                              className={`text-[10px] px-1.5 py-0 flex items-center gap-0.5 ${
+                                alert.critical_updates > 0
+                                  ? ''
+                                  : 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300'
+                              }`}
+                            >
+                              <Download className="h-2.5 w-2.5" />
+                              {alert.pending_updates} update
+                              {alert.critical_updates > 0 && ` (${alert.critical_updates} critici)`}
+                            </Badge>
+                          )}
                           <span>
                             {formatDistanceToNow(new Date(alert.created_at), {
                               addSuffix: true,

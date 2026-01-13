@@ -96,6 +96,7 @@ async function getDashboardData() {
       ssl_valid: site.ssl_status === 'valid',
       ssl_days_remaining: null,
       wp_updates_pending: site.platform === 'wordpress' ? siteUpdates.total : 0,
+      wp_updates_critical: site.platform === 'wordpress' ? siteUpdates.critical : 0,
       ps_updates_pending: 0,
       last_perf_score: site.performance_score,
       last_lcp: null,

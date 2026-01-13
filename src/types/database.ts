@@ -123,6 +123,7 @@ export interface SiteWithStatus {
   ssl_valid: boolean | null;
   ssl_days_remaining: number | null;
   wp_updates_pending: number;
+  wp_updates_critical?: number;
   ps_updates_pending: number;
   last_perf_score: number | null;
   last_lcp: number | null;

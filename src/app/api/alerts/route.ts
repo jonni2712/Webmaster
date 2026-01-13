@@ -52,12 +52,36 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Transform data to include site info
-  const alerts = (data || []).map((alert) => ({
-    ...alert,
-    site_name: alert.site?.name,
-    site_url: alert.site?.url,
-  }));
+  // Get unique site IDs from alerts
+  const siteIds = [...new Set((data || []).filter(a => a.site_id).map(a => a.site_id))];
+
+  // Fetch update counts for all sites in one query
+  const { data: updateCounts } = await supabase
+    .from('wp_updates')
+    .select('site_id, is_critical')
+    .in('site_id', siteIds)
+    .eq('status', 'available');
+
+  // Group update counts by site_id
+  const updatesBySite = new Map<string, { total: number; critical: number }>();
+  for (const update of updateCounts || []) {
+    const current = updatesBySite.get(update.site_id) || { total: 0, critical: 0 };
+    current.total++;
+    if (update.is_critical) current.critical++;
+    updatesBySite.set(update.site_id, current);
+  }
+
+  // Transform data to include site info and update counts
+  const alerts = (data || []).map((alert) => {
+    const siteUpdates = alert.site_id ? updatesBySite.get(alert.site_id) : null;
+    return {
+      ...alert,
+      site_name: alert.site?.name,
+      site_url: alert.site?.url,
+      pending_updates: siteUpdates?.total || 0,
+      critical_updates: siteUpdates?.critical || 0,
+    };
+  });
 
   return NextResponse.json({
     alerts,
