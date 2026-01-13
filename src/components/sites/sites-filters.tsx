@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { SitesGrid } from '@/components/dashboard/sites-grid';
-import { Search, Building2, Trash2, Loader2 } from 'lucide-react';
+import { Search, Building2, Trash2, Loader2, RefreshCw } from 'lucide-react';
 import type { SiteWithStatus, Client } from '@/types';
 
 interface SitesFiltersProps {
@@ -24,6 +24,8 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
   const [clientFilter, setClientFilter] = useState<string>('all');
   const [isCleaningUp, setIsCleaningUp] = useState(false);
   const [cleanupMessage, setCleanupMessage] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   const handleCleanupDuplicates = async () => {
     setIsCleaningUp(true);
@@ -63,6 +65,25 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
       setCleanupMessage('Errore durante il reset');
     } finally {
       setIsCleaningUp(false);
+    }
+  };
+
+  const handleSyncAll = async () => {
+    setIsSyncing(true);
+    setSyncMessage(null);
+    try {
+      const res = await fetch('/api/sites/sync-all', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setSyncMessage(`${data.message}. ${data.failed > 0 ? `(${data.failed} falliti)` : ''}`);
+        setTimeout(() => window.location.reload(), 2000);
+      } else {
+        setSyncMessage(`Errore: ${data.error}`);
+      }
+    } catch (error) {
+      setSyncMessage('Errore durante la sincronizzazione');
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -134,6 +155,21 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
           variant="outline"
           size="sm"
           className="h-9 sm:h-10"
+          onClick={handleSyncAll}
+          disabled={isSyncing}
+        >
+          {isSyncing ? (
+            <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
+          ) : (
+            <RefreshCw className="h-4 w-4 sm:mr-2" />
+          )}
+          <span className="hidden sm:inline">Sincronizza tutti</span>
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9 sm:h-10"
           onClick={handleResetUpdates}
           disabled={isCleaningUp}
         >
@@ -149,6 +185,12 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
       {cleanupMessage && (
         <p className={`text-sm ${cleanupMessage.includes('Errore') ? 'text-red-500' : 'text-green-600'}`}>
           {cleanupMessage}
+        </p>
+      )}
+
+      {syncMessage && (
+        <p className={`text-sm ${syncMessage.includes('Errore') ? 'text-red-500' : 'text-green-600'}`}>
+          {syncMessage}
         </p>
       )}
 
