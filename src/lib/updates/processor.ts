@@ -230,7 +230,7 @@ export async function processWordPressUpdates({
   }
 
   // Upsert new updates
-  const newCriticalUpdates: UpdateRecord[] = [];
+  const newUpdates: UpdateRecord[] = [];
 
   for (const update of updates) {
     const key = `${update.update_type}:${update.slug}:${update.new_version}`;
@@ -254,16 +254,15 @@ export async function processWordPressUpdates({
           checked_at: new Date().toISOString(),
         });
 
-      // Track new critical updates for alerting
-      if (update.is_critical) {
-        newCriticalUpdates.push(update);
-      }
+      // Track ALL new updates for alerting
+      newUpdates.push(update);
     }
   }
 
-  // Generate alert if there are NEW critical updates (not already tracked)
-  if (newCriticalUpdates.length > 0) {
-    await generateUpdateAlert(siteId, tenantId, updates, newCriticalUpdates.length, updates.length);
+  // Generate alert if there are ANY new updates (not already tracked)
+  if (newUpdates.length > 0) {
+    const newCriticalCount = newUpdates.filter(u => u.is_critical).length;
+    await generateUpdateAlert(siteId, tenantId, newUpdates, newCriticalCount, newUpdates.length);
   }
 
   return { processed: updates.length, critical: criticalCount };
@@ -291,18 +290,22 @@ async function generateUpdateAlert(
 
     if (!site) return;
 
-    // Check if we already sent an alert recently (cooldown of 24 hours)
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    // Determine trigger type based on critical updates
+    const triggerType = criticalCount > 0 ? 'update_critical' : 'update_available';
+
+    // Check if we already sent an alert recently (cooldown: 6h for available, 1h for critical)
+    const cooldownHours = criticalCount > 0 ? 1 : 6;
+    const cooldownTime = new Date(Date.now() - cooldownHours * 60 * 60 * 1000).toISOString();
     const { data: recentAlert } = await supabase
       .from('alerts')
       .select('id')
       .eq('site_id', siteId)
-      .eq('trigger_type', 'update_critical')
-      .gte('created_at', oneDayAgo)
+      .in('trigger_type', ['update_critical', 'update_available'])
+      .gte('created_at', cooldownTime)
       .limit(1);
 
     if (recentAlert && recentAlert.length > 0) {
-      console.log(`Skipping update alert for site ${siteId} - already sent within 24h`);
+      console.log(`Skipping update alert for site ${siteId} - already sent within ${cooldownHours}h`);
       return;
     }
 
@@ -312,14 +315,14 @@ async function generateUpdateAlert(
       .insert({
         tenant_id: tenantId,
         site_id: siteId,
-        trigger_type: 'update_critical',
+        trigger_type: triggerType,
         severity: criticalCount > 0 ? 'warning' : 'info',
         title: criticalCount > 0
           ? `${criticalCount} aggiornamenti critici disponibili`
-          : `${totalCount} aggiornamenti disponibili`,
+          : `${totalCount} ${totalCount === 1 ? 'aggiornamento disponibile' : 'aggiornamenti disponibili'}`,
         message: criticalCount > 0
           ? `Il sito ${site.name} ha ${criticalCount} aggiornamenti critici che richiedono attenzione immediata.`
-          : `Il sito ${site.name} ha ${totalCount} aggiornamenti disponibili.`,
+          : `Il sito ${site.name} ha ${totalCount} ${totalCount === 1 ? 'aggiornamento disponibile' : 'aggiornamenti disponibili'}.`,
         details: {
           criticalCount,
           totalCount,
