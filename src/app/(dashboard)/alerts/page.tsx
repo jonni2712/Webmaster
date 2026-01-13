@@ -20,7 +20,9 @@ import {
   Filter,
   RefreshCw,
   Download,
+  Globe,
 } from 'lucide-react';
+import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { it } from 'date-fns/locale';
 
@@ -257,7 +259,15 @@ export default function AlertsPage() {
                           {alert.message}
                         </p>
                         <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-[10px] sm:text-xs text-muted-foreground">
-                          <span>{alert.site_name}</span>
+                          {alert.site_name && (
+                            <Link
+                              href={`/sites/${alert.site_id}`}
+                              className="flex items-center gap-1 hover:text-foreground transition-colors"
+                            >
+                              <Globe className="h-3 w-3" />
+                              {alert.site_name}
+                            </Link>
+                          )}
                           {alert.pending_updates > 0 && (
                             <Badge
                               variant={alert.critical_updates > 0 ? 'destructive' : 'secondary'}
@@ -269,7 +279,7 @@ export default function AlertsPage() {
                             >
                               <Download className="h-2.5 w-2.5" />
                               {alert.pending_updates} update
-                              {alert.critical_updates > 0 && ` (${alert.critical_updates} critici)`}
+                              {alert.critical_updates > 0 ? ` (${alert.critical_updates} critici)` : null}
                             </Badge>
                           )}
                           <span>

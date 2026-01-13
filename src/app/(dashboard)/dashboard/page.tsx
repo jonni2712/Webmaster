@@ -8,7 +8,7 @@ import { AlertsFeed } from '@/components/dashboard/alerts-feed';
 import { Button } from '@/components/ui/button';
 import { Plus, Upload } from 'lucide-react';
 import Link from 'next/link';
-import type { DashboardStats, SiteWithStatus, Alert } from '@/types';
+import type { DashboardStats, SiteWithStatus, AlertWithSite } from '@/types';
 
 function getEmptyStats(): DashboardStats {
   return {
@@ -67,13 +67,23 @@ async function getDashboardData() {
     updateCountsMap.set(update.site_id, current);
   }
 
-  // Get recent alerts
-  const { data: alerts } = await supabase
+  // Get recent alerts with site info
+  const { data: alertsData } = await supabase
     .from('alerts')
-    .select('*')
+    .select(`
+      *,
+      site:sites(name, url)
+    `)
     .eq('tenant_id', user.current_tenant_id)
     .order('created_at', { ascending: false })
     .limit(5);
+
+  // Map alerts to include site_name and site_url
+  const alerts: AlertWithSite[] = (alertsData || []).map(alert => ({
+    ...alert,
+    site_name: alert.site?.name || null,
+    site_url: alert.site?.url || null,
+  }));
 
   // Map sites to SiteWithStatus format
   const sitesList: SiteWithStatus[] = (sites || []).map(site => {
@@ -103,7 +113,7 @@ async function getDashboardData() {
     };
   });
 
-  const alertsList = (alerts || []) as Alert[];
+  const alertsList = alerts;
 
   const stats: DashboardStats = {
     totalSites: sitesList.length,

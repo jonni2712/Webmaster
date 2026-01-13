@@ -264,6 +264,11 @@ export interface Alert {
   created_at: string;
 }
 
+export interface AlertWithSite extends Alert {
+  site_name: string | null;
+  site_url: string | null;
+}
+
 export type DigestFrequency = 'daily' | 'weekly' | 'none';
 
 export interface DigestPreferences {

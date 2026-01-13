@@ -6,14 +6,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Bell, AlertTriangle, Info, XCircle } from 'lucide-react';
+import { Bell, AlertTriangle, Info, XCircle, Globe } from 'lucide-react';
 import Link from 'next/link';
-import type { Alert } from '@/types';
+import type { AlertWithSite, AlertTriggerType } from '@/types';
 
 interface AlertsFeedProps {
-  alerts: Alert[];
+  alerts: AlertWithSite[];
   isLoading?: boolean;
 }
+
+const triggerTypeLabels: Record<AlertTriggerType, string> = {
+  site_down: 'Sito offline',
+  ssl_expiring: 'SSL in scadenza',
+  ssl_invalid: 'SSL non valido',
+  performance_degraded: 'Performance',
+  update_available: 'Aggiornamenti',
+  update_critical: 'Aggiornamenti critici',
+  ecommerce_anomaly: 'E-commerce',
+};
 
 const severityConfig = {
   info: {
@@ -81,46 +91,57 @@ export function AlertsFeed({ alerts, isLoading }: AlertsFeedProps) {
               const Icon = config.icon;
 
               return (
-                <div
+                <Link
                   key={alert.id}
-                  className={`flex gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg ${config.bg}`}
+                  href={alert.site_id ? `/sites/${alert.site_id}` : '/alerts'}
+                  className={`flex gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg ${config.bg} hover:opacity-80 transition-opacity block`}
                 >
                   <div className={`flex-shrink-0 ${config.color}`}>
                     <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-1 sm:gap-2">
-                      <p className="font-medium text-xs sm:text-sm line-clamp-1">
-                        {alert.title}
-                      </p>
+                      <div className="min-w-0">
+                        <p className="font-medium text-xs sm:text-sm line-clamp-1">
+                          {alert.title}
+                        </p>
+                        {alert.site_name && (
+                          <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <Globe className="h-3 w-3" />
+                            {alert.site_name}
+                          </p>
+                        )}
+                      </div>
                       <Badge
                         variant={
                           alert.status === 'resolved'
                             ? 'secondary'
                             : alert.status === 'acknowledged'
                             ? 'outline'
-                            : 'default'
+                            : 'destructive'
                         }
                         className="flex-shrink-0 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5"
                       >
                         {alert.status === 'resolved'
                           ? 'Risolto'
                           : alert.status === 'acknowledged'
-                          ? 'Preso in carico'
+                          ? 'Gestito'
                           : 'Attivo'}
                       </Badge>
                     </div>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 line-clamp-1">
-                      {alert.message}
-                    </p>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
-                      {formatDistanceToNow(new Date(alert.created_at), {
-                        addSuffix: true,
-                        locale: it,
-                      })}
-                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                        {triggerTypeLabels[alert.trigger_type] || alert.trigger_type}
+                      </Badge>
+                      <span className="text-[10px] sm:text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(alert.created_at), {
+                          addSuffix: true,
+                          locale: it,
+                        })}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
