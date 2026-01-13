@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin';
+import { dispatchNotification } from '@/lib/notifications/dispatcher';
 import type { UpdateType, UpdateStatus } from '@/types/database';
 
 interface PluginInfo {
@@ -223,6 +224,8 @@ export async function processWordPressUpdates({
   }
 
   // Upsert new updates
+  const newCriticalUpdates: UpdateRecord[] = [];
+
   for (const update of updates) {
     const key = `${update.update_type}:${update.slug}:${update.new_version}`;
 
@@ -244,10 +247,124 @@ export async function processWordPressUpdates({
           ...update,
           checked_at: new Date().toISOString(),
         });
+
+      // Track new critical updates for alerting
+      if (update.is_critical) {
+        newCriticalUpdates.push(update);
+      }
     }
   }
 
+  // Generate alert if there are NEW critical updates (not already tracked)
+  if (newCriticalUpdates.length > 0) {
+    await generateUpdateAlert(siteId, tenantId, updates, newCriticalUpdates.length, updates.length);
+  }
+
   return { processed: updates.length, critical: criticalCount };
+}
+
+/**
+ * Generate an alert for critical updates
+ */
+async function generateUpdateAlert(
+  siteId: string,
+  tenantId: string,
+  updates: UpdateRecord[],
+  criticalCount: number,
+  totalCount: number
+): Promise<void> {
+  const supabase = createAdminClient();
+
+  try {
+    // Get site info
+    const { data: site } = await supabase
+      .from('sites')
+      .select('name, url')
+      .eq('id', siteId)
+      .single();
+
+    if (!site) return;
+
+    // Check if we already sent an alert recently (cooldown of 24 hours)
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: recentAlert } = await supabase
+      .from('alerts')
+      .select('id')
+      .eq('site_id', siteId)
+      .eq('type', 'update_critical')
+      .gte('created_at', oneDayAgo)
+      .limit(1);
+
+    if (recentAlert && recentAlert.length > 0) {
+      console.log(`Skipping update alert for site ${siteId} - already sent within 24h`);
+      return;
+    }
+
+    // Create alert record
+    const { data: alert, error: alertError } = await supabase
+      .from('alerts')
+      .insert({
+        tenant_id: tenantId,
+        site_id: siteId,
+        type: 'update_critical',
+        severity: criticalCount > 0 ? 'warning' : 'info',
+        title: criticalCount > 0
+          ? `${criticalCount} aggiornamenti critici disponibili`
+          : `${totalCount} aggiornamenti disponibili`,
+        message: criticalCount > 0
+          ? `Il sito ${site.name} ha ${criticalCount} aggiornamenti critici che richiedono attenzione immediata.`
+          : `Il sito ${site.name} ha ${totalCount} aggiornamenti disponibili.`,
+        details: {
+          criticalCount,
+          totalCount,
+          updates: updates.map(u => ({
+            name: u.name,
+            type: u.update_type,
+            currentVersion: u.current_version,
+            newVersion: u.new_version,
+            isCritical: u.is_critical,
+          })),
+        },
+      })
+      .select()
+      .single();
+
+    if (alertError || !alert) {
+      console.error('Error creating update alert:', alertError);
+      return;
+    }
+
+    // Dispatch notification
+    await dispatchNotification({
+      tenantId,
+      alertId: alert.id,
+      type: criticalCount > 0 ? 'updates_critical' : 'updates_available',
+      severity: criticalCount > 0 ? 'warning' : 'info',
+      site: {
+        id: siteId,
+        name: site.name,
+        url: site.url,
+      },
+      title: alert.title,
+      message: alert.message,
+      details: {
+        criticalCount,
+        totalCount,
+        updates: updates.map(u => ({
+          name: u.name,
+          type: u.update_type,
+          currentVersion: u.current_version,
+          newVersion: u.new_version,
+          isCritical: u.is_critical,
+        })),
+        dashboardUrl: `${process.env.NEXTAUTH_URL || ''}/sites/${siteId}`,
+      },
+    });
+
+    console.log(`Update alert dispatched for site ${siteId}: ${criticalCount} critical, ${totalCount} total`);
+  } catch (err) {
+    console.error('Error generating update alert:', err);
+  }
 }
 
 /**

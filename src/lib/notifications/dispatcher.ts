@@ -9,7 +9,7 @@ import type { AlertChannelType } from '@/types/database';
 export interface NotificationPayload {
   tenantId: string;
   alertId: string;
-  type: 'site_down' | 'site_up' | 'ssl_expiring' | 'ssl_expired' | 'ssl_invalid';
+  type: 'site_down' | 'site_up' | 'ssl_expiring' | 'ssl_expired' | 'ssl_invalid' | 'updates_critical' | 'updates_available';
   severity: 'info' | 'warning' | 'critical';
   site: {
     id: string;

@@ -2,6 +2,7 @@ import { resend, EMAIL_FROM } from '@/lib/email/client';
 import { AlertDowntimeEmail } from '@/lib/email/templates/alert-downtime';
 import { AlertSSLEmail } from '@/lib/email/templates/alert-ssl';
 import { AlertRecoveryEmail } from '@/lib/email/templates/alert-recovery';
+import { AlertUpdatesEmail } from '@/lib/email/templates/alert-updates';
 import type { NotificationPayload } from '../dispatcher';
 
 interface EmailConfig {
@@ -73,6 +74,42 @@ export async function sendEmailNotification(
           expiryDate: payload.details?.expiryDate as string,
           daysUntilExpiry: 0,
           isExpired: true,
+        });
+        break;
+
+      case 'updates_critical':
+        subject = `🔴 Aggiornamenti CRITICI: ${payload.site.name}`;
+        emailComponent = AlertUpdatesEmail({
+          siteName: payload.site.name,
+          siteUrl: payload.site.url,
+          updates: (payload.details?.updates as Array<{
+            name: string;
+            type: 'core' | 'plugin' | 'theme';
+            currentVersion: string;
+            newVersion: string;
+            isCritical: boolean;
+          }>) || [],
+          criticalCount: (payload.details?.criticalCount as number) || 0,
+          totalCount: (payload.details?.totalCount as number) || 0,
+          dashboardUrl: payload.details?.dashboardUrl as string | undefined,
+        });
+        break;
+
+      case 'updates_available':
+        subject = `🔄 Aggiornamenti disponibili: ${payload.site.name}`;
+        emailComponent = AlertUpdatesEmail({
+          siteName: payload.site.name,
+          siteUrl: payload.site.url,
+          updates: (payload.details?.updates as Array<{
+            name: string;
+            type: 'core' | 'plugin' | 'theme';
+            currentVersion: string;
+            newVersion: string;
+            isCritical: boolean;
+          }>) || [],
+          criticalCount: 0,
+          totalCount: (payload.details?.totalCount as number) || 0,
+          dashboardUrl: payload.details?.dashboardUrl as string | undefined,
         });
         break;
 
