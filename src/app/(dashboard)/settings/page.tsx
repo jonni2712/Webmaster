@@ -13,7 +13,7 @@ import {
   User,
   Bell,
   Shield,
-  Building,
+  Users,
   Mail,
   MessageSquare,
   Webhook,
@@ -25,6 +25,14 @@ import {
 import { toast } from 'sonner';
 import { ChannelFormDialog } from '@/components/settings/channel-form-dialog';
 import { DigestPreferencesForm } from '@/components/settings/digest-preferences-form';
+import {
+  TeamMembersList,
+  InviteMemberDialog,
+  PendingInvitations,
+  MemberSitesDialog,
+  ActivityFeed,
+} from '@/components/team';
+import type { TeamMember, MemberRole } from '@/types/database';
 
 interface AlertChannel {
   id: string;
@@ -49,6 +57,12 @@ export default function SettingsPage() {
   const [channels, setChannels] = useState<AlertChannel[]>([]);
   const [showChannelDialog, setShowChannelDialog] = useState(false);
 
+  // Team management state
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<MemberRole>('viewer');
+  const [teamRefreshKey, setTeamRefreshKey] = useState(0);
+
   // Profile form
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -70,11 +84,24 @@ export default function SettingsPage() {
     }
   }, []);
 
+  const fetchCurrentUserRole = useCallback(async () => {
+    try {
+      const res = await fetch('/api/team/members');
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentUserRole(data.currentUserRole || 'viewer');
+      }
+    } catch (error) {
+      console.error('Error fetching user role:', error);
+    }
+  }, []);
+
   useEffect(() => {
     if (status === 'authenticated') {
       fetchChannels();
+      fetchCurrentUserRole();
     }
-  }, [status, fetchChannels]);
+  }, [status, fetchChannels, fetchCurrentUserRole]);
 
   useEffect(() => {
     if (session?.user) {
@@ -203,9 +230,9 @@ export default function SettingsPage() {
             <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
             <span className="hidden xs:inline">Notifiche</span>
           </TabsTrigger>
-          <TabsTrigger value="workspace" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
-            <Building className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden xs:inline">Workspace</span>
+          <TabsTrigger value="team" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+            <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Team</span>
           </TabsTrigger>
         </TabsList>
 
@@ -393,25 +420,33 @@ export default function SettingsPage() {
           </div>
         </TabsContent>
 
-        {/* Workspace Tab */}
-        <TabsContent value="workspace">
-          <Card>
-            <CardHeader className="p-4 sm:p-6">
-              <CardTitle className="text-base sm:text-lg">Workspace</CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                Gestisci il tuo workspace e i membri del team
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-              <div className="text-center py-6 sm:py-8 text-muted-foreground">
-                <Building className="mx-auto h-10 w-10 sm:h-12 sm:w-12 mb-3 sm:mb-4 opacity-50" />
-                <p className="text-sm sm:text-base">Gestione team in arrivo</p>
-                <p className="text-xs sm:text-sm">
-                  Presto potrai invitare membri e gestire i ruoli
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Team Tab */}
+        <TabsContent value="team">
+          <div className="space-y-4 sm:space-y-6">
+            {/* Team Members */}
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-base sm:text-lg">Membri del Team</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  Gestisci i membri del tuo team e i loro ruoli
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                <TeamMembersList
+                  key={teamRefreshKey}
+                  currentUserRole={currentUserRole}
+                  onInviteClick={() => setShowInviteDialog(true)}
+                  onSiteAccessClick={(member) => setSelectedMember(member)}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Pending Invitations */}
+            <PendingInvitations currentUserRole={currentUserRole} />
+
+            {/* Activity Feed */}
+            <ActivityFeed limit={10} />
+          </div>
         </TabsContent>
       </Tabs>
 
@@ -420,6 +455,22 @@ export default function SettingsPage() {
         open={showChannelDialog}
         onOpenChange={setShowChannelDialog}
         onSuccess={fetchChannels}
+      />
+
+      {/* Invite Member Dialog */}
+      <InviteMemberDialog
+        open={showInviteDialog}
+        onOpenChange={setShowInviteDialog}
+        currentUserRole={currentUserRole}
+        onInviteSent={() => setTeamRefreshKey(k => k + 1)}
+      />
+
+      {/* Member Sites Dialog */}
+      <MemberSitesDialog
+        open={!!selectedMember}
+        onOpenChange={(open) => !open && setSelectedMember(null)}
+        member={selectedMember}
+        onAccessUpdated={() => setTeamRefreshKey(k => k + 1)}
       />
     </div>
   );

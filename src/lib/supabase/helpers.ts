@@ -140,3 +140,73 @@ export async function switchTenant(
 
   return !error;
 }
+
+/**
+ * Get the site IDs a member can access
+ * Returns 'all' for owner/admin, or array of site IDs for member/viewer
+ */
+export async function getMemberSiteIds(
+  userId: string,
+  tenantId: string
+): Promise<string[] | 'all'> {
+  const supabase = createAdminClient();
+
+  // Get user's membership in tenant
+  const { data: membership } = await supabase
+    .from('user_tenants')
+    .select('id, role')
+    .eq('user_id', userId)
+    .eq('tenant_id', tenantId)
+    .single();
+
+  if (!membership) {
+    return [];
+  }
+
+  // Owner and Admin have access to all sites
+  if (membership.role === 'owner' || membership.role === 'admin') {
+    return 'all';
+  }
+
+  // Member and Viewer only have access to explicitly assigned sites
+  const { data: access } = await supabase
+    .from('member_site_access')
+    .select('site_id')
+    .eq('user_tenant_id', membership.id);
+
+  return access?.map(a => a.site_id) || [];
+}
+
+/**
+ * Check if a user can access a specific site
+ */
+export async function userCanAccessSite(
+  userId: string,
+  tenantId: string,
+  siteId: string
+): Promise<boolean> {
+  const siteIds = await getMemberSiteIds(userId, tenantId);
+
+  if (siteIds === 'all') {
+    return true;
+  }
+
+  return siteIds.includes(siteId);
+}
+
+/**
+ * Get filtered sites query for a user
+ * Returns site IDs to filter by, or null if user has access to all sites
+ */
+export async function getSiteAccessFilter(
+  userId: string,
+  tenantId: string
+): Promise<string[] | null> {
+  const siteIds = await getMemberSiteIds(userId, tenantId);
+
+  if (siteIds === 'all') {
+    return null; // No filter needed
+  }
+
+  return siteIds;
+}

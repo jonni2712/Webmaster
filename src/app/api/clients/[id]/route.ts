@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { logActivity } from '@/lib/activity/logger';
 
 // GET /api/clients/[id] - Get single client with sites
 export async function GET(
@@ -132,6 +133,16 @@ export async function PUT(
       return NextResponse.json({ error: 'Errore nell\'aggiornamento del cliente' }, { status: 500 });
     }
 
+    // Log activity
+    await logActivity({
+      tenantId: user.current_tenant_id,
+      userId: session.user.id,
+      actionType: 'client_updated',
+      resourceType: 'client',
+      resourceId: client.id,
+      resourceName: client.name,
+    });
+
     return NextResponse.json(client);
   } catch (error) {
     console.error('Error in PUT /api/clients/[id]:', error);
@@ -167,7 +178,7 @@ export async function DELETE(
     // Check client exists and belongs to tenant
     const { data: existingClient } = await supabase
       .from('clients')
-      .select('id')
+      .select('id, name')
       .eq('id', id)
       .eq('tenant_id', user.current_tenant_id)
       .single();
@@ -175,6 +186,8 @@ export async function DELETE(
     if (!existingClient) {
       return NextResponse.json({ error: 'Cliente non trovato' }, { status: 404 });
     }
+
+    const clientName = existingClient.name;
 
     // Remove client_id from sites (don't delete sites, just unlink)
     await supabase
@@ -192,6 +205,16 @@ export async function DELETE(
       console.error('Error deleting client:', error);
       return NextResponse.json({ error: 'Errore nell\'eliminazione del cliente' }, { status: 500 });
     }
+
+    // Log activity
+    await logActivity({
+      tenantId: user.current_tenant_id,
+      userId: session.user.id,
+      actionType: 'client_deleted',
+      resourceType: 'client',
+      resourceId: id,
+      resourceName: clientName,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

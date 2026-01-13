@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { logActivity } from '@/lib/activity/logger';
 
 // GET /api/clients - List all clients
 export async function GET(request: NextRequest) {
@@ -143,6 +144,16 @@ export async function POST(request: NextRequest) {
       console.error('Error creating client:', error);
       return NextResponse.json({ error: 'Errore nella creazione del cliente' }, { status: 500 });
     }
+
+    // Log activity
+    await logActivity({
+      tenantId: user.current_tenant_id,
+      userId: session.user.id,
+      actionType: 'client_created',
+      resourceType: 'client',
+      resourceId: client.id,
+      resourceName: client.name,
+    });
 
     return NextResponse.json(client, { status: 201 });
   } catch (error) {

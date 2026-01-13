@@ -286,3 +286,89 @@ export const DEFAULT_DIGEST_PREFERENCES: DigestPreferences = {
   hour: 8,        // 8 AM
   email: null,
 };
+
+// ============================================
+// Team Management Types (v1.4.0)
+// ============================================
+
+export type MemberRole = 'owner' | 'admin' | 'member' | 'viewer';
+
+export type ActivityActionType =
+  | 'member_invited'
+  | 'member_joined'
+  | 'member_removed'
+  | 'role_changed'
+  | 'site_created'
+  | 'site_updated'
+  | 'site_deleted'
+  | 'client_created'
+  | 'client_updated'
+  | 'client_deleted'
+  | 'site_access_granted'
+  | 'site_access_revoked'
+  | 'settings_updated';
+
+export interface TeamMember {
+  id: string;              // user_tenants.id
+  user_id: string;
+  email: string;
+  name: string | null;
+  avatar_url: string | null;
+  role: MemberRole;
+  site_access: 'all' | 'restricted';
+  assigned_sites_count: number;
+  created_at: string;      // When they joined the tenant
+}
+
+export interface TeamInvitation {
+  id: string;
+  tenant_id: string;
+  email: string;
+  role: MemberRole;
+  invited_by: string;
+  inviter_name: string | null;
+  inviter_email: string;
+  token: string;
+  expires_at: string;
+  accepted_at: string | null;
+  created_at: string;
+}
+
+export interface MemberSiteAccess {
+  id: string;
+  user_tenant_id: string;
+  site_id: string;
+  site_name?: string;
+  site_url?: string;
+  created_at: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  tenant_id: string;
+  user_id: string | null;
+  user_name: string | null;
+  user_email: string | null;
+  action_type: ActivityActionType;
+  resource_type: string | null;
+  resource_id: string | null;
+  resource_name: string | null;
+  target_user_id: string | null;
+  target_user_email: string | null;
+  metadata: Record<string, unknown>;
+  ip_address: string | null;
+  created_at: string;
+}
+
+export interface ActivityLogCreateParams {
+  tenantId: string;
+  userId: string;
+  actionType: ActivityActionType;
+  resourceType?: string;
+  resourceId?: string;
+  resourceName?: string;
+  targetUserId?: string;
+  targetUserEmail?: string;
+  metadata?: Record<string, unknown>;
+  ipAddress?: string;
+}

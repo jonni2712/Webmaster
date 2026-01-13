@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { processWordPressUpdates } from '@/lib/updates/processor';
+import { getSiteAccessFilter } from '@/lib/supabase/helpers';
+import { logActivity } from '@/lib/activity/logger';
 import { z } from 'zod';
 
 const siteSchema = z.object({
@@ -46,10 +48,30 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
   }
 
+  // Get site access filter for member/viewer roles
+  const siteAccessFilter = await getSiteAccessFilter(session.user.id, user.current_tenant_id);
+
   let query = supabase
     .from('sites')
     .select('*', { count: 'exact' })
     .eq('tenant_id', user.current_tenant_id);
+
+  // Apply site access filter for non-admin users
+  if (siteAccessFilter !== null) {
+    if (siteAccessFilter.length === 0) {
+      // User has no site access - return empty result
+      return NextResponse.json({
+        sites: [],
+        pagination: {
+          page,
+          limit,
+          total: 0,
+          totalPages: 0,
+        },
+      });
+    }
+    query = query.in('id', siteAccessFilter);
+  }
 
   if (platform) {
     query = query.eq('platform', platform);
@@ -169,6 +191,16 @@ export async function POST(request: NextRequest) {
       }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    // Log activity
+    await logActivity({
+      tenantId: user.current_tenant_id,
+      userId: session.user.id,
+      actionType: 'site_created',
+      resourceType: 'site',
+      resourceId: data.id,
+      resourceName: data.name,
+    });
 
     // Auto-sync if WordPress site with API key
     if (data && data.platform === 'wordpress' && api_key) {

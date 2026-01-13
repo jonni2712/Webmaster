@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { userCanAccessSite } from '@/lib/supabase/helpers';
+import { logActivity } from '@/lib/activity/logger';
 import { z } from 'zod';
 
 const alertSettingsSchema = z.object({
@@ -51,6 +53,12 @@ export async function GET(
 
   if (!user?.current_tenant_id) {
     return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
+  }
+
+  // Check if user can access this site
+  const hasAccess = await userCanAccessSite(session.user.id, user.current_tenant_id, id);
+  if (!hasAccess) {
+    return NextResponse.json({ error: 'Non hai accesso a questo sito' }, { status: 403 });
   }
 
   const { data: site, error } = await supabase
@@ -175,6 +183,16 @@ export async function PUT(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Log activity
+    await logActivity({
+      tenantId: user.current_tenant_id,
+      userId: session.user.id,
+      actionType: 'site_updated',
+      resourceType: 'site',
+      resourceId: data.id,
+      resourceName: data.name,
+    });
+
     return NextResponse.json(data);
   } catch (error) {
     console.error('PUT /api/sites/[id] error:', error);
@@ -223,10 +241,10 @@ export async function DELETE(
     );
   }
 
-  // Verify site belongs to tenant
+  // Verify site belongs to tenant and get name for logging
   const { data: existingSite } = await supabase
     .from('sites')
-    .select('id')
+    .select('id, name')
     .eq('id', id)
     .eq('tenant_id', user.current_tenant_id)
     .single();
@@ -235,11 +253,23 @@ export async function DELETE(
     return NextResponse.json({ error: 'Site not found' }, { status: 404 });
   }
 
+  const siteName = existingSite.name;
+
   const { error } = await supabase.from('sites').delete().eq('id', id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // Log activity
+  await logActivity({
+    tenantId: user.current_tenant_id,
+    userId: session.user.id,
+    actionType: 'site_deleted',
+    resourceType: 'site',
+    resourceId: id,
+    resourceName: siteName,
+  });
 
   return NextResponse.json({ success: true });
 }
