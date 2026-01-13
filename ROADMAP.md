@@ -1,6 +1,6 @@
 # Roadmap Piattaforma Webmaster Monitor
 
-## Versione Attuale: 1.1.0
+## Versione Attuale: 1.2.0
 
 ### v1.0.0 (Rilasciata)
 - [x] Autenticazione OAuth (GitHub, Google)
@@ -21,7 +21,6 @@
 ### v1.1.0 - Notifiche e Alert (Rilasciata)
 - [x] Notifiche email per downtime
 - [x] Notifiche email per SSL in scadenza
-- [ ] Notifiche email per aggiornamenti disponibili (v1.2.0)
 - [x] Notifiche Telegram
 - [x] Notifiche Slack
 - [x] Notifiche Discord
@@ -32,16 +31,23 @@
 
 ---
 
-## Prossime Versioni
-
-### v1.2.0 - Gestione Aggiornamenti (In Sviluppo)
+### v1.2.0 - Gestione Aggiornamenti (Rilasciata)
 - [x] Lista aggiornamenti disponibili per sito
-- [ ] Aggiornamento singolo plugin da remoto
-- [ ] Aggiornamento massivo plugin
-- [ ] Aggiornamento temi da remoto
-- [ ] Aggiornamento WordPress core
-- [ ] Schedulazione aggiornamenti
-- [ ] Changelog aggiornamenti
+- [x] Aggiornamento singolo plugin da remoto
+- [x] Aggiornamento massivo plugin (bulk update)
+- [x] Aggiornamento temi da remoto
+- [x] Aggiornamento WordPress core da remoto
+- [x] Alert per aggiornamenti disponibili
+- [x] Alert per aggiornamenti critici (sicurezza)
+- [x] Auto-sync quando si connette un nuovo sito
+- [x] Sync-all per sincronizzare tutti i siti
+- [x] Gestione tag per siti (produzione, dev, staging, ecc.)
+- [x] Filtro siti per tag
+- [x] Notifiche email per aggiornamenti disponibili
+
+---
+
+## Prossime Versioni
 
 ### v1.3.0 - Report e Analytics
 - [ ] Report uptime mensile PDF
@@ -91,6 +97,7 @@
 - [ ] Auto-notify on critical events
 - [ ] Scheduled maintenance mode
 - [ ] Cron job personalizzati
+- [ ] Schedulazione aggiornamenti automatici
 
 ### v2.0.0 - White Label e API
 - [ ] White label completo
@@ -102,21 +109,21 @@
 
 ---
 
-## Funzionalità Dashboard
+## Funzionalita Dashboard
 
 ### Overview
 - [ ] Widget personalizzabili
 - [ ] Drag & drop layout
 - [ ] Filtri avanzati
 - [ ] Ricerca globale
-- [ ] Tema chiaro/scuro (già presente toggle)
-- [ ] Responsive migliorato
+- [x] Tema chiaro/scuro
+- [x] Responsive design
 
 ### Gestione Siti
 - [ ] Gruppi/cartelle per siti
-- [ ] Tag e categorie
-- [ ] Bulk actions (azioni massive)
-- [ ] Import siti da CSV (già presente)
+- [x] Tag e categorie per siti
+- [x] Bulk actions (sync-all, bulk update)
+- [x] Import siti da CSV
 - [ ] Import da MainWP/ManageWP
 - [ ] Duplicate site config
 
@@ -150,7 +157,7 @@
 - [ ] Jira/Asana (task creation)
 
 ### Communication
-- [ ] Discord
+- [x] Discord
 - [ ] Microsoft Teams
 - [ ] WhatsApp Business
 - [ ] SMS (Twilio)
@@ -191,6 +198,31 @@
 - API access
 - Team illimitato
 - Support prioritario
+
+---
+
+## Changelog
+
+### v1.2.0 (Gennaio 2025)
+- Sistema completo gestione aggiornamenti WordPress
+- Applicazione remota aggiornamenti plugin/temi/core
+- Bulk update con selezione multipla
+- Alert automatici per aggiornamenti critici
+- Auto-sync alla connessione di nuovi siti
+- Sync-all per aggiornare tutti i siti contemporaneamente
+- Sistema tag per categorizzare i siti
+- Filtri avanzati nella lista siti
+
+### v1.1.0 (Dicembre 2024)
+- Sistema notifiche multi-canale (Email, Telegram, Slack, Discord, Webhook)
+- Configurazione soglie alert personalizzate per sito
+- Digest giornaliero/settimanale via email
+
+### v1.0.0 (Novembre 2024)
+- Rilascio iniziale piattaforma
+- Monitoraggio uptime, SSL, performance
+- Plugin WordPress per raccolta dati
+- Gestione clienti e siti
 
 ---
 
