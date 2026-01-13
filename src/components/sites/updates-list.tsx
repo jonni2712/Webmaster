@@ -46,6 +46,8 @@ export function UpdatesList({ siteId, onSync }: UpdatesListProps) {
   const [syncing, setSyncing] = useState(false);
   const [selectedUpdates, setSelectedUpdates] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState<UpdateType | 'all'>('all');
+  const [applyingUpdates, setApplyingUpdates] = useState<Set<string>>(new Set());
+  const [bulkApplying, setBulkApplying] = useState(false);
 
   const fetchUpdates = async () => {
     try {
@@ -106,6 +108,95 @@ export function UpdatesList({ siteId, onSync }: UpdatesListProps) {
 
   const selectCritical = () => {
     setSelectedUpdates(new Set(filteredUpdates.filter(u => u.is_critical).map(u => u.id)));
+  };
+
+  const applyUpdate = async (updateId: string) => {
+    setApplyingUpdates(prev => new Set(prev).add(updateId));
+
+    const update = updates.find(u => u.id === updateId);
+    toast.info(`Aggiornamento ${update?.name || ''} in corso...`);
+
+    try {
+      const res = await fetch(`/api/sites/${siteId}/updates/${updateId}/apply`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        toast.success(data.message || 'Aggiornamento applicato con successo');
+        // Remove from selected
+        setSelectedUpdates(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(updateId);
+          return newSet;
+        });
+        // Refresh updates list
+        await fetchUpdates();
+        onSync?.();
+      } else {
+        toast.error(data.error || 'Errore durante l\'aggiornamento');
+      }
+    } catch (error) {
+      toast.error('Errore durante l\'aggiornamento');
+    } finally {
+      setApplyingUpdates(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(updateId);
+        return newSet;
+      });
+    }
+  };
+
+  const applySelectedUpdates = async () => {
+    if (selectedUpdates.size === 0) return;
+
+    setBulkApplying(true);
+    const updateIds = Array.from(selectedUpdates);
+    let successCount = 0;
+    let errorCount = 0;
+
+    toast.info(`Applicazione di ${updateIds.length} aggiornamenti in corso...`);
+
+    for (const updateId of updateIds) {
+      setApplyingUpdates(prev => new Set(prev).add(updateId));
+
+      try {
+        const res = await fetch(`/api/sites/${siteId}/updates/${updateId}/apply`, {
+          method: 'POST',
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          successCount++;
+          setSelectedUpdates(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(updateId);
+            return newSet;
+          });
+        } else {
+          errorCount++;
+        }
+      } catch {
+        errorCount++;
+      } finally {
+        setApplyingUpdates(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(updateId);
+          return newSet;
+        });
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`${successCount} aggiornamenti applicati con successo`);
+    }
+    if (errorCount > 0) {
+      toast.error(`${errorCount} aggiornamenti falliti`);
+    }
+
+    await fetchUpdates();
+    onSync?.();
+    setBulkApplying(false);
   };
 
   const filteredUpdates = filter === 'all'
@@ -184,8 +275,16 @@ export function UpdatesList({ siteId, onSync }: UpdatesListProps) {
             </Button>
           )}
           {selectedUpdates.size > 0 && (
-            <Button size="sm" disabled>
-              <Download className="h-4 w-4 mr-2" />
+            <Button
+              size="sm"
+              onClick={applySelectedUpdates}
+              disabled={bulkApplying || applyingUpdates.size > 0}
+            >
+              {bulkApplying ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
               Aggiorna selezionati ({selectedUpdates.size})
             </Button>
           )}
@@ -251,9 +350,20 @@ export function UpdatesList({ siteId, onSync }: UpdatesListProps) {
                         <span className="font-medium text-foreground">{update.new_version}</span>
                       </div>
                     </div>
-                    <Button size="sm" variant="outline" disabled>
-                      <Download className="h-4 w-4 sm:mr-2" />
-                      <span className="hidden sm:inline">Aggiorna</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => applyUpdate(update.id)}
+                      disabled={applyingUpdates.has(update.id) || bulkApplying}
+                    >
+                      {applyingUpdates.has(update.id) ? (
+                        <RefreshCw className="h-4 w-4 sm:mr-2 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4 sm:mr-2" />
+                      )}
+                      <span className="hidden sm:inline">
+                        {applyingUpdates.has(update.id) ? 'Aggiornando...' : 'Aggiorna'}
+                      </span>
                     </Button>
                   </div>
                 </CardContent>
@@ -266,8 +376,8 @@ export function UpdatesList({ siteId, onSync }: UpdatesListProps) {
       {/* Note about remote updates */}
       {filteredUpdates.length > 0 && (
         <p className="text-xs text-muted-foreground text-center py-2">
-          L'aggiornamento da remoto sara' disponibile nella prossima versione.
-          Per ora, puoi aggiornare direttamente dal pannello WordPress.
+          Gli aggiornamenti vengono applicati direttamente sul sito WordPress.
+          Assicurati di avere un backup prima di procedere.
         </p>
       )}
     </div>

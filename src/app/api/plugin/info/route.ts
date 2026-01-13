@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 // Plugin version - update this when releasing new versions
-const PLUGIN_VERSION = '1.0.1';
+const PLUGIN_VERSION = '1.0.2';
 const PLUGIN_SLUG = 'webmaster-monitor';
 const PLUGIN_NAME = 'Webmaster Monitor';
 
@@ -39,6 +39,11 @@ const pluginInfo = {
       </ol>
     `,
     changelog: `
+      <h4>1.0.2</h4>
+      <ul>
+        <li>Aggiunto endpoint per applicare aggiornamenti da remoto</li>
+        <li>Supporto aggiornamento plugin, temi e core WordPress</li>
+      </ul>
       <h4>1.0.1</h4>
       <ul>
         <li>Aggiunto sistema di auto-update</li>
