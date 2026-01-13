@@ -28,9 +28,12 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Info, ExternalLink, CheckCircle2, Building2 } from 'lucide-react';
+import { Loader2, Info, ExternalLink, CheckCircle2, Building2, Tag, X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import Link from 'next/link';
 import type { Client } from '@/types';
+import { PREDEFINED_TAGS, getTagConfig } from '@/lib/constants/tags';
 
 const siteFormSchema = z.object({
   name: z.string().min(1, 'Nome richiesto'),
@@ -44,13 +47,14 @@ const siteFormSchema = z.object({
   performance_check_enabled: z.boolean(),
   updates_check_enabled: z.boolean(),
   ecommerce_check_enabled: z.boolean(),
+  tags: z.array(z.string()).optional(),
   notes: z.string().optional(),
 });
 
 type SiteFormValues = z.infer<typeof siteFormSchema>;
 
 interface SiteFormProps {
-  initialData?: Partial<SiteFormValues & { client_id?: string | null }>;
+  initialData?: Partial<SiteFormValues & { client_id?: string | null; tags?: string[] }>;
   siteId?: string;
 }
 
@@ -94,6 +98,7 @@ export function SiteForm({ initialData, siteId }: SiteFormProps) {
       performance_check_enabled: initialData?.performance_check_enabled ?? true,
       updates_check_enabled: initialData?.updates_check_enabled ?? true,
       ecommerce_check_enabled: initialData?.ecommerce_check_enabled ?? false,
+      tags: initialData?.tags || [],
       notes: initialData?.notes || '',
     },
   });
@@ -237,6 +242,54 @@ export function SiteForm({ initialData, siteId }: SiteFormProps) {
                   <FormDescription className="text-xs">
                     Associa questo sito a un cliente per una gestione organizzata
                   </FormDescription>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="tags"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm">Tag</FormLabel>
+                  <FormDescription className="text-xs mb-2">
+                    Seleziona uno o piu tag per categorizzare il sito
+                  </FormDescription>
+                  <div className="flex flex-wrap gap-2">
+                    {PREDEFINED_TAGS.map((tag) => {
+                      const isSelected = field.value?.includes(tag.value);
+                      const config = getTagConfig(tag.value);
+                      return (
+                        <button
+                          key={tag.value}
+                          type="button"
+                          onClick={() => {
+                            const currentTags = field.value || [];
+                            if (isSelected) {
+                              field.onChange(currentTags.filter(t => t !== tag.value));
+                            } else {
+                              field.onChange([...currentTags, tag.value]);
+                            }
+                          }}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-all ${
+                            isSelected
+                              ? `${config.bgColor} ${config.color} ${config.borderColor} ring-2 ring-offset-1 ring-primary/30`
+                              : 'bg-background hover:bg-muted border-input'
+                          }`}
+                        >
+                          <Tag className="h-3 w-3" />
+                          {tag.label}
+                          {isSelected && <X className="h-3 w-3" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {field.value && field.value.length > 0 && (
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      Tag selezionati: {field.value.length}
+                    </div>
+                  )}
                   <FormMessage className="text-xs" />
                 </FormItem>
               )}

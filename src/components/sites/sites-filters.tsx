@@ -11,8 +11,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { SitesGrid } from '@/components/dashboard/sites-grid';
-import { Search, Building2, Trash2, Loader2, RefreshCw } from 'lucide-react';
+import { Search, Building2, Trash2, Loader2, RefreshCw, Tag } from 'lucide-react';
 import type { SiteWithStatus, Client } from '@/types';
+import { PREDEFINED_TAGS, getTagConfig, getUniqueTags } from '@/lib/constants/tags';
 
 interface SitesFiltersProps {
   sites: SiteWithStatus[];
@@ -22,6 +23,7 @@ interface SitesFiltersProps {
 export function SitesFilters({ sites, clients }: SitesFiltersProps) {
   const [search, setSearch] = useState('');
   const [clientFilter, setClientFilter] = useState<string>('all');
+  const [tagFilter, setTagFilter] = useState<string>('all');
   const [isCleaningUp, setIsCleaningUp] = useState(false);
   const [cleanupMessage, setCleanupMessage] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -87,6 +89,9 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
     }
   };
 
+  // Get unique tags from sites for the filter dropdown
+  const availableTags = useMemo(() => getUniqueTags(sites), [sites]);
+
   const filteredSites = useMemo(() => {
     return sites.filter(site => {
       // Search filter
@@ -95,7 +100,8 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
         const matchesSearch =
           site.name.toLowerCase().includes(searchLower) ||
           site.url.toLowerCase().includes(searchLower) ||
-          site.client_name?.toLowerCase().includes(searchLower);
+          site.client_name?.toLowerCase().includes(searchLower) ||
+          site.tags?.some(tag => tag.toLowerCase().includes(searchLower));
         if (!matchesSearch) return false;
       }
 
@@ -108,9 +114,18 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
         }
       }
 
+      // Tag filter
+      if (tagFilter && tagFilter !== 'all') {
+        if (tagFilter === 'no_tags') {
+          if (site.tags && site.tags.length > 0) return false;
+        } else {
+          if (!site.tags || !site.tags.includes(tagFilter)) return false;
+        }
+      }
+
       return true;
     });
-  }, [sites, search, clientFilter]);
+  }, [sites, search, clientFilter, tagFilter]);
 
   return (
     <div className="space-y-4">
@@ -150,6 +165,34 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
             </SelectContent>
           </Select>
         )}
+
+        <Select value={tagFilter} onValueChange={setTagFilter}>
+          <SelectTrigger className="w-full sm:w-[180px] h-9 sm:h-10">
+            <div className="flex items-center gap-2">
+              <Tag className="h-4 w-4 text-muted-foreground" />
+              <SelectValue placeholder="Filtra per tag" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tutti i tag</SelectItem>
+            <SelectItem value="no_tags">Senza tag</SelectItem>
+            {PREDEFINED_TAGS.map((tag) => (
+              <SelectItem key={tag.value} value={tag.value}>
+                <span className={`inline-flex items-center gap-1.5 ${tag.color}`}>
+                  <span className={`w-2 h-2 rounded-full ${tag.bgColor}`} />
+                  {tag.label}
+                </span>
+              </SelectItem>
+            ))}
+            {availableTags
+              .filter(tag => !PREDEFINED_TAGS.some(pt => pt.value === tag))
+              .map((tag) => (
+                <SelectItem key={tag} value={tag}>
+                  {tag}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
 
         <Button
           variant="outline"
@@ -195,7 +238,7 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
       )}
 
       {/* Results info */}
-      {(search || clientFilter !== 'all') && (
+      {(search || clientFilter !== 'all' || tagFilter !== 'all') && (
         <p className="text-sm text-muted-foreground">
           {filteredSites.length} {filteredSites.length === 1 ? 'sito trovato' : 'siti trovati'}
           {search && ` per "${search}"`}
@@ -203,6 +246,10 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
             ` del cliente ${clients.find(c => c.id === clientFilter)?.name}`
           )}
           {clientFilter === 'no_client' && ' senza cliente associato'}
+          {tagFilter !== 'all' && tagFilter !== 'no_tags' && (
+            ` con tag "${getTagConfig(tagFilter).label}"`
+          )}
+          {tagFilter === 'no_tags' && ' senza tag'}
         </p>
       )}
 

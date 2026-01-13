@@ -27,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { SiteWithStatus } from '@/types';
+import { getTagConfig } from '@/lib/constants/tags';
 
 interface SitesGridProps {
   sites: SiteWithStatus[];
@@ -92,6 +93,18 @@ function UpdatesBadge({ pending, critical }: { pending: number; critical?: numbe
   );
 }
 
+function TagBadge({ tag }: { tag: string }) {
+  const config = getTagConfig(tag);
+  return (
+    <Badge
+      variant="outline"
+      className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 ${config.color} ${config.bgColor} ${config.borderColor}`}
+    >
+      {config.label}
+    </Badge>
+  );
+}
+
 function StatItem({ icon: Icon, label, value, color }: { icon: any; label: string; value: string; color?: string }) {
   return (
     <div className="flex flex-col items-center gap-0.5 sm:gap-1">
@@ -151,6 +164,18 @@ function SiteCard({ site }: { site: SiteWithStatus }) {
                   <Building2 className="h-3 w-3 flex-shrink-0" />
                   <span className="truncate">{site.client_name}</span>
                 </Link>
+              )}
+              {site.tags && site.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {site.tags.slice(0, 3).map((tag) => (
+                    <TagBadge key={tag} tag={tag} />
+                  ))}
+                  {site.tags.length > 3 && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 text-muted-foreground">
+                      +{site.tags.length - 3}
+                    </Badge>
+                  )}
+                </div>
               )}
             </div>
             <DropdownMenu>

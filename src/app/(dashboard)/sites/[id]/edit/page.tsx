@@ -18,6 +18,7 @@ interface SiteData {
   performance_check_enabled: boolean;
   updates_check_enabled: boolean;
   ecommerce_check_enabled: boolean;
+  tags: string[];
   notes: string | null;
 }
 
@@ -122,6 +123,7 @@ export default function EditSitePage({
           performance_check_enabled: site.performance_check_enabled,
           updates_check_enabled: site.updates_check_enabled,
           ecommerce_check_enabled: site.ecommerce_check_enabled,
+          tags: site.tags || [],
           notes: site.notes || '',
         }}
       />
