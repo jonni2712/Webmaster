@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (type && type !== 'all') {
-    query = query.eq('type', type);
+    query = query.eq('trigger_type', type);
   }
 
   const { data, error, count } = await query

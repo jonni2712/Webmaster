@@ -29,11 +29,11 @@ interface Alert {
   site_id: string;
   site_name: string;
   site_url: string;
-  type: 'uptime' | 'ssl' | 'performance' | 'update' | 'ecommerce';
+  trigger_type: 'site_down' | 'ssl_expiring' | 'ssl_invalid' | 'performance_degraded' | 'update_available' | 'update_critical' | 'ecommerce_anomaly';
   severity: 'critical' | 'warning' | 'info';
   title: string;
   message: string;
-  status: 'active' | 'acknowledged' | 'resolved';
+  status: 'triggered' | 'acknowledged' | 'resolved';
   created_at: string;
   acknowledged_at: string | null;
   resolved_at: string | null;
@@ -47,12 +47,14 @@ const severityConfig = {
   info: { color: 'bg-blue-500', icon: Bell, label: 'Info' },
 };
 
-const typeLabels = {
-  uptime: 'Uptime',
-  ssl: 'SSL',
-  performance: 'Performance',
-  update: 'Aggiornamenti',
-  ecommerce: 'E-commerce',
+const typeLabels: Record<string, string> = {
+  site_down: 'Uptime',
+  ssl_expiring: 'SSL',
+  ssl_invalid: 'SSL',
+  performance_degraded: 'Performance',
+  update_available: 'Aggiornamenti',
+  update_critical: 'Aggiornamenti',
+  ecommerce_anomaly: 'E-commerce',
 };
 
 export default function AlertsPage() {
@@ -109,7 +111,7 @@ export default function AlertsPage() {
     }
   };
 
-  const activeAlerts = alerts.filter((a) => a.status === 'active').length;
+  const activeAlerts = alerts.filter((a) => a.status === 'triggered').length;
   const acknowledgedAlerts = alerts.filter(
     (a) => a.status === 'acknowledged'
   ).length;
@@ -170,7 +172,7 @@ export default function AlertsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tutti</SelectItem>
-              <SelectItem value="active">Attivi</SelectItem>
+              <SelectItem value="triggered">Attivi</SelectItem>
               <SelectItem value="acknowledged">In gestione</SelectItem>
               <SelectItem value="resolved">Risolti</SelectItem>
             </SelectContent>
@@ -182,11 +184,10 @@ export default function AlertsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tutti i tipi</SelectItem>
-            <SelectItem value="uptime">Uptime</SelectItem>
-            <SelectItem value="ssl">SSL</SelectItem>
-            <SelectItem value="performance">Performance</SelectItem>
-            <SelectItem value="update">Aggiornamenti</SelectItem>
-            <SelectItem value="ecommerce">E-commerce</SelectItem>
+            <SelectItem value="site_down">Uptime</SelectItem>
+            <SelectItem value="ssl_expiring">SSL</SelectItem>
+            <SelectItem value="update_critical">Aggiornamenti</SelectItem>
+            <SelectItem value="ecommerce_anomaly">E-commerce</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -233,11 +234,11 @@ export default function AlertsPage() {
                         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
                           <span className="font-semibold text-sm sm:text-base">{alert.title}</span>
                           <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2">
-                            {typeLabels[alert.type]}
+                            {typeLabels[alert.trigger_type] || alert.trigger_type}
                           </Badge>
                           <Badge
                             variant={
-                              alert.status === 'active'
+                              alert.status === 'triggered'
                                 ? 'destructive'
                                 : alert.status === 'acknowledged'
                                   ? 'secondary'
@@ -245,7 +246,7 @@ export default function AlertsPage() {
                             }
                             className="text-[10px] sm:text-xs px-1.5 sm:px-2"
                           >
-                            {alert.status === 'active'
+                            {alert.status === 'triggered'
                               ? 'Attivo'
                               : alert.status === 'acknowledged'
                                 ? 'In gestione'
@@ -281,7 +282,7 @@ export default function AlertsPage() {
                       </div>
                     </div>
                     <div className="flex gap-2 ml-7 sm:ml-0 flex-shrink-0">
-                      {alert.status === 'active' && (
+                      {alert.status === 'triggered' && (
                         <Button
                           size="sm"
                           variant="outline"

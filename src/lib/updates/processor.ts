@@ -291,7 +291,7 @@ async function generateUpdateAlert(
       .from('alerts')
       .select('id')
       .eq('site_id', siteId)
-      .eq('type', 'update_critical')
+      .eq('trigger_type', 'update_critical')
       .gte('created_at', oneDayAgo)
       .limit(1);
 
@@ -306,7 +306,7 @@ async function generateUpdateAlert(
       .insert({
         tenant_id: tenantId,
         site_id: siteId,
-        type: 'update_critical',
+        trigger_type: 'update_critical',
         severity: criticalCount > 0 ? 'warning' : 'info',
         title: criticalCount > 0
           ? `${criticalCount} aggiornamenti critici disponibili`
@@ -325,6 +325,8 @@ async function generateUpdateAlert(
             isCritical: u.is_critical,
           })),
         },
+        status: 'triggered',
+        channels_notified: [],
       })
       .select()
       .single();
