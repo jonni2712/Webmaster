@@ -141,8 +141,10 @@ export async function processWordPressUpdates({
 
   // Process plugin updates
   if (wpData.plugins?.list) {
+    console.log(`[Updates] Processing ${wpData.plugins.list.length} plugins, ${wpData.plugins.list.filter(p => p.update_available).length} have updates`);
     for (const plugin of wpData.plugins.list) {
       if (plugin.update_available && plugin.new_version) {
+        console.log(`[Updates] Plugin update: ${plugin.slug} ${plugin.version} -> ${plugin.new_version}`);
         const isCritical = isCriticalUpdate(
           'plugin',
           plugin.slug,
@@ -168,8 +170,10 @@ export async function processWordPressUpdates({
 
   // Process theme updates
   if (wpData.themes?.list) {
+    console.log(`[Updates] Processing ${wpData.themes.list.length} themes, ${wpData.themes.list.filter(t => t.update_available).length} have updates`);
     for (const theme of wpData.themes.list) {
       if (theme.update_available && theme.new_version) {
+        console.log(`[Updates] Theme update: ${theme.slug} ${theme.version} -> ${theme.new_version}`);
         const isCritical = isCriticalUpdate(
           'theme',
           theme.slug,
@@ -192,6 +196,8 @@ export async function processWordPressUpdates({
       }
     }
   }
+
+  console.log(`[Updates] Total updates to process: ${updates.length} (core: ${updates.filter(u => u.update_type === 'core').length}, plugins: ${updates.filter(u => u.update_type === 'plugin').length}, themes: ${updates.filter(u => u.update_type === 'theme').length})`);
 
   // Get current pending updates for this site
   const { data: existingUpdates } = await supabase

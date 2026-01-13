@@ -43,6 +43,38 @@ export async function GET(request: NextRequest) {
       .order('site_id')
       .order('checked_at', { ascending: false });
 
+    // Get wp_info from sites to see raw plugin data
+    const { data: sitesWithWpInfo } = await supabase
+      .from('sites')
+      .select('id, name, wp_info')
+      .in('id', siteIds);
+
+    const wpInfoBySite: Record<string, any> = {};
+    for (const site of sitesWithWpInfo || []) {
+      if (site.wp_info) {
+        const plugins = site.wp_info.plugins?.list || [];
+        const themes = site.wp_info.themes?.list || [];
+        wpInfoBySite[site.name] = {
+          pluginsWithUpdates: plugins.filter((p: any) => p.update_available).map((p: any) => ({
+            slug: p.slug,
+            name: p.name,
+            version: p.version,
+            new_version: p.new_version,
+            update_available: p.update_available,
+          })),
+          themesWithUpdates: themes.filter((t: any) => t.update_available).map((t: any) => ({
+            slug: t.slug,
+            name: t.name,
+            version: t.version,
+            new_version: t.new_version,
+            update_available: t.update_available,
+          })),
+          totalPlugins: plugins.length,
+          totalThemes: themes.length,
+        };
+      }
+    }
+
     // Group by site
     const bySite: Record<string, any[]> = {};
     for (const update of allUpdates || []) {
@@ -64,6 +96,7 @@ export async function GET(request: NextRequest) {
       totalRecords: allUpdates?.length || 0,
       availableCount: allUpdates?.filter(u => u.status === 'available').length || 0,
       bySite,
+      wpInfoBySite,
     });
   } catch (error) {
     console.error('GET /api/updates/debug error:', error);
