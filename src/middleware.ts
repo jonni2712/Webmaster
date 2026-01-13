@@ -43,6 +43,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Salta controllo per plugin info (endpoint pubblico per update checker)
+  if (pathname.startsWith('/api/plugin')) {
+    return NextResponse.next();
+  }
+
   // Controlla se è un file statico pubblico (solo estensioni specifiche)
   const isPublicStaticFile = publicFileExtensions.some(ext =>
     pathname.toLowerCase().endsWith(ext)
