@@ -162,7 +162,7 @@ export function ActivityItem({ activity }: ActivityItemProps) {
 
       <Avatar className="h-8 w-8">
         <AvatarFallback className="text-xs">
-          {getInitials(activity.user_name, activity.user_email)}
+          {getInitials(activity.user_name, activity.user_email || '')}
         </AvatarFallback>
       </Avatar>
     </div>

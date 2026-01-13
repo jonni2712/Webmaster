@@ -67,7 +67,7 @@ export function MemberSitesDialog({
       setHasFullAccess(data.member.hasFullAccess);
 
       // Set initially selected sites
-      const accessedIds = new Set(
+      const accessedIds = new Set<string>(
         data.sites.filter((s: SiteAccess) => s.hasAccess).map((s: SiteAccess) => s.id)
       );
       setSelectedSites(accessedIds);
