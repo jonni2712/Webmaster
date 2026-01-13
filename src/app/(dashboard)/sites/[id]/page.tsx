@@ -32,9 +32,16 @@ import {
   Palette,
   ChevronDown,
   ChevronUp,
+  BarChart3,
+  Download,
 } from 'lucide-react';
 import { AlertSettingsForm } from '@/components/sites/alert-settings-form';
 import { UpdatesList } from '@/components/sites/updates-list';
+import { DateRangeSelector, getDateRangeFromPreset, type DateRange, type DateRangePreset } from '@/components/reports/date-range-selector';
+import { UptimeChart } from '@/components/reports/uptime-chart';
+import { ResponseTimeChart } from '@/components/reports/response-time-chart';
+import { PerformanceChart } from '@/components/reports/performance-chart';
+import { WebVitalsChart } from '@/components/reports/web-vitals-chart';
 import type { SiteAlertSettings } from '@/types/database';
 import { formatDistanceToNow, format } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -181,6 +188,11 @@ export default function SiteDetailPage({
   const [syncing, setSyncing] = useState(false);
   const [pluginsExpanded, setPluginsExpanded] = useState(false);
   const [themesExpanded, setThemesExpanded] = useState(false);
+  // Report state
+  const [reportDateRange, setReportDateRange] = useState<DateRange>(() => getDateRangeFromPreset('30d'));
+  const [uptimeReportData, setUptimeReportData] = useState<any>(null);
+  const [performanceReportData, setPerformanceReportData] = useState<any>(null);
+  const [reportLoading, setReportLoading] = useState(false);
 
   useEffect(() => {
     fetchSite();
@@ -226,6 +238,102 @@ export default function SiteDetailPage({
     } catch (error) {
       console.error('Error fetching checks:', error);
     }
+  };
+
+  const fetchReportData = async (range: DateRange) => {
+    setReportLoading(true);
+    const startISO = range.start.toISOString();
+    const endISO = range.end.toISOString();
+
+    try {
+      const [uptimeRes, perfRes] = await Promise.all([
+        fetch(`/api/sites/${id}/reports/uptime?start=${startISO}&end=${endISO}`),
+        fetch(`/api/sites/${id}/reports/performance?start=${startISO}&end=${endISO}`),
+      ]);
+
+      if (uptimeRes.ok) {
+        const data = await uptimeRes.json();
+        setUptimeReportData(data);
+      }
+      if (perfRes.ok) {
+        const data = await perfRes.json();
+        setPerformanceReportData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching report data:', error);
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const handleDateRangeChange = (range: DateRange) => {
+    setReportDateRange(range);
+    fetchReportData(range);
+  };
+
+  const exportCSV = () => {
+    if (!uptimeReportData?.data || !performanceReportData?.data) {
+      toast.error('Nessun dato disponibile per l\'esportazione');
+      return;
+    }
+
+    // Merge uptime and performance data by date
+    const dataMap = new Map<string, any>();
+
+    uptimeReportData.data.forEach((d: any) => {
+      dataMap.set(d.date, {
+        date: d.date,
+        uptime_percentage: d.uptime_percentage,
+        total_checks: d.total_checks,
+        avg_response_time: d.avg_response_time,
+      });
+    });
+
+    performanceReportData.data.forEach((d: any) => {
+      const existing = dataMap.get(d.date) || { date: d.date };
+      dataMap.set(d.date, {
+        ...existing,
+        performance_score: d.avg_score,
+        lcp: d.avg_lcp,
+        fid: d.avg_fid,
+        cls: d.avg_cls,
+        fcp: d.avg_fcp,
+        ttfb: d.avg_ttfb,
+      });
+    });
+
+    const rows = Array.from(dataMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+
+    // Create CSV
+    const headers = ['Data', 'Uptime %', 'Check Totali', 'Tempo Risposta (ms)', 'Performance Score', 'LCP (ms)', 'FID (ms)', 'CLS', 'FCP (ms)', 'TTFB (ms)'];
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(r => [
+        r.date,
+        r.uptime_percentage ?? '',
+        r.total_checks ?? '',
+        r.avg_response_time ?? '',
+        r.performance_score ?? '',
+        r.lcp ?? '',
+        r.fid ?? '',
+        r.cls ?? '',
+        r.fcp ?? '',
+        r.ttfb ?? '',
+      ].join(','))
+    ].join('\n');
+
+    // Download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `report-${site?.name || 'site'}-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success('Report esportato con successo');
   };
 
   const handleDelete = async () => {
@@ -457,6 +565,18 @@ export default function SiteDetailPage({
             <Zap className="h-3 w-3 sm:h-4 sm:w-4" />
             <span className="hidden xs:inline">Perf.</span>
           </TabsTrigger>
+          <TabsTrigger
+            value="report"
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3"
+            onClick={() => {
+              if (!uptimeReportData && !reportLoading) {
+                fetchReportData(reportDateRange);
+              }
+            }}
+          >
+            <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Report</span>
+          </TabsTrigger>
           {site.platform === 'wordpress' && (
             <TabsTrigger value="updates" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
               <Package className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -667,6 +787,242 @@ export default function SiteDetailPage({
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Report Tab */}
+        <TabsContent value="report">
+          <div className="space-y-4">
+            {/* Report Header with Date Selector */}
+            <Card>
+              <CardHeader className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="text-base sm:text-lg">Report Analitici</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">
+                      Analisi dettagliata delle prestazioni del sito
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <DateRangeSelector
+                      value={reportDateRange}
+                      onChange={handleDateRangeChange}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={exportCSV}
+                      disabled={!uptimeReportData?.data?.length && !performanceReportData?.data?.length}
+                    >
+                      <Download className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">CSV</span>
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+
+            {reportLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <>
+                {/* Summary Stats */}
+                {(uptimeReportData?.summary || performanceReportData?.summary) && (
+                  <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+                    {uptimeReportData?.summary && (
+                      <>
+                        <Card>
+                          <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6 sm:pb-2">
+                            <CardTitle className="text-xs sm:text-sm font-medium">Uptime Medio</CardTitle>
+                            <Activity className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+                          </CardHeader>
+                          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                            <div className={`text-xl sm:text-2xl font-bold ${
+                              uptimeReportData.summary.average_uptime >= 99.5 ? 'text-green-500' :
+                              uptimeReportData.summary.average_uptime >= 95 ? 'text-yellow-500' : 'text-red-500'
+                            }`}>
+                              {uptimeReportData.summary.average_uptime.toFixed(2)}%
+                            </div>
+                            <p className="text-[10px] sm:text-xs text-muted-foreground">
+                              {uptimeReportData.summary.total_checks} controlli totali
+                            </p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6 sm:pb-2">
+                            <CardTitle className="text-xs sm:text-sm font-medium">Risposta Media</CardTitle>
+                            <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+                          </CardHeader>
+                          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                            <div className="text-xl sm:text-2xl font-bold">
+                              {uptimeReportData.summary.avg_response_time}ms
+                            </div>
+                            <p className="text-[10px] sm:text-xs text-muted-foreground">
+                              P95: {uptimeReportData.summary.p95_response_time}ms
+                            </p>
+                          </CardContent>
+                        </Card>
+                      </>
+                    )}
+                    {performanceReportData?.summary && (
+                      <>
+                        <Card>
+                          <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6 sm:pb-2">
+                            <CardTitle className="text-xs sm:text-sm font-medium">Performance</CardTitle>
+                            <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+                          </CardHeader>
+                          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                            <div className={`text-xl sm:text-2xl font-bold ${
+                              performanceReportData.summary.average_score >= 90 ? 'text-green-500' :
+                              performanceReportData.summary.average_score >= 50 ? 'text-yellow-500' : 'text-red-500'
+                            }`}>
+                              {performanceReportData.summary.average_score}
+                            </div>
+                            <p className="text-[10px] sm:text-xs text-muted-foreground">
+                              Trend: {performanceReportData.summary.score_trend === 'improving' ? 'In miglioramento' :
+                                      performanceReportData.summary.score_trend === 'degrading' ? 'In peggioramento' : 'Stabile'}
+                            </p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6 sm:pb-2">
+                            <CardTitle className="text-xs sm:text-sm font-medium">LCP</CardTitle>
+                            <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+                          </CardHeader>
+                          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+                            <div className={`text-xl sm:text-2xl font-bold ${
+                              performanceReportData.summary.lcp_status === 'good' ? 'text-green-500' :
+                              performanceReportData.summary.lcp_status === 'needs-improvement' ? 'text-yellow-500' : 'text-red-500'
+                            }`}>
+                              {performanceReportData.summary.avg_lcp}ms
+                            </div>
+                            <p className="text-[10px] sm:text-xs text-muted-foreground">
+                              Largest Contentful Paint
+                            </p>
+                          </CardContent>
+                        </Card>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Uptime Chart */}
+                <Card>
+                  <CardHeader className="p-4 sm:p-6">
+                    <CardTitle className="text-base sm:text-lg">Uptime nel Tempo</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">
+                      Percentuale di disponibilita' giornaliera
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                    <UptimeChart
+                      data={uptimeReportData?.data || []}
+                      slaTarget={99.9}
+                      height={300}
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* Response Time Chart */}
+                <Card>
+                  <CardHeader className="p-4 sm:p-6">
+                    <CardTitle className="text-base sm:text-lg">Tempi di Risposta</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">
+                      Media, minimo e massimo tempi di risposta
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                    <ResponseTimeChart
+                      data={uptimeReportData?.data || []}
+                      height={300}
+                      showRange={true}
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* Performance Score Chart */}
+                <Card>
+                  <CardHeader className="p-4 sm:p-6">
+                    <CardTitle className="text-base sm:text-lg">Performance Score</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">
+                      Punteggio complessivo delle prestazioni
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                    <PerformanceChart
+                      data={performanceReportData?.data || []}
+                      height={300}
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* Web Vitals Charts */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Card>
+                    <CardHeader className="p-4 sm:p-6">
+                      <CardTitle className="text-base sm:text-lg">LCP (Largest Contentful Paint)</CardTitle>
+                      <CardDescription className="text-xs sm:text-sm">
+                        Tempo di caricamento dell'elemento principale
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                      <WebVitalsChart
+                        data={performanceReportData?.data || []}
+                        metric="lcp"
+                        height={250}
+                      />
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="p-4 sm:p-6">
+                      <CardTitle className="text-base sm:text-lg">FID (First Input Delay)</CardTitle>
+                      <CardDescription className="text-xs sm:text-sm">
+                        Tempo di risposta alla prima interazione
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                      <WebVitalsChart
+                        data={performanceReportData?.data || []}
+                        metric="fid"
+                        height={250}
+                      />
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="p-4 sm:p-6">
+                      <CardTitle className="text-base sm:text-lg">CLS (Cumulative Layout Shift)</CardTitle>
+                      <CardDescription className="text-xs sm:text-sm">
+                        Stabilita' visiva della pagina
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                      <WebVitalsChart
+                        data={performanceReportData?.data || []}
+                        metric="cls"
+                        height={250}
+                      />
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="p-4 sm:p-6">
+                      <CardTitle className="text-base sm:text-lg">TTFB (Time To First Byte)</CardTitle>
+                      <CardDescription className="text-xs sm:text-sm">
+                        Tempo di risposta del server
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                      <WebVitalsChart
+                        data={performanceReportData?.data || []}
+                        metric="ttfb"
+                        height={250}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
+            )}
+          </div>
         </TabsContent>
 
         {/* Updates Tab */}
