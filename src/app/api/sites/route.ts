@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { processWordPressUpdates } from '@/lib/updates/processor';
 import { z } from 'zod';
 
 const siteSchema = z.object({
@@ -169,6 +170,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Auto-sync if WordPress site with API key
+    if (data && data.platform === 'wordpress' && api_key) {
+      // Run sync in background (don't wait for it)
+      syncWordPressSite(data.id, data.url, api_key, user.current_tenant_id).catch(err => {
+        console.error('Auto-sync error for new site:', err);
+      });
+    }
+
     return NextResponse.json(data, { status: 201 });
   } catch (error) {
     console.error('POST /api/sites error:', error);
@@ -176,5 +185,78 @@ export async function POST(request: NextRequest) {
       { error: 'Errore interno del server' },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * Auto-sync WordPress site after creation
+ */
+async function syncWordPressSite(
+  siteId: string,
+  siteUrl: string,
+  apiKey: string,
+  tenantId: string
+) {
+  try {
+    const url = siteUrl.replace(/\/$/, '');
+    const apiUrl = `${url}/wp-json/webmaster-monitor/v1/status`;
+
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'X-WM-API-Key': apiKey,
+        'User-Agent': 'Webmaster-Monitor/1.0',
+      },
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (!response.ok) {
+      console.log(`Auto-sync failed for site ${siteId}: HTTP ${response.status}`);
+      return;
+    }
+
+    const wpData = await response.json();
+    const supabase = createAdminClient();
+
+    // Update site with synced data
+    await supabase
+      .from('sites')
+      .update({
+        last_sync: new Date().toISOString(),
+        wp_version: wpData.wordpress?.core?.version,
+        php_version: wpData.server?.php?.version,
+        server_info: {
+          php: wpData.server?.php,
+          database: wpData.server?.database,
+          server: wpData.server?.server,
+          disk: wpData.server?.disk,
+        },
+        wp_info: {
+          core: wpData.wordpress?.core,
+          plugins: wpData.wordpress?.plugins,
+          themes: wpData.wordpress?.themes,
+          site_health: wpData.wordpress?.site_health,
+        },
+        plugin_version: wpData.plugin_version,
+        status: 'online',
+      })
+      .eq('id', siteId);
+
+    // Process updates
+    if (wpData.wordpress) {
+      await processWordPressUpdates({
+        siteId,
+        tenantId,
+        wpData: {
+          core: wpData.wordpress.core,
+          plugins: wpData.wordpress.plugins,
+          themes: wpData.wordpress.themes,
+        },
+      });
+    }
+
+    console.log(`Auto-sync completed for new site ${siteId}`);
+  } catch (err) {
+    console.error(`Auto-sync error for site ${siteId}:`, err);
   }
 }
