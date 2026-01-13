@@ -33,13 +33,34 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
       const data = await res.json();
       if (data.success) {
         setCleanupMessage(`Rimossi ${data.totalDeleted} duplicati. Ricarica la pagina.`);
-        // Auto-reload after 2 seconds
         setTimeout(() => window.location.reload(), 2000);
       } else {
         setCleanupMessage(`Errore: ${data.error}`);
       }
     } catch (error) {
       setCleanupMessage('Errore durante la pulizia');
+    } finally {
+      setIsCleaningUp(false);
+    }
+  };
+
+  const handleResetUpdates = async () => {
+    if (!confirm('Vuoi eliminare TUTTI i record degli aggiornamenti? Dovrai rifare il sync per ripopolarli.')) {
+      return;
+    }
+    setIsCleaningUp(true);
+    setCleanupMessage(null);
+    try {
+      const res = await fetch('/api/updates/debug', { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setCleanupMessage('Tutti i record eliminati. Ricarica la pagina e fai sync.');
+        setTimeout(() => window.location.reload(), 2000);
+      } else {
+        setCleanupMessage(`Errore: ${data.error}`);
+      }
+    } catch (error) {
+      setCleanupMessage('Errore durante il reset');
     } finally {
       setIsCleaningUp(false);
     }
@@ -113,7 +134,7 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
           variant="outline"
           size="sm"
           className="h-9 sm:h-10"
-          onClick={handleCleanupDuplicates}
+          onClick={handleResetUpdates}
           disabled={isCleaningUp}
         >
           {isCleaningUp ? (
@@ -121,7 +142,7 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
           ) : (
             <Trash2 className="h-4 w-4 sm:mr-2" />
           )}
-          <span className="hidden sm:inline">Pulisci duplicati</span>
+          <span className="hidden sm:inline">Reset aggiornamenti</span>
         </Button>
       </div>
 
