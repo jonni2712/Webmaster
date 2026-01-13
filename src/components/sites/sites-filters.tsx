@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -10,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { SitesGrid } from '@/components/dashboard/sites-grid';
-import { Search, Building2 } from 'lucide-react';
+import { Search, Building2, Trash2, Loader2 } from 'lucide-react';
 import type { SiteWithStatus, Client } from '@/types';
 
 interface SitesFiltersProps {
@@ -21,6 +22,28 @@ interface SitesFiltersProps {
 export function SitesFilters({ sites, clients }: SitesFiltersProps) {
   const [search, setSearch] = useState('');
   const [clientFilter, setClientFilter] = useState<string>('all');
+  const [isCleaningUp, setIsCleaningUp] = useState(false);
+  const [cleanupMessage, setCleanupMessage] = useState<string | null>(null);
+
+  const handleCleanupDuplicates = async () => {
+    setIsCleaningUp(true);
+    setCleanupMessage(null);
+    try {
+      const res = await fetch('/api/updates/cleanup', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setCleanupMessage(`Rimossi ${data.totalDeleted} duplicati. Ricarica la pagina.`);
+        // Auto-reload after 2 seconds
+        setTimeout(() => window.location.reload(), 2000);
+      } else {
+        setCleanupMessage(`Errore: ${data.error}`);
+      }
+    } catch (error) {
+      setCleanupMessage('Errore durante la pulizia');
+    } finally {
+      setIsCleaningUp(false);
+    }
+  };
 
   const filteredSites = useMemo(() => {
     return sites.filter(site => {
@@ -85,7 +108,28 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
             </SelectContent>
           </Select>
         )}
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9 sm:h-10"
+          onClick={handleCleanupDuplicates}
+          disabled={isCleaningUp}
+        >
+          {isCleaningUp ? (
+            <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
+          ) : (
+            <Trash2 className="h-4 w-4 sm:mr-2" />
+          )}
+          <span className="hidden sm:inline">Pulisci duplicati</span>
+        </Button>
       </div>
+
+      {cleanupMessage && (
+        <p className={`text-sm ${cleanupMessage.includes('Errore') ? 'text-red-500' : 'text-green-600'}`}>
+          {cleanupMessage}
+        </p>
+      )}
 
       {/* Results info */}
       {(search || clientFilter !== 'all') && (
