@@ -24,9 +24,9 @@ mkdir -p lib
 mkdir -p app/api/webmaster-monitor/status
 ```
 
-Copia i file:
-- `webmaster-monitor.ts` → `lib/webmaster-monitor.ts`
-- `route.ts` → `app/api/webmaster-monitor/status/route.ts`
+Copia i file (rimuovi l'estensione `.txt`):
+- `webmaster-monitor.ts.txt` → `lib/webmaster-monitor.ts`
+- `route.ts.txt` → `app/api/webmaster-monitor/status/route.ts`
 
 ### 2. Configura le variabili d'ambiente
 
