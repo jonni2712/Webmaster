@@ -46,6 +46,7 @@ import { PerformanceChart } from '@/components/reports/performance-chart';
 import { WebVitalsChart } from '@/components/reports/web-vitals-chart';
 import { VercelConnectForm } from '@/components/sites/vercel-connect-form';
 import { VercelDeploymentsList } from '@/components/sites/vercel-deployments-list';
+import { NextJSInfoTab } from '@/components/sites/nextjs-info-tab';
 import type { SiteAlertSettings } from '@/types/database';
 import { formatDistanceToNow, format } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -593,6 +594,12 @@ export default function SiteDetailPage({
           )}
           {site.platform === 'wordpress' && (
             <TabsTrigger value="wordpress" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+              <Server className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Server</span>
+            </TabsTrigger>
+          )}
+          {site.platform === 'nextjs' && (
+            <TabsTrigger value="nextjs-info" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
               <Server className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden xs:inline">Server</span>
             </TabsTrigger>
@@ -1443,6 +1450,19 @@ export default function SiteDetailPage({
                 isConnected={!!site.vercel_project_id}
               />
             </div>
+          </TabsContent>
+        )}
+
+        {/* Next.js Server Info Tab */}
+        {site.platform === 'nextjs' && (
+          <TabsContent value="nextjs-info">
+            <NextJSInfoTab
+              siteId={site.id}
+              nextjsInfo={site.wp_info as any}
+              serverInfo={site.server_info as any}
+              lastSync={site.last_sync || null}
+              apiKeyConfigured={!!site.api_key_encrypted}
+            />
           </TabsContent>
         )}
 
