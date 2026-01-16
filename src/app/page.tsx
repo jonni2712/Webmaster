@@ -428,19 +428,17 @@ export default function LandingPage() {
             <div>
               <h4 className="font-semibold mb-4">Prodotto</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="#features" className="hover:text-foreground">Funzionalità</Link></li>
+                <li><Link href="#features" className="hover:text-foreground">Funzionalita</Link></li>
                 <li><Link href="#pricing" className="hover:text-foreground">Prezzi</Link></li>
-                <li><Link href="/docs" className="hover:text-foreground">Documentazione</Link></li>
-                <li><Link href="/changelog" className="hover:text-foreground">Changelog</Link></li>
+                <li><Link href="#benefits" className="hover:text-foreground">Vantaggi</Link></li>
+                <li><Link href="/login" className="hover:text-foreground">Accedi</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Azienda</h4>
+              <h4 className="font-semibold mb-4">Supporto</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="/about" className="hover:text-foreground">Chi Siamo</Link></li>
-                <li><Link href="/blog" className="hover:text-foreground">Blog</Link></li>
-                <li><Link href="/careers" className="hover:text-foreground">Lavora con Noi</Link></li>
                 <li><Link href="/contact" className="hover:text-foreground">Contatti</Link></li>
+                <li><a href="mailto:support@webmaster-monitor.com" className="hover:text-foreground">Assistenza</a></li>
               </ul>
             </div>
             <div>
