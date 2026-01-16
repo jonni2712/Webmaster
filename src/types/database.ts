@@ -100,6 +100,12 @@ export interface Site {
   tags: string[];
   notes: string | null;
   alert_settings: SiteAlertSettings | null;
+  // Vercel integration (Next.js sites)
+  vercel_project_id: string | null;
+  vercel_team_id: string | null;
+  vercel_token_encrypted: string | null;
+  vercel_last_sync: string | null;
+  vercel_webhook_secret: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -202,6 +208,47 @@ export interface PSUpdate {
   applied_at: string | null;
   checked_at: string;
   created_at: string;
+}
+
+// ============================================
+// Vercel Integration Types
+// ============================================
+
+export type VercelDeploymentState =
+  | 'BUILDING'
+  | 'ERROR'
+  | 'INITIALIZING'
+  | 'QUEUED'
+  | 'READY'
+  | 'CANCELED';
+
+export type VercelDeploymentTarget = 'production' | 'preview';
+
+export interface VercelDeployment {
+  id: string;
+  site_id: string;
+  tenant_id: string;
+  deployment_id: string;
+  deployment_url: string | null;
+  state: VercelDeploymentState;
+  target: VercelDeploymentTarget | null;
+  git_branch: string | null;
+  git_commit_sha: string | null;
+  git_commit_message: string | null;
+  git_commit_author: string | null;
+  created_at: string;
+  ready_at: string | null;
+  build_duration_ms: number | null;
+  error_message: string | null;
+  meta: Record<string, unknown>;
+  synced_at: string;
+}
+
+export interface VercelProject {
+  id: string;
+  name: string;
+  framework: string | null;
+  latestDeployments: VercelDeployment[];
 }
 
 export interface EcommerceTransaction {

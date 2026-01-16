@@ -34,6 +34,7 @@ import {
   ChevronUp,
   BarChart3,
   Download,
+  Rocket,
 } from 'lucide-react';
 import { AlertSettingsForm } from '@/components/sites/alert-settings-form';
 import { UpdatesList } from '@/components/sites/updates-list';
@@ -43,6 +44,8 @@ import { UptimeChart } from '@/components/reports/uptime-chart';
 import { ResponseTimeChart } from '@/components/reports/response-time-chart';
 import { PerformanceChart } from '@/components/reports/performance-chart';
 import { WebVitalsChart } from '@/components/reports/web-vitals-chart';
+import { VercelConnectForm } from '@/components/sites/vercel-connect-form';
+import { VercelDeploymentsList } from '@/components/sites/vercel-deployments-list';
 import type { SiteAlertSettings } from '@/types/database';
 import { formatDistanceToNow, format } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -146,6 +149,10 @@ interface Site {
   last_sync?: string | null;
   plugin_version?: string | null;
   api_key_encrypted?: string | null;
+  // Vercel integration (Next.js)
+  vercel_project_id?: string | null;
+  vercel_team_id?: string | null;
+  vercel_last_sync?: string | null;
 }
 
 interface UptimeCheck {
@@ -600,6 +607,12 @@ export default function SiteDetailPage({
             <TabsTrigger value="security" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
               <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden xs:inline">Security</span>
+            </TabsTrigger>
+          )}
+          {site.platform === 'nextjs' && (
+            <TabsTrigger value="vercel" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+              <Rocket className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Vercel</span>
             </TabsTrigger>
           )}
           <TabsTrigger value="alerts" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
@@ -1411,6 +1424,25 @@ export default function SiteDetailPage({
         {site.platform === 'wordpress' && (
           <TabsContent value="security">
             <SecurityTab siteId={site.id} siteName={site.name} />
+          </TabsContent>
+        )}
+
+        {/* Vercel Tab (Next.js) */}
+        {site.platform === 'nextjs' && (
+          <TabsContent value="vercel">
+            <div className="space-y-4">
+              <VercelConnectForm
+                siteId={site.id}
+                isConnected={!!site.vercel_project_id}
+                projectName={site.vercel_project_id || undefined}
+                lastSync={site.vercel_last_sync || undefined}
+                onConnect={fetchSite}
+              />
+              <VercelDeploymentsList
+                siteId={site.id}
+                isConnected={!!site.vercel_project_id}
+              />
+            </div>
           </TabsContent>
         )}
 
