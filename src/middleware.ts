@@ -11,6 +11,15 @@ const publicRoutes = [
   '/forgot-password',
   '/reset-password',
   '/api/auth',
+  // Pagine legali e istituzionali
+  '/privacy',
+  '/terms',
+  '/cookies',
+  '/gdpr',
+  '/contact',
+  // SEO
+  '/sitemap.xml',
+  '/robots.txt',
 ];
 
 // Estensioni file statici pubblici (immagini, font, ecc.)
