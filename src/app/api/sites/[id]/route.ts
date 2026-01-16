@@ -151,11 +151,13 @@ export async function PUT(
     const { api_key, api_secret, client_id, alert_settings, ...updateData } = validation.data;
 
     const updatePayload: Record<string, unknown> = { ...updateData };
-    if (api_key !== undefined) {
-      updatePayload.api_key_encrypted = api_key || null;
+    // Solo aggiorna api_key se viene fornito un valore non vuoto
+    // Stringa vuota = mantieni il valore esistente
+    if (api_key !== undefined && api_key !== '') {
+      updatePayload.api_key_encrypted = api_key;
     }
-    if (api_secret !== undefined) {
-      updatePayload.api_secret_encrypted = api_secret || null;
+    if (api_secret !== undefined && api_secret !== '') {
+      updatePayload.api_secret_encrypted = api_secret;
     }
     if (client_id !== undefined) {
       updatePayload.client_id = client_id || null;

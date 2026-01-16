@@ -20,6 +20,8 @@ interface SiteData {
   ecommerce_check_enabled: boolean;
   tags: string[];
   notes: string | null;
+  api_key_encrypted: string | null;
+  api_secret_encrypted: string | null;
 }
 
 function EditFormSkeleton() {
@@ -125,6 +127,8 @@ export default function EditSitePage({
           ecommerce_check_enabled: site.ecommerce_check_enabled,
           tags: site.tags || [],
           notes: site.notes || '',
+          hasApiKey: !!site.api_key_encrypted,
+          hasApiSecret: !!site.api_secret_encrypted,
         }}
       />
     </div>

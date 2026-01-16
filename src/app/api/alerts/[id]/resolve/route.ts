@@ -43,7 +43,6 @@ export async function POST(
     .update({
       status: 'resolved',
       resolved_at: new Date().toISOString(),
-      resolved_by: session.user.id,
     })
     .eq('id', id)
     .select()

@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Info, ExternalLink, CheckCircle2, Building2, Tag, X } from 'lucide-react';
+import { Loader2, Info, ExternalLink, CheckCircle2, Building2, Tag, X, Key } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import Link from 'next/link';
@@ -54,7 +54,12 @@ const siteFormSchema = z.object({
 type SiteFormValues = z.infer<typeof siteFormSchema>;
 
 interface SiteFormProps {
-  initialData?: Partial<SiteFormValues & { client_id?: string | null; tags?: string[] }>;
+  initialData?: Partial<SiteFormValues & {
+    client_id?: string | null;
+    tags?: string[];
+    hasApiKey?: boolean;
+    hasApiSecret?: boolean;
+  }>;
   siteId?: string;
 }
 
@@ -343,10 +348,18 @@ export function SiteForm({ initialData, siteId }: SiteFormProps) {
                   <FormLabel>
                     {form.watch('platform') === 'wordpress' ? 'API Key (dal plugin)' : 'API Key'}
                   </FormLabel>
+                  {isEditing && initialData?.hasApiKey && !field.value && (
+                    <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 dark:bg-green-950/30 px-3 py-2 rounded-md border border-green-200 dark:border-green-800">
+                      <Key className="h-3.5 w-3.5 flex-shrink-0" />
+                      <span>API Key gia configurata - lascia vuoto per mantenerla oppure inserisci una nuova chiave per sostituirla</span>
+                    </div>
+                  )}
                   <FormControl>
                     <Input
                       placeholder={
-                        form.watch('platform') === 'wordpress'
+                        isEditing && initialData?.hasApiKey
+                          ? 'Lascia vuoto per mantenere l\'API attuale...'
+                          : form.watch('platform') === 'wordpress'
                           ? 'wm_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
                           : 'Inserisci API key...'
                       }
@@ -372,10 +385,20 @@ export function SiteForm({ initialData, siteId }: SiteFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>API Secret (opzionale)</FormLabel>
+                    {isEditing && initialData?.hasApiSecret && !field.value && (
+                      <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 dark:bg-green-950/30 px-3 py-2 rounded-md border border-green-200 dark:border-green-800">
+                        <Key className="h-3.5 w-3.5 flex-shrink-0" />
+                        <span>API Secret gia configurato - lascia vuoto per mantenerlo</span>
+                      </div>
+                    )}
                     <FormControl>
                       <Input
                         type="password"
-                        placeholder="Inserisci API secret..."
+                        placeholder={
+                          isEditing && initialData?.hasApiSecret
+                            ? 'Lascia vuoto per mantenere il secret attuale...'
+                            : 'Inserisci API secret...'
+                        }
                         {...field}
                       />
                     </FormControl>
