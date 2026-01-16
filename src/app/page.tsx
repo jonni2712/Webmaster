@@ -317,11 +317,11 @@ export default function LandingPage() {
               Scegli il piano più adatto alle tue esigenze. Tutti includono una prova gratuita di 14 giorni.
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto items-stretch">
             {plans.map((plan) => (
               <Card
                 key={plan.name}
-                className={`relative ${plan.popular ? 'border-primary border-2 scale-105' : ''}`}
+                className={`relative flex flex-col ${plan.popular ? 'border-primary border-2 scale-105' : ''}`}
               >
                 {plan.popular && (
                   <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -336,8 +336,8 @@ export default function LandingPage() {
                     <span className="text-muted-foreground">/mese</span>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <ul className="space-y-3">
+                <CardContent className="flex flex-col flex-grow">
+                  <ul className="space-y-3 flex-grow">
                     {plan.features.map((feature) => (
                       <li key={feature} className="flex items-center gap-2">
                         <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
@@ -345,7 +345,7 @@ export default function LandingPage() {
                       </li>
                     ))}
                   </ul>
-                  <Button className="w-full" variant={plan.popular ? 'default' : 'outline'}>
+                  <Button className="w-full mt-6" variant={plan.popular ? 'default' : 'outline'}>
                     {plan.cta}
                   </Button>
                 </CardContent>
@@ -399,7 +399,7 @@ export default function LandingPage() {
               </Button>
             </Link>
             <Link href="/login">
-              <Button size="lg" variant="outline" className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10">
+              <Button size="lg" variant="outline" className="border-primary-foreground/50 text-primary-foreground hover:bg-primary-foreground hover:text-primary">
                 Accedi <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
