@@ -10,7 +10,7 @@ import { z } from 'zod';
 const siteSchema = z.object({
   name: z.string().min(1),
   url: z.string().url(),
-  platform: z.enum(['wordpress', 'prestashop', 'other']),
+  platform: z.enum(['wordpress', 'prestashop', 'nextjs', 'other']),
   client_id: z.string().uuid().optional().nullable(),
   api_key: z.string().optional(),
   api_secret: z.string().optional(),

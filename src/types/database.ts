@@ -1,4 +1,4 @@
-export type Platform = 'wordpress' | 'prestashop' | 'other';
+export type Platform = 'wordpress' | 'prestashop' | 'nextjs' | 'other';
 export type UpdateType = 'core' | 'plugin' | 'theme';
 export type UpdateStatus = 'available' | 'applied' | 'failed' | 'ignored';
 export type AlertChannelType = 'email' | 'webhook' | 'slack' | 'telegram' | 'discord';

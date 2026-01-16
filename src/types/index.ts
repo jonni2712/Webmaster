@@ -35,7 +35,7 @@ export interface DashboardStats {
 export interface SiteFormData {
   name: string;
   url: string;
-  platform: 'wordpress' | 'prestashop' | 'other';
+  platform: 'wordpress' | 'prestashop' | 'nextjs' | 'other';
   api_endpoint?: string;
   api_key?: string;
   api_secret?: string;

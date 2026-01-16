@@ -18,7 +18,7 @@ const alertSettingsSchema = z.object({
 const updateSiteSchema = z.object({
   name: z.string().min(1).optional(),
   url: z.string().url().optional(),
-  platform: z.enum(['wordpress', 'prestashop', 'other']).optional(),
+  platform: z.enum(['wordpress', 'prestashop', 'nextjs', 'other']).optional(),
   client_id: z.string().uuid().optional().nullable(),
   api_key: z.string().optional(),
   api_secret: z.string().optional(),

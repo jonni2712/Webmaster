@@ -38,7 +38,7 @@ import { PREDEFINED_TAGS, getTagConfig } from '@/lib/constants/tags';
 const siteFormSchema = z.object({
   name: z.string().min(1, 'Nome richiesto'),
   url: z.string().url('URL non valido'),
-  platform: z.enum(['wordpress', 'prestashop', 'other']),
+  platform: z.enum(['wordpress', 'prestashop', 'nextjs', 'other']),
   client_id: z.string().optional(),
   api_key: z.string().optional(),
   api_secret: z.string().optional(),
@@ -195,6 +195,7 @@ export function SiteForm({ initialData, siteId }: SiteFormProps) {
                     <SelectContent>
                       <SelectItem value="wordpress">WordPress</SelectItem>
                       <SelectItem value="prestashop">PrestaShop</SelectItem>
+                      <SelectItem value="nextjs">Next.js</SelectItem>
                       <SelectItem value="other">Altro</SelectItem>
                     </SelectContent>
                   </Select>

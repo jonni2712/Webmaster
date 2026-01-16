@@ -11,7 +11,7 @@ interface SiteData {
   id: string;
   name: string;
   url: string;
-  platform: 'wordpress' | 'prestashop' | 'other';
+  platform: 'wordpress' | 'prestashop' | 'nextjs' | 'other';
   client_id: string | null;
   ssl_check_enabled: boolean;
   uptime_check_enabled: boolean;

@@ -124,7 +124,7 @@ interface Site {
   id: string;
   name: string;
   url: string;
-  platform: 'wordpress' | 'prestashop' | 'other';
+  platform: 'wordpress' | 'prestashop' | 'nextjs' | 'other';
   status: 'online' | 'offline' | 'degraded' | 'unknown';
   ssl_status: 'valid' | 'expiring' | 'expired' | 'invalid' | null;
   ssl_expiry: string | null;
