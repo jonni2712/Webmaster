@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/lib/auth/providers';
 import { Toaster } from '@/components/ui/sonner';
 import { CookieBanner } from '@/components/cookie-banner';
+import { Analytics } from '@vercel/analytics/next';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -102,6 +103,7 @@ export default function RootLayout({
             <CookieBanner />
           </ThemeProvider>
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   );
