@@ -29,6 +29,7 @@ import {
   Menu,
   X,
 } from 'lucide-react';
+import { CookieSettingsButton } from '@/components/cookie-banner';
 
 const features = [
   {
@@ -448,6 +449,7 @@ export default function LandingPage() {
                 <li><Link href="/terms" className="hover:text-foreground">Termini di Servizio</Link></li>
                 <li><Link href="/cookies" className="hover:text-foreground">Cookie Policy</Link></li>
                 <li><Link href="/gdpr" className="hover:text-foreground">GDPR</Link></li>
+                <li><CookieSettingsButton /></li>
               </ul>
             </div>
           </div>
