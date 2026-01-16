@@ -38,19 +38,14 @@ export async function POST(
     return NextResponse.json({ error: 'Alert not found' }, { status: 404 });
   }
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('alerts')
-    .update({
-      status: 'resolved',
-      resolved_at: new Date().toISOString(),
-    })
-    .eq('id', id)
-    .select()
-    .single();
+    .delete()
+    .eq('id', id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json(data);
+  return NextResponse.json({ success: true });
 }
