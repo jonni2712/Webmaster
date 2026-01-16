@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { AlertSettingsForm } from '@/components/sites/alert-settings-form';
 import { UpdatesList } from '@/components/sites/updates-list';
+import { SecurityTab } from '@/components/security/security-tab';
 import { DateRangeSelector, getDateRangeFromPreset, type DateRange, type DateRangePreset } from '@/components/reports/date-range-selector';
 import { UptimeChart } from '@/components/reports/uptime-chart';
 import { ResponseTimeChart } from '@/components/reports/response-time-chart';
@@ -593,6 +594,12 @@ export default function SiteDetailPage({
             <TabsTrigger value="ecommerce" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
               <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden xs:inline">E-com.</span>
+            </TabsTrigger>
+          )}
+          {site.platform === 'wordpress' && (
+            <TabsTrigger value="security" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+              <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Security</span>
             </TabsTrigger>
           )}
           <TabsTrigger value="alerts" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
@@ -1397,6 +1404,13 @@ export default function SiteDetailPage({
                 </p>
               </CardContent>
             </Card>
+          </TabsContent>
+        )}
+
+        {/* Security Tab */}
+        {site.platform === 'wordpress' && (
+          <TabsContent value="security">
+            <SecurityTab siteId={site.id} siteName={site.name} />
           </TabsContent>
         )}
 

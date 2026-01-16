@@ -372,3 +372,104 @@ export interface ActivityLogCreateParams {
   metadata?: Record<string, unknown>;
   ipAddress?: string;
 }
+
+// ============================================
+// Security & Backup Types (v1.5.0)
+// ============================================
+
+export type BackupType = 'full' | 'database' | 'files';
+export type BackupStatus = 'pending' | 'creating' | 'completed' | 'failed' | 'deleted';
+export type RecommendationPriority = 'critical' | 'high' | 'medium' | 'low';
+
+export interface SecurityScanData {
+  ssl: {
+    valid: boolean;
+    https_forced: boolean;
+    hsts_enabled: boolean;
+  };
+  versions: {
+    wp_updated: boolean;
+    plugins_updated: boolean;
+    themes_updated: boolean;
+    outdated_count: number;
+  };
+  config: {
+    debug_disabled: boolean;
+    file_editor_disabled: boolean;
+    directory_listing_disabled: boolean;
+    default_prefix: boolean;
+  };
+  security_plugin: {
+    installed: boolean;
+    name: string | null;
+    active: boolean;
+  };
+  file_integrity: {
+    core_files_modified: number;
+    suspicious_files: string[];
+  };
+}
+
+export interface SecurityRecommendation {
+  id: string;
+  priority: RecommendationPriority;
+  title: string;
+  description: string;
+  category: 'ssl' | 'versions' | 'config' | 'security_plugin' | 'files';
+}
+
+export interface SecurityScan {
+  id: string;
+  site_id: string;
+  tenant_id: string;
+  security_score: number;
+  ssl_score: number;
+  ssl_valid: boolean | null;
+  https_forced: boolean | null;
+  hsts_enabled: boolean | null;
+  versions_score: number;
+  wp_updated: boolean | null;
+  plugins_updated: boolean | null;
+  themes_updated: boolean | null;
+  outdated_count: number;
+  config_score: number;
+  debug_disabled: boolean | null;
+  file_editor_disabled: boolean | null;
+  directory_listing_disabled: boolean | null;
+  default_prefix: boolean | null;
+  security_plugin_score: number;
+  security_plugin_name: string | null;
+  security_plugin_active: boolean | null;
+  core_files_modified: number;
+  suspicious_files: string[];
+  recommendations: SecurityRecommendation[];
+  scanned_at: string;
+}
+
+export interface SiteBackup {
+  id: string;
+  site_id: string;
+  tenant_id: string;
+  filename: string;
+  file_size: number | null;
+  backup_type: BackupType;
+  status: BackupStatus;
+  error_message: string | null;
+  includes_database: boolean;
+  includes_files: boolean;
+  includes_uploads: boolean;
+  created_at: string;
+  completed_at: string | null;
+  expires_at: string | null;
+}
+
+export interface SecuritySummary {
+  security_score: number;
+  ssl_score: number;
+  versions_score: number;
+  config_score: number;
+  security_plugin_score: number;
+  last_scan: string | null;
+  recommendations_count: number;
+  critical_issues: number;
+}
