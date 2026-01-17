@@ -400,7 +400,7 @@ export default function LandingPage() {
               </Button>
             </Link>
             <Link href="/login">
-              <Button size="lg" variant="outline" className="border-primary-foreground/50 text-primary-foreground hover:bg-primary-foreground hover:text-primary">
+              <Button size="lg" variant="outline" className="border-black text-primary-foreground hover:bg-primary-foreground hover:text-black">
                 Accedi <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
