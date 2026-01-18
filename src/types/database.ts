@@ -153,6 +153,8 @@ export interface MultisiteSubsite {
   domain: string;
   path: string;
   site_name: string;
+  site_url?: string;
+  home_url?: string;
   registered: string;
   last_updated: string;
   public: boolean;
@@ -160,6 +162,7 @@ export interface MultisiteSubsite {
   spam: boolean;
   deleted: boolean;
   post_count: number;
+  is_main_site: boolean;
 }
 
 // Type for multisite network info from WordPress API
