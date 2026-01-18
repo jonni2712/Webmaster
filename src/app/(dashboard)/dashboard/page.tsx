@@ -110,6 +110,10 @@ async function getDashboardData() {
       ps_updates_pending: 0,
       last_perf_score: site.performance_score,
       last_lcp: null,
+      // Multisite fields
+      parent_site_id: site.parent_site_id || null,
+      is_multisite: site.is_multisite || false,
+      is_main_site: site.is_main_site || false,
     };
   });
 
