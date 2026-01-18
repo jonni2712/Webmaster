@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +29,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import type { SiteWithStatus } from '@/types';
 import { getTagConfig } from '@/lib/constants/tags';
+import { MultisiteNetworkCard } from '@/components/sites/multisite-network-card';
 
 interface SitesGridProps {
   sites: SiteWithStatus[];
@@ -247,7 +249,49 @@ function SiteCard({ site }: { site: SiteWithStatus }) {
   );
 }
 
+interface GroupedSites {
+  multisiteNetworks: Map<string, { mainSite: SiteWithStatus; subsites: SiteWithStatus[] }>;
+  standaloneSites: SiteWithStatus[];
+}
+
+function groupSitesByMultisite(sites: SiteWithStatus[]): GroupedSites {
+  const multisiteNetworks = new Map<string, { mainSite: SiteWithStatus; subsites: SiteWithStatus[] }>();
+  const standaloneSites: SiteWithStatus[] = [];
+
+  // First pass: identify main sites (multisite networks)
+  for (const site of sites) {
+    if (site.is_multisite && site.is_main_site) {
+      multisiteNetworks.set(site.site_id, { mainSite: site, subsites: [] });
+    }
+  }
+
+  // Second pass: assign subsites to their parent networks or mark as standalone
+  for (const site of sites) {
+    // Skip main sites as they're already in the networks map
+    if (site.is_multisite && site.is_main_site) {
+      continue;
+    }
+
+    // Check if this is a subsite
+    if (site.parent_site_id && multisiteNetworks.has(site.parent_site_id)) {
+      multisiteNetworks.get(site.parent_site_id)!.subsites.push(site);
+    } else if (!site.parent_site_id) {
+      // Standalone site (not a subsite)
+      standaloneSites.push(site);
+    }
+    // Note: Subsites whose parent is not in the current view are excluded
+  }
+
+  return { multisiteNetworks, standaloneSites };
+}
+
 export function SitesGrid({ sites, isLoading }: SitesGridProps) {
+  // Group sites by multisite networks
+  const { multisiteNetworks, standaloneSites } = useMemo(
+    () => groupSitesByMultisite(sites),
+    [sites]
+  );
+
   if (isLoading) {
     return (
       <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
@@ -297,7 +341,16 @@ export function SitesGrid({ sites, isLoading }: SitesGridProps) {
 
   return (
     <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
-      {sites.map((site) => (
+      {/* Render multisite networks first */}
+      {Array.from(multisiteNetworks.values()).map(({ mainSite, subsites }) => (
+        <MultisiteNetworkCard
+          key={mainSite.site_id}
+          mainSite={mainSite}
+          subsites={subsites}
+        />
+      ))}
+      {/* Then render standalone sites */}
+      {standaloneSites.map((site) => (
         <SiteCard key={site.site_id} site={site} />
       ))}
     </div>

@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { SitesGrid } from '@/components/dashboard/sites-grid';
-import { Search, Building2, Trash2, Loader2, RefreshCw, Tag } from 'lucide-react';
+import { Search, Building2, Trash2, Loader2, RefreshCw, Tag, Network } from 'lucide-react';
 import type { SiteWithStatus, Client } from '@/types';
 import { PREDEFINED_TAGS, getTagConfig, getUniqueTags } from '@/lib/constants/tags';
 
@@ -20,10 +20,13 @@ interface SitesFiltersProps {
   clients: Client[];
 }
 
+type SiteTypeFilter = 'all' | 'multisite' | 'standalone' | 'subsites';
+
 export function SitesFilters({ sites, clients }: SitesFiltersProps) {
   const [search, setSearch] = useState('');
   const [clientFilter, setClientFilter] = useState<string>('all');
   const [tagFilter, setTagFilter] = useState<string>('all');
+  const [siteTypeFilter, setSiteTypeFilter] = useState<SiteTypeFilter>('all');
   const [isCleaningUp, setIsCleaningUp] = useState(false);
   const [cleanupMessage, setCleanupMessage] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -123,9 +126,23 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
         }
       }
 
+      // Site type filter (multisite)
+      if (siteTypeFilter !== 'all') {
+        if (siteTypeFilter === 'multisite') {
+          // Show only multisite main sites
+          if (!site.is_multisite || !site.is_main_site) return false;
+        } else if (siteTypeFilter === 'standalone') {
+          // Show only standalone sites (not multisite main sites and not subsites)
+          if (site.is_multisite || site.parent_site_id) return false;
+        } else if (siteTypeFilter === 'subsites') {
+          // Show only subsites
+          if (!site.parent_site_id) return false;
+        }
+      }
+
       return true;
     });
-  }, [sites, search, clientFilter, tagFilter]);
+  }, [sites, search, clientFilter, tagFilter, siteTypeFilter]);
 
   return (
     <div className="space-y-4">
@@ -194,6 +211,21 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
           </SelectContent>
         </Select>
 
+        <Select value={siteTypeFilter} onValueChange={(value) => setSiteTypeFilter(value as SiteTypeFilter)}>
+          <SelectTrigger className="w-full sm:w-[180px] h-9 sm:h-10">
+            <div className="flex items-center gap-2">
+              <Network className="h-4 w-4 text-muted-foreground" />
+              <SelectValue placeholder="Tipo sito" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tutti i tipi</SelectItem>
+            <SelectItem value="multisite">Reti Multisite</SelectItem>
+            <SelectItem value="standalone">Siti Standalone</SelectItem>
+            <SelectItem value="subsites">Sottositi</SelectItem>
+          </SelectContent>
+        </Select>
+
         <Button
           variant="outline"
           size="sm"
@@ -238,7 +270,7 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
       )}
 
       {/* Results info */}
-      {(search || clientFilter !== 'all' || tagFilter !== 'all') && (
+      {(search || clientFilter !== 'all' || tagFilter !== 'all' || siteTypeFilter !== 'all') && (
         <p className="text-sm text-muted-foreground">
           {filteredSites.length} {filteredSites.length === 1 ? 'sito trovato' : 'siti trovati'}
           {search && ` per "${search}"`}
@@ -250,6 +282,9 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
             ` con tag "${getTagConfig(tagFilter).label}"`
           )}
           {tagFilter === 'no_tags' && ' senza tag'}
+          {siteTypeFilter === 'multisite' && ' (reti multisite)'}
+          {siteTypeFilter === 'standalone' && ' (standalone)'}
+          {siteTypeFilter === 'subsites' && ' (sottositi)'}
         </p>
       )}
 

@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { processWordPressUpdates } from '@/lib/updates/processor';
+import { processMultisiteSubsites } from '@/lib/multisite/processor';
+import type { MultisiteNetworkInfo } from '@/types';
 
 interface WordPressStatus {
   plugin_version: string;
@@ -83,6 +85,7 @@ interface WordPressStatus {
       status: string;
     };
   };
+  multisite?: MultisiteNetworkInfo;
 }
 
 export async function POST(
@@ -184,11 +187,34 @@ export async function POST(
           site_health: wpData.wordpress?.site_health,
         },
         plugin_version: wpData.plugin_version,
+        // Multisite flags
+        is_multisite: wpData.multisite?.is_multisite || false,
+        is_main_site: wpData.multisite?.is_main_site || false,
       })
       .eq('id', id);
 
     if (updateError) {
       console.error('Error updating site data:', updateError);
+    }
+
+    // Process multisite subsites if this is a multisite main site
+    if (wpData.multisite?.is_multisite && wpData.multisite?.is_main_site) {
+      try {
+        const multisiteResult = await processMultisiteSubsites({
+          parentSiteId: id,
+          tenantId: user.current_tenant_id,
+          clientId: site.client_id,
+          apiKeyEncrypted: site.api_key_encrypted,
+          multisiteData: wpData.multisite,
+        });
+        console.log(`Multisite sync for ${id}: created ${multisiteResult.created}, updated ${multisiteResult.updated}, removed ${multisiteResult.removed}`);
+        if (multisiteResult.errors.length > 0) {
+          console.error('Multisite sync errors:', multisiteResult.errors);
+        }
+      } catch (multisiteError) {
+        console.error('Error processing multisite subsites:', multisiteError);
+        // Don't fail the sync if multisite processing fails
+      }
     }
 
     // Process WordPress updates into wp_updates table

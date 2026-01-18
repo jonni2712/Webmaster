@@ -106,6 +106,13 @@ export interface Site {
   vercel_token_encrypted: string | null;
   vercel_last_sync: string | null;
   vercel_webhook_secret: string | null;
+  // WordPress Multisite support
+  parent_site_id: string | null;
+  is_multisite: boolean;
+  is_main_site: boolean;
+  multisite_blog_id: number | null;
+  multisite_path: string | null;
+  auto_discovered: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -133,6 +140,39 @@ export interface SiteWithStatus {
   ps_updates_pending: number;
   last_perf_score: number | null;
   last_lcp: number | null;
+  // WordPress Multisite support
+  parent_site_id: string | null;
+  is_multisite: boolean;
+  is_main_site: boolean;
+  subsites_count?: number;
+}
+
+// Type for multisite subsite from WordPress API
+export interface MultisiteSubsite {
+  blog_id: number;
+  domain: string;
+  path: string;
+  site_name: string;
+  registered: string;
+  last_updated: string;
+  public: boolean;
+  archived: boolean;
+  spam: boolean;
+  deleted: boolean;
+  post_count: number;
+}
+
+// Type for multisite network info from WordPress API
+export interface MultisiteNetworkInfo {
+  is_multisite: boolean;
+  is_main_site: boolean;
+  network_id: number | null;
+  network_name: string | null;
+  network_domain: string | null;
+  network_path: string | null;
+  site_count: number;
+  installation_type: 'subdomain' | 'subdirectory' | null;
+  subsites: MultisiteSubsite[];
 }
 
 export interface UptimeCheck {
