@@ -16,6 +16,8 @@ import {
   X,
   Users,
   Map,
+  FolderKanban,
+  Server,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -45,6 +47,15 @@ const navigation = [
     children: [
       { name: 'Tutti i clienti', href: '/clients' },
       { name: 'Nuovo cliente', href: '/clients/new', icon: Plus },
+    ],
+  },
+  {
+    name: 'Portfolio',
+    href: '/portfolio',
+    icon: FolderKanban,
+    children: [
+      { name: 'Dashboard', href: '/portfolio' },
+      { name: 'Server', href: '/portfolio/servers', icon: Server },
     ],
   },
   {
