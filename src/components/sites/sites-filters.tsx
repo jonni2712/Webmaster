@@ -191,9 +191,9 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row">
-        <div className="relative flex-1 sm:max-w-sm">
+      {/* Row 1: Search + Actions */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Cerca siti..."
@@ -202,13 +202,46 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 sm:h-10"
+            onClick={handleSyncAll}
+            disabled={isSyncing}
+          >
+            {isSyncing ? (
+              <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
+            ) : (
+              <RefreshCw className="h-4 w-4 sm:mr-2" />
+            )}
+            <span className="hidden sm:inline">Sync</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 sm:h-10"
+            onClick={handleResetUpdates}
+            disabled={isCleaningUp}
+          >
+            {isCleaningUp ? (
+              <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
+            ) : (
+              <Trash2 className="h-4 w-4 sm:mr-2" />
+            )}
+            <span className="hidden sm:inline">Reset</span>
+          </Button>
+        </div>
+      </div>
 
+      {/* Row 2: Filters Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2">
         {clients.length > 0 && (
           <Select value={clientFilter} onValueChange={setClientFilter}>
-            <SelectTrigger className="w-full sm:w-[200px] h-9 sm:h-10">
-              <div className="flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-muted-foreground" />
-                <SelectValue placeholder="Filtra per cliente" />
+            <SelectTrigger className="h-9">
+              <div className="flex items-center gap-2 truncate">
+                <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <SelectValue placeholder="Cliente" />
               </div>
             </SelectTrigger>
             <SelectContent>
@@ -217,11 +250,6 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
               {clients.map((client) => (
                 <SelectItem key={client.id} value={client.id}>
                   {client.name}
-                  {client.company_name && (
-                    <span className="text-muted-foreground ml-1">
-                      ({client.company_name})
-                    </span>
-                  )}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -229,10 +257,10 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
         )}
 
         <Select value={tagFilter} onValueChange={setTagFilter}>
-          <SelectTrigger className="w-full sm:w-[180px] h-9 sm:h-10">
-            <div className="flex items-center gap-2">
-              <Tag className="h-4 w-4 text-muted-foreground" />
-              <SelectValue placeholder="Filtra per tag" />
+          <SelectTrigger className="h-9">
+            <div className="flex items-center gap-2 truncate">
+              <Tag className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <SelectValue placeholder="Tag" />
             </div>
           </SelectTrigger>
           <SelectContent>
@@ -257,25 +285,25 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
         </Select>
 
         <Select value={siteTypeFilter} onValueChange={(value) => setSiteTypeFilter(value as SiteTypeFilter)}>
-          <SelectTrigger className="w-full sm:w-[180px] h-9 sm:h-10">
-            <div className="flex items-center gap-2">
-              <Network className="h-4 w-4 text-muted-foreground" />
-              <SelectValue placeholder="Tipo sito" />
+          <SelectTrigger className="h-9">
+            <div className="flex items-center gap-2 truncate">
+              <Network className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <SelectValue placeholder="Tipo" />
             </div>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tutti i tipi</SelectItem>
-            <SelectItem value="multisite">Reti Multisite</SelectItem>
-            <SelectItem value="standalone">Siti Standalone</SelectItem>
+            <SelectItem value="multisite">Multisite</SelectItem>
+            <SelectItem value="standalone">Standalone</SelectItem>
             <SelectItem value="subsites">Sottositi</SelectItem>
           </SelectContent>
         </Select>
 
         {servers.length > 0 && (
           <Select value={serverFilter} onValueChange={setServerFilter}>
-            <SelectTrigger className="w-full sm:w-[180px] h-9 sm:h-10">
-              <div className="flex items-center gap-2">
-                <Server className="h-4 w-4 text-muted-foreground" />
+            <SelectTrigger className="h-9">
+              <div className="flex items-center gap-2 truncate">
+                <Server className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <SelectValue placeholder="Server" />
               </div>
             </SelectTrigger>
@@ -292,9 +320,9 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
         )}
 
         <Select value={lifecycleFilter} onValueChange={setLifecycleFilter}>
-          <SelectTrigger className="w-full sm:w-[180px] h-9 sm:h-10">
-            <div className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-muted-foreground" />
+          <SelectTrigger className="h-9">
+            <div className="flex items-center gap-2 truncate">
+              <Activity className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <SelectValue placeholder="Stato" />
             </div>
           </SelectTrigger>
@@ -309,7 +337,7 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
         </Select>
 
         <Select value={redirectFilter} onValueChange={setRedirectFilter}>
-          <SelectTrigger className="w-full sm:w-[140px] h-9 sm:h-10">
+          <SelectTrigger className="h-9">
             <SelectValue placeholder="Redirect" />
           </SelectTrigger>
           <SelectContent>
@@ -318,36 +346,6 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
             <SelectItem value="no_redirect">No Redirect</SelectItem>
           </SelectContent>
         </Select>
-
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-9 sm:h-10"
-          onClick={handleSyncAll}
-          disabled={isSyncing}
-        >
-          {isSyncing ? (
-            <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
-          ) : (
-            <RefreshCw className="h-4 w-4 sm:mr-2" />
-          )}
-          <span className="hidden sm:inline">Sincronizza tutti</span>
-        </Button>
-
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-9 sm:h-10"
-          onClick={handleResetUpdates}
-          disabled={isCleaningUp}
-        >
-          {isCleaningUp ? (
-            <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
-          ) : (
-            <Trash2 className="h-4 w-4 sm:mr-2" />
-          )}
-          <span className="hidden sm:inline">Reset aggiornamenti</span>
-        </Button>
       </div>
 
       {cleanupMessage && (
