@@ -22,6 +22,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   DropdownMenu,
@@ -44,9 +45,23 @@ import {
   Link as LinkIcon,
   Unlink,
   Network,
+  Building2,
+  Star,
+  StarOff,
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+
+interface Brand {
+  id: string;
+  name: string;
+  description: string | null;
+  primary_domain_id: string | null;
+  client_id: string | null;
+  client_name?: string;
+  is_active: boolean;
+  created_at: string;
+}
 
 interface DomainSite {
   id: string;
@@ -56,38 +71,41 @@ interface DomainSite {
   is_redirect_source: boolean;
   redirect_url: string | null;
   redirect_type: string | null;
-  primary_domain_id: string | null;
-  zone_name: string | null;
+  brand_id: string | null;
+  is_primary_for_brand: boolean;
 }
 
-interface DomainZone {
-  primary: DomainSite;
-  secondaryDomains: DomainSite[];
+interface BrandWithDomains extends Brand {
+  domains: DomainSite[];
+  primaryDomain: DomainSite | null;
 }
 
-export default function ZonesPage() {
-  const [domains, setDomains] = useState<DomainSite[]>([]);
-  const [zones, setZones] = useState<DomainZone[]>([]);
+interface Client {
+  id: string;
+  name: string;
+}
+
+export default function BrandsPage() {
+  const [brands, setBrands] = useState<BrandWithDomains[]>([]);
   const [unassignedDomains, setUnassignedDomains] = useState<DomainSite[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Create zone modal
+  // Create brand modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [newZoneName, setNewZoneName] = useState('');
-  const [selectedPrimaryId, setSelectedPrimaryId] = useState('');
+  const [newBrand, setNewBrand] = useState({ name: '', description: '', client_id: '' });
   const [isCreating, setIsCreating] = useState(false);
 
-  // Add to zone modal
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [addToZoneId, setAddToZoneId] = useState('');
+  // Edit brand modal
+  const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', description: '', client_id: '' });
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Add domains modal
+  const [addToBrandId, setAddToBrandId] = useState<string | null>(null);
   const [selectedDomainIds, setSelectedDomainIds] = useState<string[]>([]);
   const [isAdding, setIsAdding] = useState(false);
-
-  // Edit zone modal
-  const [editingZone, setEditingZone] = useState<DomainZone | null>(null);
-  const [editZoneName, setEditZoneName] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
 
   const fetchData = useCallback(async (refresh = false) => {
     if (refresh) {
@@ -97,12 +115,12 @@ export default function ZonesPage() {
     }
 
     try {
-      const res = await fetch('/api/portfolio/zones');
+      const res = await fetch('/api/portfolio/brands');
       if (!res.ok) throw new Error('Errore nel caricamento');
       const data = await res.json();
-      setDomains(data.domains || []);
-      setZones(data.zones || []);
+      setBrands(data.brands || []);
       setUnassignedDomains(data.unassigned || []);
+      setClients(data.clients || []);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Errore sconosciuto');
     } finally {
@@ -115,29 +133,28 @@ export default function ZonesPage() {
     fetchData();
   }, [fetchData]);
 
-  const handleCreateZone = async () => {
-    if (!selectedPrimaryId) {
-      toast.error('Seleziona un dominio principale');
+  const handleCreateBrand = async () => {
+    if (!newBrand.name.trim()) {
+      toast.error('Inserisci il nome del brand');
       return;
     }
     setIsCreating(true);
 
     try {
-      const res = await fetch('/api/portfolio/zones', {
+      const res = await fetch('/api/portfolio/brands', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          primaryDomainId: selectedPrimaryId,
-          zoneName: newZoneName || null,
-        }),
+        body: JSON.stringify(newBrand),
       });
 
-      if (!res.ok) throw new Error('Errore nella creazione');
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Errore nella creazione');
+      }
 
-      toast.success('Zona creata');
+      toast.success('Brand creato');
       setIsCreateOpen(false);
-      setNewZoneName('');
-      setSelectedPrimaryId('');
+      setNewBrand({ name: '', description: '', client_id: '' });
       fetchData(true);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Errore nella creazione');
@@ -146,28 +163,69 @@ export default function ZonesPage() {
     }
   };
 
-  const handleAddToZone = async () => {
-    if (!addToZoneId || selectedDomainIds.length === 0) {
-      toast.error('Seleziona la zona e almeno un dominio');
+  const handleSaveBrand = async () => {
+    if (!editingBrand) return;
+    setIsSaving(true);
+
+    try {
+      const res = await fetch(`/api/portfolio/brands/${editingBrand.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm),
+      });
+
+      if (!res.ok) throw new Error('Errore nel salvataggio');
+
+      toast.success('Brand aggiornato');
+      setEditingBrand(null);
+      fetchData(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Errore nel salvataggio');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteBrand = async (brandId: string) => {
+    if (!confirm('Vuoi eliminare questo brand? I domini verranno scollegati ma non eliminati.')) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/portfolio/brands/${brandId}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) throw new Error('Errore nell\'eliminazione');
+
+      toast.success('Brand eliminato');
+      fetchData(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Errore nell\'eliminazione');
+    }
+  };
+
+  const handleAddDomains = async () => {
+    if (!addToBrandId || selectedDomainIds.length === 0) {
+      toast.error('Seleziona almeno un dominio');
       return;
     }
     setIsAdding(true);
 
     try {
-      const res = await fetch('/api/portfolio/zones/add', {
+      const res = await fetch('/api/portfolio/brands/add-domains', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          primaryDomainId: addToZoneId,
+          brandId: addToBrandId,
           domainIds: selectedDomainIds,
         }),
       });
 
       if (!res.ok) throw new Error('Errore nell\'aggiunta');
 
-      toast.success(`${selectedDomainIds.length} domini aggiunti alla zona`);
-      setIsAddOpen(false);
-      setAddToZoneId('');
+      toast.success(`${selectedDomainIds.length} domini aggiunti`);
+      setAddToBrandId(null);
       setSelectedDomainIds([]);
       fetchData(true);
     } catch (err) {
@@ -177,9 +235,9 @@ export default function ZonesPage() {
     }
   };
 
-  const handleRemoveFromZone = async (domainId: string) => {
+  const handleRemoveDomain = async (domainId: string) => {
     try {
-      const res = await fetch('/api/portfolio/zones/remove', {
+      const res = await fetch('/api/portfolio/brands/remove-domain', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ domainId }),
@@ -187,56 +245,27 @@ export default function ZonesPage() {
 
       if (!res.ok) throw new Error('Errore nella rimozione');
 
-      toast.success('Dominio rimosso dalla zona');
+      toast.success('Dominio rimosso dal brand');
       fetchData(true);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Errore nella rimozione');
     }
   };
 
-  const handleSaveZone = async () => {
-    if (!editingZone) return;
-    setIsSaving(true);
-
+  const handleSetPrimary = async (brandId: string, domainId: string) => {
     try {
-      const res = await fetch(`/api/sites/${editingZone.primary.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          zone_name: editZoneName || null,
-        }),
-      });
-
-      if (!res.ok) throw new Error('Errore nel salvataggio');
-
-      toast.success('Zona aggiornata');
-      setEditingZone(null);
-      fetchData(true);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Errore nel salvataggio');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDeleteZone = async (zoneId: string) => {
-    if (!confirm('Vuoi eliminare questa zona? I domini verranno scollegati ma non eliminati.')) {
-      return;
-    }
-
-    try {
-      const res = await fetch('/api/portfolio/zones/delete', {
+      const res = await fetch('/api/portfolio/brands/set-primary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ primaryDomainId: zoneId }),
+        body: JSON.stringify({ brandId, domainId }),
       });
 
-      if (!res.ok) throw new Error('Errore nell\'eliminazione');
+      if (!res.ok) throw new Error('Errore nell\'impostazione');
 
-      toast.success('Zona eliminata');
+      toast.success('Dominio principale impostato');
       fetchData(true);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Errore nell\'eliminazione');
+      toast.error(err instanceof Error ? err.message : 'Errore nell\'impostazione');
     }
   };
 
@@ -272,23 +301,17 @@ export default function ZonesPage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Zone Domini</h1>
+            <h1 className="text-2xl font-bold">Brand & Zone Domini</h1>
             <p className="text-sm text-muted-foreground">
-              {zones.length} zone, {unassignedDomains.length} domini non assegnati
+              {brands.length} brand, {unassignedDomains.length} domini non assegnati
             </p>
           </div>
         </div>
         <div className="flex gap-2">
           <Button onClick={() => setIsCreateOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Nuova Zona
+            Nuovo Brand
           </Button>
-          {unassignedDomains.length > 0 && zones.length > 0 && (
-            <Button variant="outline" onClick={() => setIsAddOpen(true)}>
-              <LinkIcon className="h-4 w-4 mr-2" />
-              Assegna Domini
-            </Button>
-          )}
           <Button
             variant="outline"
             size="icon"
@@ -304,22 +327,20 @@ export default function ZonesPage() {
         </div>
       </div>
 
-      {/* Zones Grid */}
-      {zones.length > 0 ? (
+      {/* Brands Grid */}
+      {brands.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {zones.map((zone) => (
-            <Card key={zone.primary.id} className="relative">
+          {brands.map((brand) => (
+            <Card key={brand.id} className="relative">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
-                    <Network className="h-5 w-5 text-primary" />
+                    <Building2 className="h-5 w-5 text-primary" />
                     <div>
-                      <CardTitle className="text-base">
-                        {zone.primary.zone_name || getDomainDisplay(zone.primary.url)}
-                      </CardTitle>
-                      {zone.primary.zone_name && (
+                      <CardTitle className="text-base">{brand.name}</CardTitle>
+                      {brand.client_name && (
                         <CardDescription className="text-xs">
-                          {getDomainDisplay(zone.primary.url)}
+                          Cliente: {brand.client_name}
                         </CardDescription>
                       )}
                     </div>
@@ -332,83 +353,110 @@ export default function ZonesPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => {
-                        setEditingZone(zone);
-                        setEditZoneName(zone.primary.zone_name || '');
+                        setEditingBrand(brand);
+                        setEditForm({
+                          name: brand.name,
+                          description: brand.description || '',
+                          client_id: brand.client_id || '',
+                        });
                       }}>
                         <Edit className="h-4 w-4 mr-2" />
-                        Modifica Nome
+                        Modifica Brand
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <a href={zone.primary.url} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          Apri Sito
-                        </a>
+                      <DropdownMenuItem onClick={() => setAddToBrandId(brand.id)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Aggiungi Domini
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         className="text-red-600"
-                        onClick={() => handleDeleteZone(zone.primary.id)}
+                        onClick={() => handleDeleteBrand(brand.id)}
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
-                        Elimina Zona
+                        Elimina Brand
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
+                {brand.description && (
+                  <p className="text-xs text-muted-foreground mt-1">{brand.description}</p>
+                )}
               </CardHeader>
               <CardContent className="pt-0">
-                {/* Primary Domain */}
-                <div className="flex items-center gap-2 p-2 rounded-lg bg-primary/10 mb-3">
-                  <Globe className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium flex-1 truncate">
-                    {getDomainDisplay(zone.primary.url)}
-                  </span>
-                  <Badge variant="secondary" className="text-xs">Principale</Badge>
-                </div>
-
-                {/* Secondary Domains */}
-                {zone.secondaryDomains.length > 0 ? (
+                {/* Domains */}
+                {brand.domains.length > 0 ? (
                   <div className="space-y-2">
                     <p className="text-xs text-muted-foreground font-medium">
-                      Domini collegati ({zone.secondaryDomains.length})
+                      Domini ({brand.domains.length})
                     </p>
-                    <ScrollArea className={zone.secondaryDomains.length > 4 ? 'h-32' : ''}>
+                    <ScrollArea className={brand.domains.length > 5 ? 'h-40' : ''}>
                       <div className="space-y-1.5">
-                        {zone.secondaryDomains.map((domain) => (
+                        {brand.domains.map((domain) => (
                           <div
                             key={domain.id}
                             className="flex items-center gap-2 p-2 rounded border bg-muted/30 group"
                           >
-                            {domain.is_redirect_source ? (
+                            {domain.is_primary_for_brand ? (
+                              <Star className="h-3 w-3 text-yellow-500 fill-yellow-500 flex-shrink-0" />
+                            ) : domain.is_redirect_source ? (
                               <ArrowRight className="h-3 w-3 text-blue-500 flex-shrink-0" />
                             ) : (
-                              <LinkIcon className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                              <Globe className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                             )}
                             <span className="text-sm flex-1 truncate">
                               {getDomainDisplay(domain.url)}
                             </span>
+                            {domain.is_primary_for_brand && (
+                              <Badge variant="secondary" className="text-[10px] px-1 bg-yellow-100 text-yellow-700">
+                                Principale
+                              </Badge>
+                            )}
                             {domain.is_redirect_source && domain.redirect_type && (
                               <Badge variant="outline" className="text-[10px] px-1">
                                 {domain.redirect_type}
                               </Badge>
                             )}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => handleRemoveFromZone(domain.id)}
-                            >
-                              <Unlink className="h-3 w-3" />
-                            </Button>
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {!domain.is_primary_for_brand && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={() => handleSetPrimary(brand.id, domain.id)}
+                                  title="Imposta come principale"
+                                >
+                                  <Star className="h-3 w-3" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={() => handleRemoveDomain(domain.id)}
+                                title="Rimuovi dal brand"
+                              >
+                                <Unlink className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </div>
                         ))}
                       </div>
                     </ScrollArea>
                   </div>
                 ) : (
-                  <p className="text-xs text-muted-foreground text-center py-4">
-                    Nessun dominio collegato
-                  </p>
+                  <div className="text-center py-4">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Nessun dominio assegnato
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAddToBrandId(brand.id)}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Aggiungi Domini
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -417,11 +465,11 @@ export default function ZonesPage() {
       ) : (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Network className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-4">Nessuna zona creata</p>
+            <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground mb-4">Nessun brand creato</p>
             <Button onClick={() => setIsCreateOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Crea Prima Zona
+              Crea Primo Brand
             </Button>
           </CardContent>
         </Card>
@@ -433,20 +481,20 @@ export default function ZonesPage() {
           <CardHeader>
             <CardTitle className="text-base">Domini Non Assegnati</CardTitle>
             <CardDescription>
-              {unassignedDomains.length} domini senza zona
+              {unassignedDomains.length} domini senza brand
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {unassignedDomains.slice(0, 20).map((domain) => (
+              {unassignedDomains.slice(0, 30).map((domain) => (
                 <Badge key={domain.id} variant="outline" className="py-1.5">
                   <Globe className="h-3 w-3 mr-1.5" />
                   {getDomainDisplay(domain.url)}
                 </Badge>
               ))}
-              {unassignedDomains.length > 20 && (
+              {unassignedDomains.length > 30 && (
                 <Badge variant="secondary">
-                  +{unassignedDomains.length - 20} altri
+                  +{unassignedDomains.length - 30} altri
                 </Badge>
               )}
             </div>
@@ -454,80 +502,135 @@ export default function ZonesPage() {
         </Card>
       )}
 
-      {/* Create Zone Dialog */}
+      {/* Create Brand Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nuova Zona Domini</DialogTitle>
+            <DialogTitle>Nuovo Brand</DialogTitle>
             <DialogDescription>
-              Seleziona il dominio principale della zona
+              Crea un brand per raggruppare domini correlati
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Nome Zona (opzionale)</Label>
+              <Label>Nome Brand *</Label>
               <Input
-                value={newZoneName}
-                onChange={(e) => setNewZoneName(e.target.value)}
+                value={newBrand.name}
+                onChange={(e) => setNewBrand({ ...newBrand, name: e.target.value })}
                 placeholder="es. Mafra, ClienteXYZ..."
               />
             </div>
             <div className="space-y-2">
-              <Label>Dominio Principale</Label>
-              <Select value={selectedPrimaryId} onValueChange={setSelectedPrimaryId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleziona dominio..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {unassignedDomains.map((domain) => (
-                    <SelectItem key={domain.id} value={domain.id}>
-                      {getDomainDisplay(domain.url)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Descrizione</Label>
+              <Textarea
+                value={newBrand.description}
+                onChange={(e) => setNewBrand({ ...newBrand, description: e.target.value })}
+                placeholder="Descrizione del brand..."
+                rows={2}
+              />
             </div>
+            {clients.length > 0 && (
+              <div className="space-y-2">
+                <Label>Cliente associato</Label>
+                <Select
+                  value={newBrand.client_id}
+                  onValueChange={(v) => setNewBrand({ ...newBrand, client_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleziona cliente..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Nessun cliente</SelectItem>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
               Annulla
             </Button>
-            <Button onClick={handleCreateZone} disabled={isCreating || !selectedPrimaryId}>
+            <Button onClick={handleCreateBrand} disabled={isCreating || !newBrand.name.trim()}>
               {isCreating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Crea Zona
+              Crea Brand
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Add to Zone Dialog */}
-      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent className="sm:max-w-lg">
+      {/* Edit Brand Dialog */}
+      <Dialog open={!!editingBrand} onOpenChange={(open) => !open && setEditingBrand(null)}>
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Assegna Domini a Zona</DialogTitle>
-            <DialogDescription>
-              Seleziona la zona e i domini da aggiungere
-            </DialogDescription>
+            <DialogTitle>Modifica Brand</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Zona di destinazione</Label>
-              <Select value={addToZoneId} onValueChange={setAddToZoneId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleziona zona..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {zones.map((zone) => (
-                    <SelectItem key={zone.primary.id} value={zone.primary.id}>
-                      {zone.primary.zone_name || getDomainDisplay(zone.primary.url)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Nome Brand</Label>
+              <Input
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+              />
             </div>
             <div className="space-y-2">
-              <Label>Domini da aggiungere</Label>
-              <ScrollArea className="h-48 rounded-md border p-2">
+              <Label>Descrizione</Label>
+              <Textarea
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                rows={2}
+              />
+            </div>
+            {clients.length > 0 && (
+              <div className="space-y-2">
+                <Label>Cliente associato</Label>
+                <Select
+                  value={editForm.client_id}
+                  onValueChange={(v) => setEditForm({ ...editForm, client_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleziona cliente..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Nessun cliente</SelectItem>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingBrand(null)}>
+              Annulla
+            </Button>
+            <Button onClick={handleSaveBrand} disabled={isSaving}>
+              {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Salva
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Domains Dialog */}
+      <Dialog open={!!addToBrandId} onOpenChange={(open) => !open && setAddToBrandId(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Aggiungi Domini al Brand</DialogTitle>
+            <DialogDescription>
+              Seleziona i domini da aggiungere
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {unassignedDomains.length > 0 ? (
+              <ScrollArea className="h-64 rounded-md border p-2">
                 <div className="space-y-1">
                   {unassignedDomains.map((domain) => (
                     <label
@@ -546,53 +649,30 @@ export default function ZonesPage() {
                         }}
                         className="rounded"
                       />
+                      <Globe className="h-3 w-3 text-muted-foreground" />
                       <span className="text-sm">{getDomainDisplay(domain.url)}</span>
                     </label>
                   ))}
                 </div>
               </ScrollArea>
-              {selectedDomainIds.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  {selectedDomainIds.length} domini selezionati
-                </p>
-              )}
-            </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">
+                Tutti i domini sono già assegnati a un brand
+              </p>
+            )}
+            {selectedDomainIds.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {selectedDomainIds.length} domini selezionati
+              </p>
+            )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddOpen(false)}>
+            <Button variant="outline" onClick={() => setAddToBrandId(null)}>
               Annulla
             </Button>
-            <Button onClick={handleAddToZone} disabled={isAdding || !addToZoneId || selectedDomainIds.length === 0}>
+            <Button onClick={handleAddDomains} disabled={isAdding || selectedDomainIds.length === 0}>
               {isAdding && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Aggiungi
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Zone Dialog */}
-      <Dialog open={!!editingZone} onOpenChange={(open) => !open && setEditingZone(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Modifica Zona</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Nome Zona</Label>
-              <Input
-                value={editZoneName}
-                onChange={(e) => setEditZoneName(e.target.value)}
-                placeholder="es. Mafra, ClienteXYZ..."
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingZone(null)}>
-              Annulla
-            </Button>
-            <Button onClick={handleSaveZone} disabled={isSaving}>
-              {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Salva
             </Button>
           </DialogFooter>
         </DialogContent>
