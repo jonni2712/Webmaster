@@ -861,6 +861,7 @@ export default function DomainsPage() {
                   </TableHead>
                   <TableHead>Dominio</TableHead>
                   <TableHead className="hidden md:table-cell">Stato HTTP</TableHead>
+                  <TableHead className="hidden md:table-cell">Destinazione</TableHead>
                   <TableHead className="hidden lg:table-cell">Brand</TableHead>
                   <TableHead className="hidden xl:table-cell">Stato</TableHead>
                   <TableHead className="w-12"></TableHead>
@@ -915,6 +916,38 @@ export default function DomainsPage() {
                           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                         ) : (
                           <HttpStatusBadge domain={domain} />
+                        )}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        {domain.detected_redirect_url ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <a
+                                href={domain.detected_redirect_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 max-w-[200px] truncate"
+                              >
+                                <ArrowRight className="h-3 w-3 flex-shrink-0" />
+                                <span className="truncate">{getDomainDisplay(domain.detected_redirect_url)}</span>
+                              </a>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-md">
+                              <p className="text-xs break-all">{domain.detected_redirect_url}</p>
+                              {domain.detected_redirect_chain && domain.detected_redirect_chain.length > 0 && (
+                                <div className="mt-2 pt-2 border-t">
+                                  <p className="text-xs font-semibold mb-1">Catena redirect:</p>
+                                  {domain.detected_redirect_chain.map((step, i) => (
+                                    <p key={i} className="text-xs text-muted-foreground">
+                                      {step.status} → {getDomainDisplay(step.url)}
+                                    </p>
+                                  ))}
+                                </div>
+                              )}
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
                         )}
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
