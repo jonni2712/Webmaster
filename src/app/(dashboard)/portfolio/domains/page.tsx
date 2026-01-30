@@ -403,7 +403,7 @@ export default function DomainsPage() {
             </TableHeader>
             <TableBody>
               {paginatedDomains.map(domain => {
-                const statusConfig = getLifecycleStatusConfig(domain.lifecycle_status);
+                const statusConfig = getLifecycleStatusConfig(domain.lifecycle_status as any);
                 const daysUntilExpiry = getDaysUntilExpiry(domain.domain_expires_at);
                 const isExpiringSoon = daysUntilExpiry !== null && daysUntilExpiry <= 30;
 
