@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       .from('server_stats')
       .select('*')
       .eq('tenant_id', user.current_tenant_id)
-      .order('name');
+      .order('server_name');
 
     if (error) {
       console.error('Error fetching server stats:', error);

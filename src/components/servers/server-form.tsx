@@ -58,13 +58,21 @@ export function ServerForm({ initialData, serverId, onSuccess }: ServerFormProps
   async function onSubmit(values: ServerFormValues) {
     setIsLoading(true);
 
+    // Convert empty strings to null for optional fields
+    const payload = {
+      ...values,
+      provider: values.provider || null,
+      hostname: values.hostname || null,
+      notes: values.notes || null,
+    };
+
     try {
       const response = await fetch(
         serverId ? `/api/servers/${serverId}` : '/api/servers',
         {
           method: serverId ? 'PUT' : 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(values),
+          body: JSON.stringify(payload),
         }
       );
 
