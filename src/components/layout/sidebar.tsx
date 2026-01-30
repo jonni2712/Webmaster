@@ -55,6 +55,7 @@ const navigation = [
     icon: FolderKanban,
     children: [
       { name: 'Dashboard', href: '/portfolio' },
+      { name: 'Gestione Domini', href: '/portfolio/domains', icon: Globe },
       { name: 'Server', href: '/portfolio/servers', icon: Server },
       { name: 'Importa Domini', href: '/portfolio/import', icon: Upload },
     ],
