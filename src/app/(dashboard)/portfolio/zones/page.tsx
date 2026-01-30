@@ -49,7 +49,34 @@ import {
   LayoutGrid,
   Copy,
   Settings2,
+  Grid3X3,
+  List,
+  GitBranch,
+  Network,
+  Route,
+  ChevronRight,
+  ChevronDown,
+  ExternalLink,
 } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import {
@@ -123,6 +150,13 @@ export default function BrandsPage() {
 
   // Search
   const [search, setSearch] = useState('');
+
+  // View type
+  type ViewType = 'cards' | 'table' | 'tree' | 'graph' | 'redirects';
+  const [viewType, setViewType] = useState<ViewType>('cards');
+
+  // Tree view expanded state
+  const [expandedBrands, setExpandedBrands] = useState<Set<string>>(new Set());
 
   // Create brand modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -430,6 +464,7 @@ export default function BrandsPage() {
   }
 
   return (
+    <TooltipProvider>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -466,26 +501,57 @@ export default function BrandsPage() {
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="flex flex-wrap gap-3 p-3 bg-muted/50 rounded-lg text-xs">
-        {DOMAIN_RELATION_CONFIG.map((config) => (
-          <div key={config.value} className="flex items-center gap-1.5">
-            <RelationIcon relation={config.value} />
-            <span className="text-muted-foreground">{config.label}</span>
-          </div>
-        ))}
+      {/* View Selector & Search */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        {/* View Tabs */}
+        <Tabs value={viewType} onValueChange={(v) => setViewType(v as ViewType)} className="w-full lg:w-auto">
+          <TabsList className="grid grid-cols-5 w-full lg:w-auto">
+            <TabsTrigger value="cards" className="gap-1.5">
+              <Grid3X3 className="h-4 w-4" />
+              <span className="hidden sm:inline">Cards</span>
+            </TabsTrigger>
+            <TabsTrigger value="table" className="gap-1.5">
+              <List className="h-4 w-4" />
+              <span className="hidden sm:inline">Tabella</span>
+            </TabsTrigger>
+            <TabsTrigger value="tree" className="gap-1.5">
+              <GitBranch className="h-4 w-4" />
+              <span className="hidden sm:inline">Albero</span>
+            </TabsTrigger>
+            <TabsTrigger value="graph" className="gap-1.5">
+              <Network className="h-4 w-4" />
+              <span className="hidden sm:inline">Grafo</span>
+            </TabsTrigger>
+            <TabsTrigger value="redirects" className="gap-1.5">
+              <Route className="h-4 w-4" />
+              <span className="hidden sm:inline">Redirect</span>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {/* Search */}
+        <div className="relative w-full lg:w-80">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Cerca domini o brand..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Cerca domini o brand..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-        />
-      </div>
+      {/* Legend - only show in cards/tree view */}
+      {(viewType === 'cards' || viewType === 'tree') && (
+        <div className="flex flex-wrap gap-3 p-3 bg-muted/50 rounded-lg text-xs">
+          {DOMAIN_RELATION_CONFIG.map((config) => (
+            <div key={config.value} className="flex items-center gap-1.5">
+              <RelationIcon relation={config.value} />
+              <span className="text-muted-foreground">{config.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {search && (
         <p className="text-sm text-muted-foreground">
@@ -493,8 +559,8 @@ export default function BrandsPage() {
         </p>
       )}
 
-      {/* Brands Grid */}
-      {filteredBrands.length > 0 ? (
+      {/* ==================== CARDS VIEW ==================== */}
+      {viewType === 'cards' && filteredBrands.length > 0 && (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filteredBrands.map((brand) => {
             const grouped = groupDomainsByRelation(brand.domains);
@@ -762,7 +828,10 @@ export default function BrandsPage() {
             );
           })}
         </div>
-      ) : (
+      )}
+
+      {/* Cards Empty State */}
+      {viewType === 'cards' && filteredBrands.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
@@ -775,8 +844,479 @@ export default function BrandsPage() {
         </Card>
       )}
 
-      {/* Unassigned Domains */}
-      {filteredUnassigned.length > 0 && (
+      {/* ==================== TABLE VIEW ==================== */}
+      {viewType === 'table' && (
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[300px]">Dominio</TableHead>
+                  <TableHead>Brand</TableHead>
+                  <TableHead>Relazione</TableHead>
+                  <TableHead className="hidden md:table-cell">Dettaglio</TableHead>
+                  <TableHead className="w-[100px]">Azioni</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {/* All domains from all brands */}
+                {filteredBrands.flatMap(brand =>
+                  brand.domains.map(domain => (
+                    <TableRow key={domain.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <RelationIcon relation={domain.domain_relation} />
+                          <div>
+                            <a
+                              href={domain.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-medium hover:text-primary transition-colors flex items-center gap-1"
+                            >
+                              {getDomainDisplay(domain.url)}
+                              <ExternalLink className="h-3 w-3 opacity-50" />
+                            </a>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="gap-1">
+                          <Building2 className="h-3 w-3" />
+                          {brand.name}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className={
+                          domain.is_primary_for_brand ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                          domain.domain_relation === 'redirect' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                          domain.domain_relation === 'weglot_language' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                          domain.domain_relation === 'wordpress_subsite' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' :
+                          ''
+                        }>
+                          {domain.is_primary_for_brand ? 'Principale' : getDomainRelationConfig(domain.domain_relation).label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                        {domain.domain_relation === 'weglot_language' && domain.weglot_language_code
+                          ? getWeglotLanguageLabel(domain.weglot_language_code)
+                          : domain.domain_relation === 'redirect' && domain.redirect_url
+                          ? `→ ${getDomainDisplay(domain.redirect_url)}`
+                          : '-'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => openEditDomainRelation(domain, brand)}
+                          >
+                            <Settings2 className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => handleSetPrimary(brand.id, domain.id)}
+                          >
+                            <Star className={`h-3.5 w-3.5 ${domain.is_primary_for_brand ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+                {/* Unassigned domains */}
+                {filteredUnassigned.map(domain => (
+                  <TableRow key={domain.id} className="bg-muted/30">
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+                        <a
+                          href={domain.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium hover:text-primary transition-colors flex items-center gap-1"
+                        >
+                          {getDomainDisplay(domain.url)}
+                          <ExternalLink className="h-3 w-3 opacity-50" />
+                        </a>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-muted-foreground text-sm">Non assegnato</span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">Standalone</Badge>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">-</TableCell>
+                    <TableCell>-</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ==================== TREE VIEW ==================== */}
+      {viewType === 'tree' && (
+        <div className="space-y-2">
+          {filteredBrands.map(brand => {
+            const grouped = groupDomainsByRelation(brand.domains);
+            const isExpanded = expandedBrands.has(brand.id);
+
+            return (
+              <Card key={brand.id} className="overflow-hidden">
+                <div
+                  className="flex items-center gap-3 p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => {
+                    const newExpanded = new Set(expandedBrands);
+                    if (isExpanded) {
+                      newExpanded.delete(brand.id);
+                    } else {
+                      newExpanded.add(brand.id);
+                    }
+                    setExpandedBrands(newExpanded);
+                  }}
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  )}
+                  <Building2 className="h-5 w-5 text-primary" />
+                  <span className="font-semibold flex-1">{brand.name}</span>
+                  <Badge variant="secondary">{brand.domains.length} domini</Badge>
+                </div>
+
+                {isExpanded && brand.domains.length > 0 && (
+                  <div className="border-t bg-muted/20 px-4 py-3">
+                    <div className="ml-6 space-y-1">
+                      {/* Primary domains */}
+                      {grouped.primaries.map(domain => (
+                        <div key={domain.id} className="flex items-center gap-2 py-1.5 px-3 rounded-md bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
+                          <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                          <a href={domain.url} target="_blank" rel="noopener noreferrer" className="flex-1 text-sm font-medium hover:text-primary">
+                            {getDomainDisplay(domain.url)}
+                          </a>
+                          <Badge variant="secondary" className="text-[10px] bg-yellow-100 text-yellow-800">Principale</Badge>
+                        </div>
+                      ))}
+                      {/* Other domains with tree lines */}
+                      {[...grouped.weglot, ...grouped.redirects, ...grouped.subsites, ...grouped.aliases, ...grouped.others].map((domain, idx, arr) => (
+                        <div key={domain.id} className="flex items-center gap-2 py-1.5">
+                          <div className="w-6 flex justify-center">
+                            <div className={`w-px bg-border ${idx === arr.length - 1 ? 'h-3' : 'h-full'}`} />
+                          </div>
+                          <div className="w-4 h-px bg-border" />
+                          <RelationIcon relation={domain.domain_relation} />
+                          <a href={domain.url} target="_blank" rel="noopener noreferrer" className="flex-1 text-sm hover:text-primary">
+                            {getDomainDisplay(domain.url)}
+                          </a>
+                          <span className="text-xs text-muted-foreground">
+                            {domain.domain_relation === 'weglot_language' && domain.weglot_language_code
+                              ? getWeglotLanguageLabel(domain.weglot_language_code)
+                              : domain.domain_relation === 'redirect' && domain.redirect_url
+                              ? `→ ${getDomainDisplay(domain.redirect_url)}`
+                              : getDomainRelationConfig(domain.domain_relation).label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </Card>
+            );
+          })}
+
+          {/* Unassigned in tree */}
+          {filteredUnassigned.length > 0 && (
+            <Card>
+              <div
+                className="flex items-center gap-3 p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => {
+                  const newExpanded = new Set(expandedBrands);
+                  if (newExpanded.has('__unassigned__')) {
+                    newExpanded.delete('__unassigned__');
+                  } else {
+                    newExpanded.add('__unassigned__');
+                  }
+                  setExpandedBrands(newExpanded);
+                }}
+              >
+                {expandedBrands.has('__unassigned__') ? (
+                  <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                )}
+                <Globe className="h-5 w-5 text-muted-foreground" />
+                <span className="font-semibold flex-1 text-muted-foreground">Non Assegnati</span>
+                <Badge variant="outline">{filteredUnassigned.length} domini</Badge>
+              </div>
+
+              {expandedBrands.has('__unassigned__') && (
+                <div className="border-t bg-muted/20 px-4 py-3">
+                  <div className="ml-6 space-y-1">
+                    {filteredUnassigned.slice(0, 50).map(domain => (
+                      <div key={domain.id} className="flex items-center gap-2 py-1">
+                        <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+                        <a href={domain.url} target="_blank" rel="noopener noreferrer" className="text-sm hover:text-primary">
+                          {getDomainDisplay(domain.url)}
+                        </a>
+                      </div>
+                    ))}
+                    {filteredUnassigned.length > 50 && (
+                      <p className="text-xs text-muted-foreground ml-6">...e altri {filteredUnassigned.length - 50} domini</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* ==================== GRAPH VIEW ==================== */}
+      {viewType === 'graph' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Network className="h-5 w-5" />
+              Visualizzazione Grafo
+            </CardTitle>
+            <CardDescription>
+              Relazioni tra brand e domini
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="relative min-h-[500px] bg-muted/20 rounded-lg border overflow-auto p-8">
+              <div className="flex flex-wrap gap-8 justify-center">
+                {filteredBrands.map((brand, brandIdx) => {
+                  const grouped = groupDomainsByRelation(brand.domains);
+                  const angleStep = (2 * Math.PI) / Math.max(brand.domains.length, 1);
+
+                  return (
+                    <div key={brand.id} className="relative">
+                      {/* Brand node (center) */}
+                      <div className="flex flex-col items-center">
+                        <div className="w-24 h-24 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center shadow-lg">
+                          <div className="text-center">
+                            <Building2 className="h-6 w-6 text-primary mx-auto" />
+                            <span className="text-xs font-semibold mt-1 block truncate max-w-[80px]">{brand.name}</span>
+                          </div>
+                        </div>
+
+                        {/* Domain nodes around */}
+                        <div className="mt-4 flex flex-wrap gap-2 justify-center max-w-[300px]">
+                          {grouped.primaries.map(domain => (
+                            <Tooltip key={domain.id}>
+                              <TooltipTrigger asChild>
+                                <div className="w-10 h-10 rounded-full bg-yellow-100 border-2 border-yellow-400 flex items-center justify-center cursor-pointer hover:scale-110 transition-transform shadow">
+                                  <Star className="h-4 w-4 text-yellow-600 fill-yellow-600" />
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="font-medium">{getDomainDisplay(domain.url)}</p>
+                                <p className="text-xs text-muted-foreground">Principale</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ))}
+                          {grouped.redirects.map(domain => (
+                            <Tooltip key={domain.id}>
+                              <TooltipTrigger asChild>
+                                <div className="w-8 h-8 rounded-full bg-blue-100 border-2 border-blue-400 flex items-center justify-center cursor-pointer hover:scale-110 transition-transform shadow-sm">
+                                  <ArrowRight className="h-3 w-3 text-blue-600" />
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="font-medium">{getDomainDisplay(domain.url)}</p>
+                                <p className="text-xs text-muted-foreground">Redirect → {domain.redirect_url ? getDomainDisplay(domain.redirect_url) : '?'}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ))}
+                          {grouped.weglot.map(domain => (
+                            <Tooltip key={domain.id}>
+                              <TooltipTrigger asChild>
+                                <div className="w-8 h-8 rounded-full bg-purple-100 border-2 border-purple-400 flex items-center justify-center cursor-pointer hover:scale-110 transition-transform shadow-sm">
+                                  <Languages className="h-3 w-3 text-purple-600" />
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="font-medium">{getDomainDisplay(domain.url)}</p>
+                                <p className="text-xs text-muted-foreground">{getWeglotLanguageLabel(domain.weglot_language_code)}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ))}
+                          {grouped.subsites.map(domain => (
+                            <Tooltip key={domain.id}>
+                              <TooltipTrigger asChild>
+                                <div className="w-8 h-8 rounded-full bg-indigo-100 border-2 border-indigo-400 flex items-center justify-center cursor-pointer hover:scale-110 transition-transform shadow-sm">
+                                  <LayoutGrid className="h-3 w-3 text-indigo-600" />
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="font-medium">{getDomainDisplay(domain.url)}</p>
+                                <p className="text-xs text-muted-foreground">WordPress Subsite</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ))}
+                          {[...grouped.aliases, ...grouped.others].map(domain => (
+                            <Tooltip key={domain.id}>
+                              <TooltipTrigger asChild>
+                                <div className="w-8 h-8 rounded-full bg-gray-100 border-2 border-gray-300 flex items-center justify-center cursor-pointer hover:scale-110 transition-transform shadow-sm">
+                                  <Globe className="h-3 w-3 text-gray-600" />
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="font-medium">{getDomainDisplay(domain.url)}</p>
+                                <p className="text-xs text-muted-foreground">{getDomainRelationConfig(domain.domain_relation).label}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Legend */}
+              <div className="absolute bottom-4 left-4 bg-background/90 backdrop-blur p-3 rounded-lg border text-xs space-y-1">
+                <div className="flex items-center gap-2"><div className="w-4 h-4 rounded-full bg-yellow-100 border-2 border-yellow-400" /> Principale</div>
+                <div className="flex items-center gap-2"><div className="w-4 h-4 rounded-full bg-blue-100 border-2 border-blue-400" /> Redirect</div>
+                <div className="flex items-center gap-2"><div className="w-4 h-4 rounded-full bg-purple-100 border-2 border-purple-400" /> Lingua</div>
+                <div className="flex items-center gap-2"><div className="w-4 h-4 rounded-full bg-indigo-100 border-2 border-indigo-400" /> Subsite</div>
+                <div className="flex items-center gap-2"><div className="w-4 h-4 rounded-full bg-gray-100 border-2 border-gray-300" /> Altro</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ==================== REDIRECTS VIEW ==================== */}
+      {viewType === 'redirects' && (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Route className="h-5 w-5" />
+                Mappa Redirect
+              </CardTitle>
+              <CardDescription>
+                Tutti i redirect configurati con origine e destinazione
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const allRedirects = filteredBrands.flatMap(brand =>
+                  brand.domains
+                    .filter(d => d.domain_relation === 'redirect' || d.is_redirect_source)
+                    .map(d => ({ ...d, brandName: brand.name }))
+                );
+
+                if (allRedirects.length === 0) {
+                  return (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <Route className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>Nessun redirect configurato</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-3">
+                    {allRedirects.map(domain => (
+                      <div key={domain.id} className="flex items-center gap-4 p-4 rounded-lg border bg-gradient-to-r from-blue-50/50 to-transparent dark:from-blue-950/20">
+                        {/* Source */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Globe className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                            <a
+                              href={domain.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-medium truncate hover:text-primary"
+                            >
+                              {getDomainDisplay(domain.url)}
+                            </a>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5 ml-6">
+                            Brand: {domain.brandName}
+                          </p>
+                        </div>
+
+                        {/* Arrow */}
+                        <div className="flex items-center gap-2 px-4">
+                          <Badge variant="outline" className="text-xs">
+                            {domain.redirect_type || '301'}
+                          </Badge>
+                          <ArrowRight className="h-5 w-5 text-blue-500" />
+                        </div>
+
+                        {/* Destination */}
+                        <div className="flex-1 min-w-0">
+                          {domain.redirect_url ? (
+                            <a
+                              href={domain.redirect_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-medium text-blue-600 hover:text-blue-800 truncate flex items-center gap-2"
+                            >
+                              <Globe className="h-4 w-4 flex-shrink-0" />
+                              {getDomainDisplay(domain.redirect_url)}
+                              <ExternalLink className="h-3 w-3 opacity-50" />
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground italic">Destinazione non configurata</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
+          {/* Redirect stats */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <p className="text-3xl font-bold text-blue-600">
+                    {filteredBrands.flatMap(b => b.domains).filter(d => d.domain_relation === 'redirect').length}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Totale Redirect</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <p className="text-3xl font-bold text-green-600">
+                    {filteredBrands.flatMap(b => b.domains).filter(d => d.domain_relation === 'redirect' && d.redirect_url).length}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Con Destinazione</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <p className="text-3xl font-bold text-amber-600">
+                    {filteredBrands.flatMap(b => b.domains).filter(d => d.domain_relation === 'redirect' && !d.redirect_url).length}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Senza Destinazione</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Unassigned Domains - only in cards view */}
+      {viewType === 'cards' && filteredUnassigned.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Domini Non Assegnati</CardTitle>
@@ -1125,6 +1665,7 @@ export default function BrandsPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </TooltipProvider>
   );
 }
 
