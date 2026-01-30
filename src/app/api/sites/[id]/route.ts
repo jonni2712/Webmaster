@@ -46,6 +46,13 @@ const updateSiteSchema = z.object({
   // Zone fields
   primary_domain_id: z.string().uuid().optional().nullable(),
   zone_name: z.string().optional().nullable(),
+  // Brand and relation fields
+  brand_id: z.string().uuid().optional().nullable(),
+  domain_relation: z.enum([
+    'primary', 'redirect', 'weglot_language', 'wordpress_subsite', 'alias', 'standalone'
+  ]).optional().nullable(),
+  weglot_language_code: z.string().optional().nullable(),
+  parent_site_id: z.string().uuid().optional().nullable(),
 });
 
 export async function GET(
@@ -172,6 +179,10 @@ export async function PUT(
       server_id,
       redirect_to_site_id,
       domain_expires_at,
+      brand_id,
+      domain_relation,
+      weglot_language_code,
+      parent_site_id,
       ...updateData
     } = validation.data;
 
@@ -238,6 +249,61 @@ export async function PUT(
 
     if (domain_expires_at !== undefined) {
       updatePayload.domain_expires_at = domain_expires_at || null;
+    }
+
+    // Brand and relation fields
+    if (brand_id !== undefined) {
+      // Verify brand belongs to tenant if provided
+      if (brand_id) {
+        const { data: brand } = await supabase
+          .from('brands')
+          .select('id')
+          .eq('id', brand_id)
+          .eq('tenant_id', user.current_tenant_id)
+          .single();
+
+        if (!brand) {
+          return NextResponse.json(
+            { error: 'Brand non trovato' },
+            { status: 404 }
+          );
+        }
+      }
+      updatePayload.brand_id = brand_id || null;
+    }
+
+    if (domain_relation !== undefined) {
+      updatePayload.domain_relation = domain_relation || 'standalone';
+    }
+
+    if (weglot_language_code !== undefined) {
+      updatePayload.weglot_language_code = weglot_language_code || null;
+    }
+
+    if (parent_site_id !== undefined) {
+      // Verify parent site belongs to tenant and is not self
+      if (parent_site_id) {
+        if (parent_site_id === id) {
+          return NextResponse.json(
+            { error: 'Un sito non puo avere se stesso come padre' },
+            { status: 400 }
+          );
+        }
+        const { data: parentSite } = await supabase
+          .from('sites')
+          .select('id')
+          .eq('id', parent_site_id)
+          .eq('tenant_id', user.current_tenant_id)
+          .single();
+
+        if (!parentSite) {
+          return NextResponse.json(
+            { error: 'Sito padre non trovato' },
+            { status: 404 }
+          );
+        }
+      }
+      updatePayload.parent_site_id = parent_site_id || null;
     }
 
     if (alert_settings !== undefined) {

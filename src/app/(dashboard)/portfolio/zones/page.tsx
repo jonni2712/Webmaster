@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -38,19 +38,27 @@ import {
   Loader2,
   MoreHorizontal,
   Edit,
-  ExternalLink,
   Trash2,
   Globe,
   ArrowRight,
-  Link as LinkIcon,
   Unlink,
-  Network,
   Building2,
   Star,
-  StarOff,
+  Search,
+  Languages,
+  LayoutGrid,
+  Copy,
+  Settings2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import {
+  DOMAIN_RELATION_CONFIG,
+  WEGLOT_LANGUAGES,
+  getDomainRelationConfig,
+  getWeglotLanguageLabel,
+  type DomainRelationType,
+} from '@/lib/constants/lifecycle-status';
 
 interface Brand {
   id: string;
@@ -73,6 +81,9 @@ interface DomainSite {
   redirect_type: string | null;
   brand_id: string | null;
   is_primary_for_brand: boolean;
+  domain_relation: DomainRelationType | null;
+  weglot_language_code: string | null;
+  parent_site_id: string | null;
 }
 
 interface BrandWithDomains extends Brand {
@@ -85,12 +96,33 @@ interface Client {
   name: string;
 }
 
+// Icon mapping for domain relation
+const RelationIcon = ({ relation }: { relation: DomainRelationType | null }) => {
+  switch (relation) {
+    case 'primary':
+      return <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />;
+    case 'redirect':
+      return <ArrowRight className="h-3.5 w-3.5 text-blue-500" />;
+    case 'weglot_language':
+      return <Languages className="h-3.5 w-3.5 text-purple-500" />;
+    case 'wordpress_subsite':
+      return <LayoutGrid className="h-3.5 w-3.5 text-indigo-500" />;
+    case 'alias':
+      return <Copy className="h-3.5 w-3.5 text-gray-500" />;
+    default:
+      return <Globe className="h-3.5 w-3.5 text-green-500" />;
+  }
+};
+
 export default function BrandsPage() {
   const [brands, setBrands] = useState<BrandWithDomains[]>([]);
   const [unassignedDomains, setUnassignedDomains] = useState<DomainSite[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Search
+  const [search, setSearch] = useState('');
 
   // Create brand modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -106,6 +138,18 @@ export default function BrandsPage() {
   const [addToBrandId, setAddToBrandId] = useState<string | null>(null);
   const [selectedDomainIds, setSelectedDomainIds] = useState<string[]>([]);
   const [isAdding, setIsAdding] = useState(false);
+
+  // Edit domain relation modal
+  const [editingDomain, setEditingDomain] = useState<DomainSite | null>(null);
+  const [editingDomainBrand, setEditingDomainBrand] = useState<BrandWithDomains | null>(null);
+  const [domainRelationForm, setDomainRelationForm] = useState({
+    domain_relation: 'standalone' as DomainRelationType,
+    weglot_language_code: '',
+    redirect_url: '',
+    redirect_type: '301',
+    parent_site_id: '',
+  });
+  const [isSavingRelation, setIsSavingRelation] = useState(false);
 
   const fetchData = useCallback(async (refresh = false) => {
     if (refresh) {
@@ -275,6 +319,48 @@ export default function BrandsPage() {
     }
   };
 
+  const openEditDomainRelation = (domain: DomainSite, brand: BrandWithDomains) => {
+    setEditingDomain(domain);
+    setEditingDomainBrand(brand);
+    setDomainRelationForm({
+      domain_relation: domain.domain_relation || 'standalone',
+      weglot_language_code: domain.weglot_language_code || '',
+      redirect_url: domain.redirect_url || '',
+      redirect_type: domain.redirect_type || '301',
+      parent_site_id: domain.parent_site_id || '',
+    });
+  };
+
+  const handleSaveDomainRelation = async () => {
+    if (!editingDomain) return;
+    setIsSavingRelation(true);
+
+    try {
+      const res = await fetch('/api/portfolio/brands/update-domain-relation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          domainId: editingDomain.id,
+          ...domainRelationForm,
+          parent_site_id: domainRelationForm.parent_site_id || null,
+          weglot_language_code: domainRelationForm.weglot_language_code || null,
+          redirect_url: domainRelationForm.redirect_url || null,
+        }),
+      });
+
+      if (!res.ok) throw new Error('Errore nel salvataggio');
+
+      toast.success('Relazione dominio aggiornata');
+      setEditingDomain(null);
+      setEditingDomainBrand(null);
+      fetchData(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Errore nel salvataggio');
+    } finally {
+      setIsSavingRelation(false);
+    }
+  };
+
   const getDomainDisplay = (url: string) => {
     try {
       return new URL(url).hostname;
@@ -282,6 +368,52 @@ export default function BrandsPage() {
       return url;
     }
   };
+
+  // Group domains by relation type
+  const groupDomainsByRelation = (domains: DomainSite[]) => {
+    const primary = domains.find(d => d.is_primary_for_brand);
+    const redirects = domains.filter(d => d.domain_relation === 'redirect' && !d.is_primary_for_brand);
+    const weglot = domains.filter(d => d.domain_relation === 'weglot_language' && !d.is_primary_for_brand);
+    const subsites = domains.filter(d => d.domain_relation === 'wordpress_subsite' && !d.is_primary_for_brand);
+    const aliases = domains.filter(d => d.domain_relation === 'alias' && !d.is_primary_for_brand);
+    const others = domains.filter(d =>
+      !d.is_primary_for_brand &&
+      !['redirect', 'weglot_language', 'wordpress_subsite', 'alias'].includes(d.domain_relation || '')
+    );
+
+    return { primary, redirects, weglot, subsites, aliases, others };
+  };
+
+  // Filter brands and domains based on search
+  const filteredBrands = useMemo(() => {
+    if (!search.trim()) return brands;
+
+    const searchLower = search.toLowerCase();
+    return brands.map(brand => {
+      const brandMatches = brand.name.toLowerCase().includes(searchLower);
+      const matchingDomains = brand.domains.filter(d =>
+        getDomainDisplay(d.url).toLowerCase().includes(searchLower) ||
+        d.name.toLowerCase().includes(searchLower)
+      );
+
+      if (brandMatches || matchingDomains.length > 0) {
+        return {
+          ...brand,
+          domains: brandMatches ? brand.domains : matchingDomains,
+        };
+      }
+      return null;
+    }).filter(Boolean) as BrandWithDomains[];
+  }, [brands, search]);
+
+  const filteredUnassigned = useMemo(() => {
+    if (!search.trim()) return unassignedDomains;
+    const searchLower = search.toLowerCase();
+    return unassignedDomains.filter(d =>
+      getDomainDisplay(d.url).toLowerCase().includes(searchLower) ||
+      d.name.toLowerCase().includes(searchLower)
+    );
+  }, [unassignedDomains, search]);
 
   if (isLoading) {
     return (
@@ -333,140 +465,218 @@ export default function BrandsPage() {
         </div>
       </div>
 
+      {/* Legend */}
+      <div className="flex flex-wrap gap-3 p-3 bg-muted/50 rounded-lg text-xs">
+        {DOMAIN_RELATION_CONFIG.map((config) => (
+          <div key={config.value} className="flex items-center gap-1.5">
+            <RelationIcon relation={config.value} />
+            <span className="text-muted-foreground">{config.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Search */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Cerca domini o brand..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9"
+        />
+      </div>
+
+      {search && (
+        <p className="text-sm text-muted-foreground">
+          {filteredBrands.length} brand e {filteredUnassigned.length} domini trovati per "{search}"
+        </p>
+      )}
+
       {/* Brands Grid */}
-      {brands.length > 0 ? (
+      {filteredBrands.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {brands.map((brand) => (
-            <Card key={brand.id} className="relative">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="h-5 w-5 text-primary" />
-                    <div>
-                      <CardTitle className="text-base">{brand.name}</CardTitle>
-                      {brand.client_name && (
-                        <CardDescription className="text-xs">
-                          Cliente: {brand.client_name}
-                        </CardDescription>
-                      )}
-                    </div>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => {
-                        setEditingBrand(brand);
-                        setEditForm({
-                          name: brand.name,
-                          description: brand.description || '',
-                          client_id: brand.client_id || 'none',
-                        });
-                      }}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Modifica Brand
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setAddToBrandId(brand.id)}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Aggiungi Domini
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        className="text-red-600"
-                        onClick={() => handleDeleteBrand(brand.id)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Elimina Brand
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                {brand.description && (
-                  <p className="text-xs text-muted-foreground mt-1">{brand.description}</p>
-                )}
-              </CardHeader>
-              <CardContent className="pt-0">
-                {/* Domains */}
-                {brand.domains.length > 0 ? (
-                  <div className="space-y-2">
-                    <p className="text-xs text-muted-foreground font-medium">
-                      Domini ({brand.domains.length})
-                    </p>
-                    <ScrollArea className={brand.domains.length > 5 ? 'h-40' : ''}>
-                      <div className="space-y-1.5">
-                        {brand.domains.map((domain) => (
-                          <div
-                            key={domain.id}
-                            className="flex items-center gap-2 p-2 rounded border bg-muted/30 group"
-                          >
-                            {domain.is_primary_for_brand ? (
-                              <Star className="h-3 w-3 text-yellow-500 fill-yellow-500 flex-shrink-0" />
-                            ) : domain.is_redirect_source ? (
-                              <ArrowRight className="h-3 w-3 text-blue-500 flex-shrink-0" />
-                            ) : (
-                              <Globe className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                            )}
-                            <span className="text-sm flex-1 truncate">
-                              {getDomainDisplay(domain.url)}
-                            </span>
-                            {domain.is_primary_for_brand && (
-                              <Badge variant="secondary" className="text-[10px] px-1 bg-yellow-100 text-yellow-700">
-                                Principale
-                              </Badge>
-                            )}
-                            {domain.is_redirect_source && domain.redirect_type && (
-                              <Badge variant="outline" className="text-[10px] px-1">
-                                {domain.redirect_type}
-                              </Badge>
-                            )}
-                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              {!domain.is_primary_for_brand && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={() => handleSetPrimary(brand.id, domain.id)}
-                                  title="Imposta come principale"
-                                >
-                                  <Star className="h-3 w-3" />
-                                </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={() => handleRemoveDomain(domain.id)}
-                                title="Rimuovi dal brand"
-                              >
-                                <Unlink className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
+          {filteredBrands.map((brand) => {
+            const grouped = groupDomainsByRelation(brand.domains);
+
+            return (
+              <Card key={brand.id} className="relative">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-5 w-5 text-primary" />
+                      <div>
+                        <CardTitle className="text-base">{brand.name}</CardTitle>
+                        {brand.client_name && (
+                          <CardDescription className="text-xs">
+                            Cliente: {brand.client_name}
+                          </CardDescription>
+                        )}
                       </div>
-                    </ScrollArea>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => {
+                          setEditingBrand(brand);
+                          setEditForm({
+                            name: brand.name,
+                            description: brand.description || '',
+                            client_id: brand.client_id || 'none',
+                          });
+                        }}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Modifica Brand
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setAddToBrandId(brand.id)}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Aggiungi Domini
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-red-600"
+                          onClick={() => handleDeleteBrand(brand.id)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Elimina Brand
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="text-xs text-muted-foreground mb-2">
-                      Nessun dominio assegnato
+                  {brand.description && (
+                    <p className="text-xs text-muted-foreground mt-1">{brand.description}</p>
+                  )}
+                </CardHeader>
+                <CardContent className="pt-0 space-y-3">
+                  {/* Primary Domain */}
+                  {grouped.primary && (
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                        Dominio Principale
+                      </p>
+                      <div className="flex items-center gap-2 p-2.5 rounded-lg border-2 border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-700">
+                        <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 flex-shrink-0" />
+                        <span className="text-sm font-medium flex-1 truncate">
+                          {getDomainDisplay(grouped.primary.url)}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => openEditDomainRelation(grouped.primary!, brand)}
+                          title="Configura dominio"
+                        >
+                          <Settings2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Secondary Domains */}
+                  {brand.domains.length > 1 && (
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                        Domini Collegati ({brand.domains.length - 1})
+                      </p>
+                      <ScrollArea className={brand.domains.length > 6 ? 'h-44' : ''}>
+                        <div className="space-y-1">
+                          {/* Weglot Languages */}
+                          {grouped.weglot.map((domain) => (
+                            <DomainRow
+                              key={domain.id}
+                              domain={domain}
+                              brand={brand}
+                              onEdit={() => openEditDomainRelation(domain, brand)}
+                              onSetPrimary={() => handleSetPrimary(brand.id, domain.id)}
+                              onRemove={() => handleRemoveDomain(domain.id)}
+                              getDomainDisplay={getDomainDisplay}
+                            />
+                          ))}
+
+                          {/* Redirects */}
+                          {grouped.redirects.map((domain) => (
+                            <DomainRow
+                              key={domain.id}
+                              domain={domain}
+                              brand={brand}
+                              onEdit={() => openEditDomainRelation(domain, brand)}
+                              onSetPrimary={() => handleSetPrimary(brand.id, domain.id)}
+                              onRemove={() => handleRemoveDomain(domain.id)}
+                              getDomainDisplay={getDomainDisplay}
+                            />
+                          ))}
+
+                          {/* WordPress Subsites */}
+                          {grouped.subsites.map((domain) => (
+                            <DomainRow
+                              key={domain.id}
+                              domain={domain}
+                              brand={brand}
+                              onEdit={() => openEditDomainRelation(domain, brand)}
+                              onSetPrimary={() => handleSetPrimary(brand.id, domain.id)}
+                              onRemove={() => handleRemoveDomain(domain.id)}
+                              getDomainDisplay={getDomainDisplay}
+                            />
+                          ))}
+
+                          {/* Aliases */}
+                          {grouped.aliases.map((domain) => (
+                            <DomainRow
+                              key={domain.id}
+                              domain={domain}
+                              brand={brand}
+                              onEdit={() => openEditDomainRelation(domain, brand)}
+                              onSetPrimary={() => handleSetPrimary(brand.id, domain.id)}
+                              onRemove={() => handleRemoveDomain(domain.id)}
+                              getDomainDisplay={getDomainDisplay}
+                            />
+                          ))}
+
+                          {/* Others */}
+                          {grouped.others.map((domain) => (
+                            <DomainRow
+                              key={domain.id}
+                              domain={domain}
+                              brand={brand}
+                              onEdit={() => openEditDomainRelation(domain, brand)}
+                              onSetPrimary={() => handleSetPrimary(brand.id, domain.id)}
+                              onRemove={() => handleRemoveDomain(domain.id)}
+                              getDomainDisplay={getDomainDisplay}
+                            />
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  )}
+
+                  {brand.domains.length === 0 && (
+                    <div className="text-center py-4">
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Nessun dominio assegnato
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setAddToBrandId(brand.id)}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Aggiungi Domini
+                      </Button>
+                    </div>
+                  )}
+
+                  {brand.domains.length === 1 && !grouped.primary && (
+                    <p className="text-xs text-muted-foreground text-center py-2">
+                      Imposta un dominio come principale
                     </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setAddToBrandId(brand.id)}
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      Aggiungi Domini
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       ) : (
         <Card>
@@ -482,25 +692,28 @@ export default function BrandsPage() {
       )}
 
       {/* Unassigned Domains */}
-      {unassignedDomains.length > 0 && (
+      {filteredUnassigned.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Domini Non Assegnati</CardTitle>
             <CardDescription>
-              {unassignedDomains.length} domini senza brand
+              {filteredUnassigned.length} domini senza brand
+              {search && unassignedDomains.length !== filteredUnassigned.length && (
+                <> (su {unassignedDomains.length} totali)</>
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {unassignedDomains.slice(0, 30).map((domain) => (
+              {filteredUnassigned.slice(0, 30).map((domain) => (
                 <Badge key={domain.id} variant="outline" className="py-1.5">
                   <Globe className="h-3 w-3 mr-1.5" />
                   {getDomainDisplay(domain.url)}
                 </Badge>
               ))}
-              {unassignedDomains.length > 30 && (
+              {filteredUnassigned.length > 30 && (
                 <Badge variant="secondary">
-                  +{unassignedDomains.length - 30} altri
+                  +{filteredUnassigned.length - 30} altri
                 </Badge>
               )}
             </div>
@@ -683,6 +896,216 @@ export default function BrandsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Domain Relation Dialog */}
+      <Dialog open={!!editingDomain} onOpenChange={(open) => !open && setEditingDomain(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Configura Dominio</DialogTitle>
+            <DialogDescription>
+              {editingDomain && getDomainDisplay(editingDomain.url)}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Tipo Relazione</Label>
+              <Select
+                value={domainRelationForm.domain_relation}
+                onValueChange={(v) => setDomainRelationForm({
+                  ...domainRelationForm,
+                  domain_relation: v as DomainRelationType,
+                })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DOMAIN_RELATION_CONFIG.filter(c => c.value !== 'primary').map((config) => (
+                    <SelectItem key={config.value} value={config.value}>
+                      <div className="flex items-center gap-2">
+                        <RelationIcon relation={config.value} />
+                        <span>{config.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {getDomainRelationConfig(domainRelationForm.domain_relation).description}
+              </p>
+            </div>
+
+            {/* Weglot Language */}
+            {domainRelationForm.domain_relation === 'weglot_language' && (
+              <div className="space-y-2">
+                <Label>Lingua</Label>
+                <Select
+                  value={domainRelationForm.weglot_language_code}
+                  onValueChange={(v) => setDomainRelationForm({
+                    ...domainRelationForm,
+                    weglot_language_code: v === 'none' ? '' : v,
+                  })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleziona lingua..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Seleziona lingua...</SelectItem>
+                    {WEGLOT_LANGUAGES.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code}>
+                        {lang.flag} {lang.label} ({lang.code})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Redirect */}
+            {domainRelationForm.domain_relation === 'redirect' && (
+              <>
+                <div className="space-y-2">
+                  <Label>URL Destinazione</Label>
+                  <Input
+                    value={domainRelationForm.redirect_url}
+                    onChange={(e) => setDomainRelationForm({
+                      ...domainRelationForm,
+                      redirect_url: e.target.value,
+                    })}
+                    placeholder="https://esempio.it"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tipo Redirect</Label>
+                  <Select
+                    value={domainRelationForm.redirect_type}
+                    onValueChange={(v) => setDomainRelationForm({
+                      ...domainRelationForm,
+                      redirect_type: v,
+                    })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="301">301 - Permanente</SelectItem>
+                      <SelectItem value="302">302 - Temporaneo</SelectItem>
+                      <SelectItem value="307">307 - Temporaneo (HTTP/1.1)</SelectItem>
+                      <SelectItem value="308">308 - Permanente (HTTP/1.1)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+
+            {/* WordPress Subsite / Parent */}
+            {(domainRelationForm.domain_relation === 'wordpress_subsite' ||
+              domainRelationForm.domain_relation === 'weglot_language') &&
+              editingDomainBrand && (
+                <div className="space-y-2">
+                  <Label>Sito Padre</Label>
+                  <Select
+                    value={domainRelationForm.parent_site_id || 'none'}
+                    onValueChange={(v) => setDomainRelationForm({
+                      ...domainRelationForm,
+                      parent_site_id: v === 'none' ? '' : v,
+                    })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleziona sito padre..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nessun sito padre</SelectItem>
+                      {editingDomainBrand.domains
+                        .filter(d => d.id !== editingDomain?.id)
+                        .map((domain) => (
+                          <SelectItem key={domain.id} value={domain.id}>
+                            {getDomainDisplay(domain.url)}
+                            {domain.is_primary_for_brand && ' (Principale)'}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingDomain(null)}>
+              Annulla
+            </Button>
+            <Button onClick={handleSaveDomainRelation} disabled={isSavingRelation}>
+              {isSavingRelation && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Salva
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// Domain Row Component
+function DomainRow({
+  domain,
+  brand,
+  onEdit,
+  onSetPrimary,
+  onRemove,
+  getDomainDisplay,
+}: {
+  domain: DomainSite;
+  brand: BrandWithDomains;
+  onEdit: () => void;
+  onSetPrimary: () => void;
+  onRemove: () => void;
+  getDomainDisplay: (url: string) => string;
+}) {
+  const relationConfig = getDomainRelationConfig(domain.domain_relation);
+
+  return (
+    <div className="flex items-center gap-2 p-2 rounded border bg-muted/30 group hover:bg-muted/50 transition-colors">
+      <RelationIcon relation={domain.domain_relation} />
+      <div className="flex-1 min-w-0">
+        <span className="text-sm truncate block">
+          {getDomainDisplay(domain.url)}
+        </span>
+        <span className="text-[10px] text-muted-foreground">
+          {domain.domain_relation === 'weglot_language' && domain.weglot_language_code
+            ? getWeglotLanguageLabel(domain.weglot_language_code)
+            : domain.domain_relation === 'redirect' && domain.redirect_url
+            ? `→ ${domain.redirect_url}`
+            : relationConfig.label}
+        </span>
+      </div>
+      <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          onClick={onEdit}
+          title="Configura"
+        >
+          <Settings2 className="h-3 w-3" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          onClick={onSetPrimary}
+          title="Imposta come principale"
+        >
+          <Star className="h-3 w-3" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          onClick={onRemove}
+          title="Rimuovi dal brand"
+        >
+          <Unlink className="h-3 w-3" />
+        </Button>
+      </div>
     </div>
   );
 }

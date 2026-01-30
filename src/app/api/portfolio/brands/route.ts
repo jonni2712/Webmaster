@@ -49,10 +49,12 @@ export async function GET(request: NextRequest) {
         redirect_url,
         redirect_type,
         brand_id,
-        is_primary_for_brand
+        is_primary_for_brand,
+        domain_relation,
+        weglot_language_code,
+        parent_site_id
       `)
       .eq('tenant_id', user.current_tenant_id)
-      .is('parent_site_id', null)
       .order('name');
 
     if (domainsError) {

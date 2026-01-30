@@ -145,3 +145,112 @@ export function getRedirectTypeLabel(type: string | null): string {
   const found = REDIRECT_TYPES.find(t => t.value === type);
   return found ? found.label : type;
 }
+
+/**
+ * Domain relation type configuration
+ * Defines how a domain relates to the primary domain in a brand
+ */
+export type DomainRelationType =
+  | 'primary'           // Dominio principale del brand
+  | 'redirect'          // Redirect verso altro dominio
+  | 'weglot_language'   // Lingua Weglot collegata al principale
+  | 'wordpress_subsite' // Sottosito WordPress (multisite)
+  | 'alias'             // Alias/mirror del principale
+  | 'standalone';       // Sito indipendente nel brand
+
+export interface DomainRelationConfig {
+  value: DomainRelationType;
+  label: string;
+  description: string;
+  icon: string;
+  color: string;
+  bgColor: string;
+}
+
+export const DOMAIN_RELATION_CONFIG: DomainRelationConfig[] = [
+  {
+    value: 'primary',
+    label: 'Principale',
+    description: 'Dominio principale del brand',
+    icon: 'Star',
+    color: 'text-yellow-600',
+    bgColor: 'bg-yellow-100',
+  },
+  {
+    value: 'redirect',
+    label: 'Redirect',
+    description: 'Reindirizza ad altro dominio',
+    icon: 'ArrowRight',
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-100',
+  },
+  {
+    value: 'weglot_language',
+    label: 'Lingua Weglot',
+    description: 'Variante lingua gestita da Weglot',
+    icon: 'Languages',
+    color: 'text-purple-600',
+    bgColor: 'bg-purple-100',
+  },
+  {
+    value: 'wordpress_subsite',
+    label: 'Sottosito WP',
+    description: 'Sottosito WordPress multisite',
+    icon: 'LayoutGrid',
+    color: 'text-indigo-600',
+    bgColor: 'bg-indigo-100',
+  },
+  {
+    value: 'alias',
+    label: 'Alias',
+    description: 'Alias o mirror del sito principale',
+    icon: 'Copy',
+    color: 'text-gray-600',
+    bgColor: 'bg-gray-100',
+  },
+  {
+    value: 'standalone',
+    label: 'Indipendente',
+    description: 'Sito indipendente nel brand',
+    icon: 'Globe',
+    color: 'text-green-600',
+    bgColor: 'bg-green-100',
+  },
+];
+
+/**
+ * Common Weglot language codes
+ */
+export const WEGLOT_LANGUAGES = [
+  { code: 'en', label: 'Inglese', flag: '🇬🇧' },
+  { code: 'de', label: 'Tedesco', flag: '🇩🇪' },
+  { code: 'fr', label: 'Francese', flag: '🇫🇷' },
+  { code: 'es', label: 'Spagnolo', flag: '🇪🇸' },
+  { code: 'pt', label: 'Portoghese', flag: '🇵🇹' },
+  { code: 'it', label: 'Italiano', flag: '🇮🇹' },
+  { code: 'nl', label: 'Olandese', flag: '🇳🇱' },
+  { code: 'pl', label: 'Polacco', flag: '🇵🇱' },
+  { code: 'ru', label: 'Russo', flag: '🇷🇺' },
+  { code: 'zh', label: 'Cinese', flag: '🇨🇳' },
+  { code: 'ja', label: 'Giapponese', flag: '🇯🇵' },
+  { code: 'ko', label: 'Coreano', flag: '🇰🇷' },
+  { code: 'ar', label: 'Arabo', flag: '🇸🇦' },
+  { code: 'tr', label: 'Turco', flag: '🇹🇷' },
+  { code: 'sv', label: 'Svedese', flag: '🇸🇪' },
+  { code: 'da', label: 'Danese', flag: '🇩🇰' },
+  { code: 'fi', label: 'Finlandese', flag: '🇫🇮' },
+  { code: 'no', label: 'Norvegese', flag: '🇳🇴' },
+  { code: 'cs', label: 'Ceco', flag: '🇨🇿' },
+  { code: 'el', label: 'Greco', flag: '🇬🇷' },
+];
+
+export function getDomainRelationConfig(relation: DomainRelationType | null): DomainRelationConfig {
+  const found = DOMAIN_RELATION_CONFIG.find(r => r.value === relation);
+  return found || DOMAIN_RELATION_CONFIG.find(r => r.value === 'standalone')!;
+}
+
+export function getWeglotLanguageLabel(code: string | null): string {
+  if (!code) return '-';
+  const lang = WEGLOT_LANGUAGES.find(l => l.code === code);
+  return lang ? `${lang.flag} ${lang.label}` : code.toUpperCase();
+}

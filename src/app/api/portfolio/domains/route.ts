@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Get all domains with server info
+    // Get all domains with server and brand info
     const { data: sites, error: sitesError } = await supabase
       .from('sites')
       .select(`
@@ -41,10 +41,14 @@ export async function GET(request: NextRequest) {
         updated_at,
         is_redirect_source,
         redirect_url,
-        redirect_type
+        redirect_type,
+        brand_id,
+        is_primary_for_brand,
+        domain_relation,
+        weglot_language_code,
+        parent_site_id
       `)
       .eq('tenant_id', user.current_tenant_id)
-      .is('parent_site_id', null) // Exclude subsites
       .order('name', { ascending: true });
 
     if (sitesError) {
@@ -63,19 +67,34 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: serversError.message }, { status: 500 });
     }
 
-    // Create server lookup map
-    const serverMap = new Map(servers?.map(s => [s.id, s.name]) || []);
+    // Get brands for mapping and dropdown
+    const { data: brands, error: brandsError } = await supabase
+      .from('brands')
+      .select('id, name')
+      .eq('tenant_id', user.current_tenant_id)
+      .eq('is_active', true)
+      .order('name', { ascending: true });
 
-    // Enrich sites with server names
-    const domainsWithServer = (sites || []).map(site => ({
+    if (brandsError) {
+      return NextResponse.json({ error: brandsError.message }, { status: 500 });
+    }
+
+    // Create lookup maps
+    const serverMap = new Map(servers?.map(s => [s.id, s.name]) || []);
+    const brandMap = new Map(brands?.map(b => [b.id, b.name]) || []);
+
+    // Enrich sites with server and brand names
+    const domainsWithInfo = (sites || []).map(site => ({
       ...site,
       server_name: site.server_id ? serverMap.get(site.server_id) || null : null,
+      brand_name: site.brand_id ? brandMap.get(site.brand_id) || null : null,
     }));
 
     return NextResponse.json({
-      domains: domainsWithServer,
+      domains: domainsWithInfo,
       servers: servers || [],
-      total: domainsWithServer.length,
+      brands: brands || [],
+      total: domainsWithInfo.length,
     });
 
   } catch (error) {

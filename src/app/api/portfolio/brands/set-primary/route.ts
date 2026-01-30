@@ -31,16 +31,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Clear is_primary_for_brand for all domains in this brand
+    // Also reset domain_relation from 'primary' to 'standalone' for the old primary
     await supabase
       .from('sites')
-      .update({ is_primary_for_brand: false })
+      .update({
+        is_primary_for_brand: false,
+        domain_relation: 'standalone',
+      })
       .eq('brand_id', brandId)
+      .eq('is_primary_for_brand', true)
       .eq('tenant_id', user.current_tenant_id);
 
     // Set the new primary
     const { error: updateError } = await supabase
       .from('sites')
-      .update({ is_primary_for_brand: true })
+      .update({
+        is_primary_for_brand: true,
+        domain_relation: 'primary',
+      })
       .eq('id', domainId)
       .eq('brand_id', brandId)
       .eq('tenant_id', user.current_tenant_id);
