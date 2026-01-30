@@ -144,7 +144,10 @@ export default function BrandsPage() {
       const res = await fetch('/api/portfolio/brands', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newBrand),
+        body: JSON.stringify({
+          ...newBrand,
+          client_id: newBrand.client_id === 'none' ? null : newBrand.client_id || null,
+        }),
       });
 
       if (!res.ok) {
@@ -171,7 +174,10 @@ export default function BrandsPage() {
       const res = await fetch(`/api/portfolio/brands/${editingBrand.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify({
+          ...editForm,
+          client_id: editForm.client_id === 'none' ? null : editForm.client_id || null,
+        }),
       });
 
       if (!res.ok) throw new Error('Errore nel salvataggio');
@@ -357,7 +363,7 @@ export default function BrandsPage() {
                         setEditForm({
                           name: brand.name,
                           description: brand.description || '',
-                          client_id: brand.client_id || '',
+                          client_id: brand.client_id || 'none',
                         });
                       }}>
                         <Edit className="h-4 w-4 mr-2" />
@@ -540,7 +546,7 @@ export default function BrandsPage() {
                     <SelectValue placeholder="Seleziona cliente..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nessun cliente</SelectItem>
+                    <SelectItem value="none">Nessun cliente</SelectItem>
                     {clients.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.name}
@@ -596,7 +602,7 @@ export default function BrandsPage() {
                     <SelectValue placeholder="Seleziona cliente..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nessun cliente</SelectItem>
+                    <SelectItem value="none">Nessun cliente</SelectItem>
                     {clients.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.name}
