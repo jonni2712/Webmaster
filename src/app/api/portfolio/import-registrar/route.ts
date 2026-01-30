@@ -80,6 +80,8 @@ function parseExpiryDate(dateStr: string | undefined): string | null {
   return null;
 }
 
+const BATCH_SIZE = 50; // Process 50 domains at a time to avoid timeout
+
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -116,7 +118,13 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { rows, registrar = 'Register.it', autoAssign = true } = body;
+    const {
+      rows,
+      registrar = 'Register.it',
+      autoAssign = true,
+      startIndex = 0,  // For batch processing
+      skipDnsLookup = false, // Skip DNS for faster import
+    } = body;
 
     if (!rows || !Array.isArray(rows) || rows.length === 0) {
       return NextResponse.json(
@@ -125,10 +133,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Calculate batch boundaries
+    const endIndex = Math.min(startIndex + BATCH_SIZE, rows.length);
+    const batchRows = rows.slice(startIndex, endIndex);
+    const hasMore = endIndex < rows.length;
+
     // Get servers for auto-assign
     let ipToServer = new Map<string, { id: string; name: string }>();
 
-    if (autoAssign) {
+    if (autoAssign && !skipDnsLookup) {
       const { data: servers } = await supabase
         .from('servers')
         .select('id, name, hostname')
@@ -169,7 +182,7 @@ export async function POST(request: NextRequest) {
     let errors = 0;
     let assigned = 0;
 
-    for (const row of rows as RegisterItRow[]) {
+    for (const row of batchRows as RegisterItRow[]) {
       // Get domain from various possible column names
       const domain = (row.Dominio || row.dominio || '').trim().toLowerCase();
 
@@ -210,9 +223,9 @@ export async function POST(request: NextRequest) {
           tags: [],
         };
 
-        // Auto-assign server via DNS
+        // Auto-assign server via DNS (only if not skipped)
         let serverName: string | undefined;
-        if (autoAssign && ipToServer.size > 0) {
+        if (autoAssign && !skipDnsLookup && ipToServer.size > 0) {
           const ip = await resolveDomainIP(domain);
           if (ip) {
             const server = ipToServer.get(ip);
@@ -254,34 +267,48 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Log activity
-    await logActivity({
-      tenantId: user.current_tenant_id,
-      userId: session.user.id,
-      actionType: 'settings_updated',
-      resourceType: 'portfolio',
-      metadata: {
-        action: 'import_registrar',
-        registrar,
-        total: rows.length,
-        created,
-        skipped,
-        errors,
-        assigned,
-      },
-    });
+    // Log activity only on last batch or single batch
+    if (!hasMore) {
+      await logActivity({
+        tenantId: user.current_tenant_id,
+        userId: session.user.id,
+        actionType: 'settings_updated',
+        resourceType: 'portfolio',
+        metadata: {
+          action: 'import_registrar',
+          registrar,
+          total: rows.length,
+          created,
+          skipped,
+          errors,
+          assigned,
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,
-      message: `Importati ${created} domini, ${skipped} già esistenti, ${errors} errori`,
+      message: hasMore
+        ? `Batch ${Math.floor(startIndex / BATCH_SIZE) + 1}: importati ${created} domini`
+        : `Importati ${created} domini, ${skipped} già esistenti, ${errors} errori`,
       summary: {
-        total: rows.length,
+        total: batchRows.length,
         created,
         skipped,
         errors,
         assigned,
       },
       results,
+      // Batch info
+      batch: {
+        startIndex,
+        endIndex,
+        hasMore,
+        nextIndex: hasMore ? endIndex : null,
+        totalRows: rows.length,
+        processedSoFar: endIndex,
+        remainingRows: rows.length - endIndex,
+      },
     });
 
   } catch (error) {

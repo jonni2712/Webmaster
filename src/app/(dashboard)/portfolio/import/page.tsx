@@ -31,6 +31,8 @@ import {
   Loader2,
   Server,
   Calendar,
+  Play,
+  Zap,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -55,6 +57,16 @@ interface ImportResult {
   error?: string;
 }
 
+interface BatchInfo {
+  startIndex: number;
+  endIndex: number;
+  hasMore: boolean;
+  nextIndex: number | null;
+  totalRows: number;
+  processedSoFar: number;
+  remainingRows: number;
+}
+
 interface ImportResponse {
   success: boolean;
   message: string;
@@ -66,6 +78,15 @@ interface ImportResponse {
     assigned: number;
   };
   results: ImportResult[];
+  batch?: BatchInfo;
+}
+
+interface AccumulatedSummary {
+  total: number;
+  created: number;
+  skipped: number;
+  errors: number;
+  assigned: number;
 }
 
 export default function ImportRegistrarPage() {
@@ -74,18 +95,31 @@ export default function ImportRegistrarPage() {
   const [parsedData, setParsedData] = useState<RegisterItRow[]>([]);
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [result, setResult] = useState<ImportResponse | null>(null);
   const [registrar, setRegistrar] = useState('Register.it');
   const [autoAssign, setAutoAssign] = useState(true);
+  const [skipDnsLookup, setSkipDnsLookup] = useState(false);
+
+  // Batch processing state
+  const [currentBatchIndex, setCurrentBatchIndex] = useState(0);
+  const [accumulatedResults, setAccumulatedResults] = useState<ImportResult[]>([]);
+  const [accumulatedSummary, setAccumulatedSummary] = useState<AccumulatedSummary>({
+    total: 0,
+    created: 0,
+    skipped: 0,
+    errors: 0,
+    assigned: 0,
+  });
+  const [batchInfo, setBatchInfo] = useState<BatchInfo | null>(null);
+  const [isComplete, setIsComplete] = useState(false);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
-      const file = acceptedFiles[0];
-      setFile(file);
-      setResult(null);
+      const uploadedFile = acceptedFiles[0];
+      setFile(uploadedFile);
+      resetImportState();
 
       // Parse CSV
-      Papa.parse(file, {
+      Papa.parse(uploadedFile, {
         header: true,
         skipEmptyLines: true,
         encoding: 'UTF-8',
@@ -103,6 +137,15 @@ export default function ImportRegistrarPage() {
     }
   }, []);
 
+  const resetImportState = () => {
+    setCurrentBatchIndex(0);
+    setAccumulatedResults([]);
+    setAccumulatedSummary({ total: 0, created: 0, skipped: 0, errors: 0, assigned: 0 });
+    setBatchInfo(null);
+    setIsComplete(false);
+    setProgress(0);
+  };
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
@@ -112,11 +155,10 @@ export default function ImportRegistrarPage() {
     maxFiles: 1,
   });
 
-  const handleImport = async () => {
+  const handleImportBatch = async (startIndex: number = 0) => {
     if (parsedData.length === 0) return;
 
     setImporting(true);
-    setProgress(10);
 
     try {
       const response = await fetch('/api/portfolio/import-registrar', {
@@ -126,23 +168,44 @@ export default function ImportRegistrarPage() {
           rows: parsedData,
           registrar,
           autoAssign,
+          startIndex,
+          skipDnsLookup,
         }),
       });
 
-      setProgress(90);
-
-      const data = await response.json();
+      const data: ImportResponse = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Errore durante l\'importazione');
+        throw new Error(data.message || 'Errore durante l\'importazione');
       }
 
-      setResult(data);
-      setProgress(100);
+      // Accumulate results
+      setAccumulatedResults(prev => [...prev, ...data.results]);
+      setAccumulatedSummary(prev => ({
+        total: prev.total + data.summary.total,
+        created: prev.created + data.summary.created,
+        skipped: prev.skipped + data.summary.skipped,
+        errors: prev.errors + data.summary.errors,
+        assigned: prev.assigned + data.summary.assigned,
+      }));
 
-      if (data.summary.created > 0) {
-        toast.success(`Importati ${data.summary.created} domini`);
+      // Update batch info
+      if (data.batch) {
+        setBatchInfo(data.batch);
+        setCurrentBatchIndex(data.batch.nextIndex || 0);
+        setProgress(Math.round((data.batch.processedSoFar / data.batch.totalRows) * 100));
+
+        if (!data.batch.hasMore) {
+          setIsComplete(true);
+          toast.success(`Importazione completata: ${accumulatedSummary.created + data.summary.created} domini creati`);
+        } else {
+          toast.info(`Batch completato: ${data.summary.created} creati. Ancora ${data.batch.remainingRows} da processare.`);
+        }
+      } else {
+        setIsComplete(true);
+        setProgress(100);
       }
+
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Errore durante l\'importazione');
     } finally {
@@ -150,8 +213,78 @@ export default function ImportRegistrarPage() {
     }
   };
 
-  const getDomain = (row: RegisterItRow) => row.Dominio || (row as any).dominio || '';
-  const getExpiry = (row: RegisterItRow) => row['Data di Scadenza'] || (row as any)['data di scadenza'] || '';
+  const handleContinue = () => {
+    if (batchInfo?.nextIndex !== null && batchInfo?.nextIndex !== undefined) {
+      handleImportBatch(batchInfo.nextIndex);
+    }
+  };
+
+  const handleImportAll = async () => {
+    // Import all batches automatically
+    let nextIndex = 0;
+    setImporting(true);
+
+    while (true) {
+      try {
+        const response = await fetch('/api/portfolio/import-registrar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            rows: parsedData,
+            registrar,
+            autoAssign,
+            startIndex: nextIndex,
+            skipDnsLookup,
+          }),
+        });
+
+        const data: ImportResponse = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Errore durante l\'importazione');
+        }
+
+        // Accumulate results
+        setAccumulatedResults(prev => [...prev, ...data.results]);
+        setAccumulatedSummary(prev => ({
+          total: prev.total + data.summary.total,
+          created: prev.created + data.summary.created,
+          skipped: prev.skipped + data.summary.skipped,
+          errors: prev.errors + data.summary.errors,
+          assigned: prev.assigned + data.summary.assigned,
+        }));
+
+        if (data.batch) {
+          setBatchInfo(data.batch);
+          setProgress(Math.round((data.batch.processedSoFar / data.batch.totalRows) * 100));
+
+          if (!data.batch.hasMore) {
+            setIsComplete(true);
+            break;
+          }
+          nextIndex = data.batch.nextIndex || 0;
+        } else {
+          setIsComplete(true);
+          setProgress(100);
+          break;
+        }
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Errore durante l\'importazione');
+        break;
+      }
+    }
+
+    setImporting(false);
+    if (isComplete || accumulatedSummary.created > 0) {
+      toast.success(`Importazione completata!`);
+    }
+  };
+
+  const getDomain = (row: RegisterItRow) => row.Dominio || row.dominio || '';
+  const getExpiry = (row: RegisterItRow) => row['Data di Scadenza'] || row['data di scadenza'] || '';
+
+  const hasStarted = accumulatedResults.length > 0 || batchInfo !== null;
+  const hasMoreBatches = batchInfo?.hasMore === true;
 
   return (
     <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
@@ -185,8 +318,7 @@ export default function ImportRegistrarPage() {
             <Badge variant="secondary">Data di Scadenza</Badge>
           </div>
           <p className="text-xs text-muted-foreground">
-            I domini saranno importati con la data di scadenza e automaticamente assegnati
-            al server corretto via DNS (se configurato).
+            I domini vengono importati in batch da 50 per evitare timeout.
           </p>
         </CardContent>
       </Card>
@@ -205,6 +337,7 @@ export default function ImportRegistrarPage() {
               onChange={(e) => setRegistrar(e.target.value)}
               placeholder="Register.it"
               className="max-w-xs"
+              disabled={hasStarted}
             />
           </div>
           <div className="flex items-center justify-between p-3 rounded-lg border">
@@ -223,120 +356,188 @@ export default function ImportRegistrarPage() {
               id="autoAssign"
               checked={autoAssign}
               onCheckedChange={setAutoAssign}
+              disabled={hasStarted}
             />
           </div>
+          {autoAssign && (
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-yellow-50 dark:bg-yellow-900/20">
+              <div className="flex items-center gap-2">
+                <Zap className="h-4 w-4 text-yellow-600" />
+                <div>
+                  <Label htmlFor="skipDns" className="text-sm font-medium">
+                    Import Veloce (senza DNS)
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Importa senza risoluzione DNS, poi usa "Auto-assegna" dal Portfolio
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="skipDns"
+                checked={skipDnsLookup}
+                onCheckedChange={setSkipDnsLookup}
+                disabled={hasStarted}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Upload Area */}
-      <Card>
-        <CardHeader className="p-4 sm:p-6">
-          <CardTitle className="text-base sm:text-lg">Carica File CSV</CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-          <div
-            {...getRootProps()}
-            className={`
-              border-2 border-dashed rounded-lg p-4 sm:p-8 text-center cursor-pointer
-              transition-colors
-              ${
-                isDragActive
-                  ? 'border-primary bg-primary/5'
-                  : 'border-muted-foreground/25 hover:border-primary/50'
-              }
-            `}
-          >
-            <input {...getInputProps()} />
-            {file ? (
-              <div className="flex items-center justify-center gap-2">
-                <FileSpreadsheet className="h-6 w-6 sm:h-8 sm:w-8 text-green-500" />
-                <div>
-                  <span className="font-medium text-sm sm:text-base">{file.name}</span>
+      {!hasStarted && (
+        <Card>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">Carica File CSV</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+            <div
+              {...getRootProps()}
+              className={`
+                border-2 border-dashed rounded-lg p-4 sm:p-8 text-center cursor-pointer
+                transition-colors
+                ${
+                  isDragActive
+                    ? 'border-primary bg-primary/5'
+                    : 'border-muted-foreground/25 hover:border-primary/50'
+                }
+              `}
+            >
+              <input {...getInputProps()} />
+              {file ? (
+                <div className="flex items-center justify-center gap-2">
+                  <FileSpreadsheet className="h-6 w-6 sm:h-8 sm:w-8 text-green-500" />
+                  <div>
+                    <span className="font-medium text-sm sm:text-base">{file.name}</span>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      {parsedData.length} domini trovati
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Upload className="h-6 w-6 sm:h-8 sm:w-8 mx-auto text-muted-foreground" />
                   <p className="text-xs sm:text-sm text-muted-foreground">
-                    {parsedData.length} domini trovati
+                    Trascina qui il file CSV esportato da Register.it
                   </p>
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <Upload className="h-6 w-6 sm:h-8 sm:w-8 mx-auto text-muted-foreground" />
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  Trascina qui il file CSV esportato da Register.it
-                </p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Preview */}
-      {parsedData.length > 0 && !result && (
+      {/* Preview & Import */}
+      {parsedData.length > 0 && !isComplete && (
         <Card>
           <CardHeader className="p-4 sm:p-6">
             <CardTitle className="text-base sm:text-lg">
-              Anteprima ({parsedData.length} domini)
+              {hasStarted ? 'Importazione in corso' : `Anteprima (${parsedData.length} domini)`}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
-            <ScrollArea className="h-64 rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs sm:text-sm">#</TableHead>
-                    <TableHead className="text-xs sm:text-sm">Dominio</TableHead>
-                    <TableHead className="text-xs sm:text-sm">Scadenza</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {parsedData.slice(0, 50).map((row, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="text-xs sm:text-sm text-muted-foreground">
-                        {i + 1}
-                      </TableCell>
-                      <TableCell className="text-xs sm:text-sm font-mono">
-                        {getDomain(row)}
-                      </TableCell>
-                      <TableCell className="text-xs sm:text-sm">
-                        {getExpiry(row) && (
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3 text-muted-foreground" />
-                            {getExpiry(row)}
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {parsedData.length > 50 && (
+            {!hasStarted && (
+              <ScrollArea className="h-64 rounded-md border mb-4">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center text-muted-foreground text-xs">
-                        ... e altri {parsedData.length - 50} domini
-                      </TableCell>
+                      <TableHead className="text-xs sm:text-sm">#</TableHead>
+                      <TableHead className="text-xs sm:text-sm">Dominio</TableHead>
+                      <TableHead className="text-xs sm:text-sm">Scadenza</TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </ScrollArea>
+                  </TableHeader>
+                  <TableBody>
+                    {parsedData.slice(0, 50).map((row, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="text-xs sm:text-sm text-muted-foreground">
+                          {i + 1}
+                        </TableCell>
+                        <TableCell className="text-xs sm:text-sm font-mono">
+                          {getDomain(row)}
+                        </TableCell>
+                        <TableCell className="text-xs sm:text-sm">
+                          {getExpiry(row) && (
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3 text-muted-foreground" />
+                              {getExpiry(row)}
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {parsedData.length > 50 && (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center text-muted-foreground text-xs">
+                          ... e altri {parsedData.length - 50} domini
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            )}
 
-            {importing && (
-              <div className="mt-4 space-y-2">
-                <Progress value={progress} className="h-2" />
-                <p className="text-xs sm:text-sm text-center text-muted-foreground">
-                  Importazione in corso... {progress}%
-                </p>
+            {/* Progress */}
+            {hasStarted && (
+              <div className="mb-4 space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span>Progresso</span>
+                  <span>{batchInfo?.processedSoFar || 0} / {batchInfo?.totalRows || parsedData.length}</span>
+                </div>
+                <Progress value={progress} className="h-3" />
+
+                {/* Running summary */}
+                <div className="grid grid-cols-4 gap-2 text-center text-sm">
+                  <div className="p-2 rounded bg-green-100 dark:bg-green-900/30">
+                    <div className="font-bold text-green-600">{accumulatedSummary.created}</div>
+                    <div className="text-xs text-muted-foreground">Creati</div>
+                  </div>
+                  <div className="p-2 rounded bg-blue-100 dark:bg-blue-900/30">
+                    <div className="font-bold text-blue-600">{accumulatedSummary.assigned}</div>
+                    <div className="text-xs text-muted-foreground">Server</div>
+                  </div>
+                  <div className="p-2 rounded bg-yellow-100 dark:bg-yellow-900/30">
+                    <div className="font-bold text-yellow-600">{accumulatedSummary.skipped}</div>
+                    <div className="text-xs text-muted-foreground">Esistenti</div>
+                  </div>
+                  <div className="p-2 rounded bg-red-100 dark:bg-red-900/30">
+                    <div className="font-bold text-red-600">{accumulatedSummary.errors}</div>
+                    <div className="text-xs text-muted-foreground">Errori</div>
+                  </div>
+                </div>
               </div>
             )}
 
-            <div className="mt-4 flex gap-2">
-              <Button onClick={handleImport} disabled={importing}>
-                {importing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Importa {parsedData.length} Domini
-              </Button>
+            {/* Action buttons */}
+            <div className="flex flex-wrap gap-2">
+              {!hasStarted ? (
+                <>
+                  <Button onClick={() => handleImportAll()} disabled={importing}>
+                    {importing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    <Zap className="h-4 w-4 mr-2" />
+                    Importa Tutti ({parsedData.length})
+                  </Button>
+                  <Button variant="outline" onClick={() => handleImportBatch(0)} disabled={importing}>
+                    {importing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    <Play className="h-4 w-4 mr-2" />
+                    Importa a Batch (50 alla volta)
+                  </Button>
+                </>
+              ) : hasMoreBatches ? (
+                <Button onClick={handleContinue} disabled={importing}>
+                  {importing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  <Play className="h-4 w-4 mr-2" />
+                  Continua ({batchInfo?.remainingRows} rimanenti)
+                </Button>
+              ) : null}
+
               <Button
                 variant="outline"
                 onClick={() => {
                   setFile(null);
                   setParsedData([]);
+                  resetImportState();
                 }}
+                disabled={importing}
               >
                 Annulla
               </Button>
@@ -345,42 +546,42 @@ export default function ImportRegistrarPage() {
         </Card>
       )}
 
-      {/* Results */}
-      {result && (
+      {/* Final Results */}
+      {isComplete && (
         <Card>
           <CardHeader className="p-4 sm:p-6">
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              {result.summary.errors === 0 ? (
+              {accumulatedSummary.errors === 0 ? (
                 <CheckCircle className="h-5 w-5 text-green-500" />
-              ) : result.summary.created === 0 ? (
+              ) : accumulatedSummary.created === 0 ? (
                 <XCircle className="h-5 w-5 text-red-500" />
               ) : (
                 <AlertTriangle className="h-5 w-5 text-yellow-500" />
               )}
-              Risultato Importazione
+              Importazione Completata
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0 space-y-4">
             {/* Summary */}
             <div className="grid grid-cols-5 gap-2 text-center">
               <div className="p-3 rounded-lg bg-muted">
-                <div className="text-xl font-bold">{result.summary.total}</div>
+                <div className="text-xl font-bold">{accumulatedSummary.total}</div>
                 <div className="text-xs text-muted-foreground">Totali</div>
               </div>
               <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900/30">
-                <div className="text-xl font-bold text-green-600">{result.summary.created}</div>
+                <div className="text-xl font-bold text-green-600">{accumulatedSummary.created}</div>
                 <div className="text-xs text-muted-foreground">Creati</div>
               </div>
               <div className="p-3 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                <div className="text-xl font-bold text-blue-600">{result.summary.assigned}</div>
+                <div className="text-xl font-bold text-blue-600">{accumulatedSummary.assigned}</div>
                 <div className="text-xs text-muted-foreground">Server</div>
               </div>
               <div className="p-3 rounded-lg bg-yellow-100 dark:bg-yellow-900/30">
-                <div className="text-xl font-bold text-yellow-600">{result.summary.skipped}</div>
+                <div className="text-xl font-bold text-yellow-600">{accumulatedSummary.skipped}</div>
                 <div className="text-xs text-muted-foreground">Esistenti</div>
               </div>
               <div className="p-3 rounded-lg bg-red-100 dark:bg-red-900/30">
-                <div className="text-xl font-bold text-red-600">{result.summary.errors}</div>
+                <div className="text-xl font-bold text-red-600">{accumulatedSummary.errors}</div>
                 <div className="text-xs text-muted-foreground">Errori</div>
               </div>
             </div>
@@ -388,7 +589,7 @@ export default function ImportRegistrarPage() {
             {/* Results list */}
             <ScrollArea className="h-64 rounded-md border p-3">
               <div className="space-y-1">
-                {result.results.map((r, i) => (
+                {accumulatedResults.map((r, i) => (
                   <div
                     key={i}
                     className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted/50"
@@ -432,7 +633,7 @@ export default function ImportRegistrarPage() {
               <Button onClick={() => router.push('/portfolio')}>
                 Vai al Portfolio
               </Button>
-              <Button onClick={() => router.push('/sites')}>
+              <Button variant="outline" onClick={() => router.push('/sites')}>
                 Vai ai Siti
               </Button>
               <Button
@@ -440,7 +641,7 @@ export default function ImportRegistrarPage() {
                 onClick={() => {
                   setFile(null);
                   setParsedData([]);
-                  setResult(null);
+                  resetImportState();
                 }}
               >
                 Importa Altri
