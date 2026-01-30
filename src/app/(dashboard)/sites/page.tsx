@@ -33,7 +33,7 @@ async function getSitesData(): Promise<SitesData> {
     return { sites: [], clients: [] };
   }
 
-  // Fetch sites with client info
+  // Fetch sites with client info (only plugin-connected sites: WordPress, PrestaShop, NextJS)
   const { data: sitesData } = await supabase
     .from('sites')
     .select(`
@@ -41,6 +41,7 @@ async function getSitesData(): Promise<SitesData> {
       clients(id, name, company_name)
     `)
     .eq('tenant_id', user.current_tenant_id)
+    .in('platform', ['wordpress', 'prestashop', 'nextjs'])
     .order('name');
 
   // Fetch clients for filter
@@ -109,9 +110,9 @@ export default async function SitesPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Siti</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Siti Monitorati</h1>
           <p className="text-sm sm:text-base text-muted-foreground">
-            Gestisci tutti i tuoi siti monitorati ({sites.length} siti)
+            Siti connessi con plugin ({sites.length} siti)
           </p>
         </div>
         <div className="flex gap-2">
