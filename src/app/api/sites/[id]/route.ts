@@ -43,6 +43,9 @@ const updateSiteSchema = z.object({
   domain_expires_at: z.string().datetime().optional().nullable(),
   domain_registrar: z.string().optional().nullable(),
   domain_notes: z.string().optional().nullable(),
+  // Zone fields
+  primary_domain_id: z.string().uuid().optional().nullable(),
+  zone_name: z.string().optional().nullable(),
 });
 
 export async function GET(
