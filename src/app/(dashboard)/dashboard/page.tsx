@@ -114,6 +114,13 @@ async function getDashboardData() {
       parent_site_id: site.parent_site_id || null,
       is_multisite: site.is_multisite || false,
       is_main_site: site.is_main_site || false,
+      // Domain management fields
+      server_id: site.server_id || null,
+      server_name: null,
+      lifecycle_status: site.lifecycle_status || 'active',
+      redirect_to_site_id: site.redirect_to_site_id || null,
+      is_redirect_source: site.is_redirect_source || false,
+      domain_expires_at: site.domain_expires_at || null,
     };
   });
 

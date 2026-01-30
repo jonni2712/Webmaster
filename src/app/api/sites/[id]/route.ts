@@ -30,6 +30,18 @@ const updateSiteSchema = z.object({
   tags: z.array(z.string()).optional(),
   notes: z.string().optional(),
   alert_settings: alertSettingsSchema.optional(),
+  // Domain management fields
+  server_id: z.string().uuid().optional().nullable(),
+  lifecycle_status: z.enum([
+    'active', 'to_update', 'to_rebuild', 'in_maintenance',
+    'in_progress', 'to_delete', 'redirect_only', 'archived'
+  ]).optional(),
+  redirect_to_site_id: z.string().uuid().optional().nullable(),
+  redirect_type: z.enum(['301', '302', '307', '308', 'meta', 'js']).optional().nullable(),
+  is_redirect_source: z.boolean().optional(),
+  domain_expires_at: z.string().datetime().optional().nullable(),
+  domain_registrar: z.string().optional().nullable(),
+  domain_notes: z.string().optional().nullable(),
 });
 
 export async function GET(
@@ -148,9 +160,19 @@ export async function PUT(
       return NextResponse.json({ error: 'Site not found' }, { status: 404 });
     }
 
-    const { api_key, api_secret, client_id, alert_settings, ...updateData } = validation.data;
+    const {
+      api_key,
+      api_secret,
+      client_id,
+      alert_settings,
+      server_id,
+      redirect_to_site_id,
+      domain_expires_at,
+      ...updateData
+    } = validation.data;
 
     const updatePayload: Record<string, unknown> = { ...updateData };
+
     // Solo aggiorna api_key se viene fornito un valore non vuoto
     // Stringa vuota = mantieni il valore esistente
     if (api_key !== undefined && api_key !== '') {
@@ -162,6 +184,58 @@ export async function PUT(
     if (client_id !== undefined) {
       updatePayload.client_id = client_id || null;
     }
+
+    // Domain management fields
+    if (server_id !== undefined) {
+      // Verify server belongs to tenant if provided
+      if (server_id) {
+        const { data: server } = await supabase
+          .from('servers')
+          .select('id')
+          .eq('id', server_id)
+          .eq('tenant_id', user.current_tenant_id)
+          .single();
+
+        if (!server) {
+          return NextResponse.json(
+            { error: 'Server non trovato' },
+            { status: 404 }
+          );
+        }
+      }
+      updatePayload.server_id = server_id || null;
+    }
+
+    if (redirect_to_site_id !== undefined) {
+      // Verify redirect target belongs to tenant and is not self
+      if (redirect_to_site_id) {
+        if (redirect_to_site_id === id) {
+          return NextResponse.json(
+            { error: 'Un sito non puo reindirizzare a se stesso' },
+            { status: 400 }
+          );
+        }
+        const { data: targetSite } = await supabase
+          .from('sites')
+          .select('id')
+          .eq('id', redirect_to_site_id)
+          .eq('tenant_id', user.current_tenant_id)
+          .single();
+
+        if (!targetSite) {
+          return NextResponse.json(
+            { error: 'Sito di destinazione redirect non trovato' },
+            { status: 404 }
+          );
+        }
+      }
+      updatePayload.redirect_to_site_id = redirect_to_site_id || null;
+    }
+
+    if (domain_expires_at !== undefined) {
+      updatePayload.domain_expires_at = domain_expires_at || null;
+    }
+
     if (alert_settings !== undefined) {
       // Merge with existing settings if partial update
       const { data: currentSite } = await supabase

@@ -20,6 +20,7 @@ import {
   Building2,
   Settings,
   Download,
+  Server,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -30,6 +31,7 @@ import {
 import type { SiteWithStatus } from '@/types';
 import { getTagConfig } from '@/lib/constants/tags';
 import { MultisiteNetworkCard } from '@/components/sites/multisite-network-card';
+import { LifecycleStatusBadge } from '@/components/sites/lifecycle-status-badge';
 
 interface SitesGridProps {
   sites: SiteWithStatus[];
@@ -167,6 +169,12 @@ function SiteCard({ site }: { site: SiteWithStatus }) {
                   <span className="truncate">{site.client_name}</span>
                 </Link>
               )}
+              {site.server_name && (
+                <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                  <Server className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">{site.server_name}</span>
+                </div>
+              )}
               {site.tags && site.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-1.5">
                   {site.tags.slice(0, 3).map((tag) => (
@@ -213,8 +221,11 @@ function SiteCard({ site }: { site: SiteWithStatus }) {
         {/* Stats */}
         <div className="p-3 sm:p-4">
           <div className="flex items-center justify-between flex-wrap gap-1.5 mb-3">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <PlatformBadge platform={site.platform} />
+              {site.lifecycle_status && site.lifecycle_status !== 'active' && (
+                <LifecycleStatusBadge status={site.lifecycle_status} size="sm" />
+              )}
               <UpdatesBadge pending={site.wp_updates_pending} critical={site.wp_updates_critical} />
             </div>
             {site.ssl_valid && (

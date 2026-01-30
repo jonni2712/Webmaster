@@ -13,6 +13,96 @@ export type AlertTriggerType =
 export type AlertSeverity = 'info' | 'warning' | 'critical';
 export type AlertStatus = 'triggered' | 'acknowledged' | 'resolved';
 
+// ============================================
+// Domain Management Types (v1.6.0)
+// ============================================
+
+export type DomainLifecycleStatus =
+  | 'active'           // Attivo / In Produzione
+  | 'to_update'        // Da Aggiornare
+  | 'to_rebuild'       // Da Rifare / Redesign
+  | 'in_maintenance'   // In Manutenzione / Sospeso
+  | 'in_progress'      // In Lavorazione
+  | 'to_delete'        // Da Cancellare
+  | 'redirect_only'    // Solo Redirect
+  | 'archived';        // Archiviato
+
+export type RedirectType = '301' | '302' | '307' | '308' | 'meta' | 'js';
+
+export interface Server {
+  id: string;
+  tenant_id: string;
+  name: string;
+  provider: string | null;
+  hostname: string | null;
+  notes: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// ServerWithStats represents the server_stats view which uses different column names
+export interface ServerWithStats {
+  server_id: string;
+  tenant_id: string;
+  server_name: string;
+  provider: string | null;
+  hostname: string | null;
+  is_active: boolean;
+  sites_count: number;
+  active_sites: number;
+  enabled_sites: number;
+}
+
+export interface DomainPortfolioSummary {
+  tenant_id: string;
+  total_domains: number;
+  active_domains: number;
+  inactive_domains: number;
+  status_active: number;
+  status_to_update: number;
+  status_to_rebuild: number;
+  status_in_maintenance: number;
+  status_in_progress: number;
+  status_to_delete: number;
+  status_redirect_only: number;
+  status_archived: number;
+  redirect_sources: number;
+  has_redirect_target: number;
+  domains_with_expiry: number;
+  expiring_30_days: number;
+  expiring_7_days: number;
+  expired: number;
+  domains_with_server: number;
+  domains_without_server: number;
+}
+
+export interface RedirectChain {
+  source_id: string;
+  tenant_id: string;
+  source_name: string;
+  source_url: string;
+  target_id: string;
+  target_name: string;
+  target_url: string;
+  chain_depth: number;
+  chain_path: string[];
+  is_circular: boolean;
+  redirect_type: RedirectType | null;
+}
+
+export interface ExpiringDomain {
+  site_id: string;
+  tenant_id: string;
+  name: string;
+  url: string;
+  domain_expires_at: string;
+  domain_registrar: string | null;
+  lifecycle_status: DomainLifecycleStatus;
+  expiry_status: 'expired' | 'critical' | 'warning' | 'ok';
+  days_until_expiry: number;
+}
+
 export interface Tenant {
   id: string;
   name: string;
@@ -113,6 +203,15 @@ export interface Site {
   multisite_blog_id: number | null;
   multisite_path: string | null;
   auto_discovered: boolean;
+  // Domain Management (v1.6.0)
+  server_id: string | null;
+  lifecycle_status: DomainLifecycleStatus;
+  redirect_to_site_id: string | null;
+  redirect_type: RedirectType | null;
+  is_redirect_source: boolean;
+  domain_expires_at: string | null;
+  domain_registrar: string | null;
+  domain_notes: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -145,6 +244,13 @@ export interface SiteWithStatus {
   is_multisite: boolean;
   is_main_site: boolean;
   subsites_count?: number;
+  // Domain Management (v1.6.0)
+  server_id: string | null;
+  server_name?: string | null;
+  lifecycle_status: DomainLifecycleStatus;
+  redirect_to_site_id: string | null;
+  is_redirect_source: boolean;
+  domain_expires_at: string | null;
 }
 
 // Type for multisite subsite from WordPress API

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,9 +11,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { SitesGrid } from '@/components/dashboard/sites-grid';
-import { Search, Building2, Trash2, Loader2, RefreshCw, Tag, Network } from 'lucide-react';
-import type { SiteWithStatus, Client } from '@/types';
+import { Search, Building2, Trash2, Loader2, RefreshCw, Tag, Network, Server, Activity, Calendar } from 'lucide-react';
+import type { SiteWithStatus, Client, Server as ServerType, DomainLifecycleStatus } from '@/types';
 import { PREDEFINED_TAGS, getTagConfig, getUniqueTags } from '@/lib/constants/tags';
+import { LIFECYCLE_STATUS_CONFIG } from '@/lib/constants/lifecycle-status';
 
 interface SitesFiltersProps {
   sites: SiteWithStatus[];
@@ -31,6 +32,27 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
   const [cleanupMessage, setCleanupMessage] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  // New filters for domain management
+  const [serverFilter, setServerFilter] = useState<string>('all');
+  const [lifecycleFilter, setLifecycleFilter] = useState<string>('all');
+  const [redirectFilter, setRedirectFilter] = useState<string>('all');
+  const [servers, setServers] = useState<ServerType[]>([]);
+
+  useEffect(() => {
+    fetchServers();
+  }, []);
+
+  const fetchServers = async () => {
+    try {
+      const res = await fetch('/api/servers');
+      if (res.ok) {
+        const data = await res.json();
+        setServers(data.servers || []);
+      }
+    } catch (error) {
+      console.error('Error fetching servers:', error);
+    }
+  };
 
   const handleCleanupDuplicates = async () => {
     setIsCleaningUp(true);
@@ -140,9 +162,32 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
         }
       }
 
+      // Server filter
+      if (serverFilter !== 'all') {
+        if (serverFilter === 'no_server') {
+          if (site.server_id) return false;
+        } else {
+          if (site.server_id !== serverFilter) return false;
+        }
+      }
+
+      // Lifecycle status filter
+      if (lifecycleFilter !== 'all') {
+        if (site.lifecycle_status !== lifecycleFilter) return false;
+      }
+
+      // Redirect filter
+      if (redirectFilter !== 'all') {
+        if (redirectFilter === 'redirect_only') {
+          if (!site.is_redirect_source) return false;
+        } else if (redirectFilter === 'no_redirect') {
+          if (site.is_redirect_source) return false;
+        }
+      }
+
       return true;
     });
-  }, [sites, search, clientFilter, tagFilter, siteTypeFilter]);
+  }, [sites, search, clientFilter, tagFilter, siteTypeFilter, serverFilter, lifecycleFilter, redirectFilter]);
 
   return (
     <div className="space-y-4">
@@ -226,6 +271,54 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
           </SelectContent>
         </Select>
 
+        {servers.length > 0 && (
+          <Select value={serverFilter} onValueChange={setServerFilter}>
+            <SelectTrigger className="w-full sm:w-[180px] h-9 sm:h-10">
+              <div className="flex items-center gap-2">
+                <Server className="h-4 w-4 text-muted-foreground" />
+                <SelectValue placeholder="Server" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tutti i server</SelectItem>
+              <SelectItem value="no_server">Senza server</SelectItem>
+              {servers.map((server) => (
+                <SelectItem key={server.id} value={server.id}>
+                  {server.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
+        <Select value={lifecycleFilter} onValueChange={setLifecycleFilter}>
+          <SelectTrigger className="w-full sm:w-[180px] h-9 sm:h-10">
+            <div className="flex items-center gap-2">
+              <Activity className="h-4 w-4 text-muted-foreground" />
+              <SelectValue placeholder="Stato" />
+            </div>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tutti gli stati</SelectItem>
+            {LIFECYCLE_STATUS_CONFIG.map((status) => (
+              <SelectItem key={status.value} value={status.value}>
+                <span className={status.color}>{status.label}</span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={redirectFilter} onValueChange={setRedirectFilter}>
+          <SelectTrigger className="w-full sm:w-[140px] h-9 sm:h-10">
+            <SelectValue placeholder="Redirect" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tutti</SelectItem>
+            <SelectItem value="redirect_only">Solo Redirect</SelectItem>
+            <SelectItem value="no_redirect">No Redirect</SelectItem>
+          </SelectContent>
+        </Select>
+
         <Button
           variant="outline"
           size="sm"
@@ -270,7 +363,7 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
       )}
 
       {/* Results info */}
-      {(search || clientFilter !== 'all' || tagFilter !== 'all' || siteTypeFilter !== 'all') && (
+      {(search || clientFilter !== 'all' || tagFilter !== 'all' || siteTypeFilter !== 'all' || serverFilter !== 'all' || lifecycleFilter !== 'all' || redirectFilter !== 'all') && (
         <p className="text-sm text-muted-foreground">
           {filteredSites.length} {filteredSites.length === 1 ? 'sito trovato' : 'siti trovati'}
           {search && ` per "${search}"`}
@@ -285,6 +378,15 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
           {siteTypeFilter === 'multisite' && ' (reti multisite)'}
           {siteTypeFilter === 'standalone' && ' (standalone)'}
           {siteTypeFilter === 'subsites' && ' (sottositi)'}
+          {serverFilter !== 'all' && serverFilter !== 'no_server' && (
+            ` su ${servers.find(s => s.id === serverFilter)?.name}`
+          )}
+          {serverFilter === 'no_server' && ' senza server'}
+          {lifecycleFilter !== 'all' && (
+            ` - ${LIFECYCLE_STATUS_CONFIG.find(s => s.value === lifecycleFilter)?.label}`
+          )}
+          {redirectFilter === 'redirect_only' && ' (solo redirect)'}
+          {redirectFilter === 'no_redirect' && ' (no redirect)'}
         </p>
       )}
 

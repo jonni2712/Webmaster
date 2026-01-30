@@ -21,6 +21,18 @@ const siteSchema = z.object({
   ecommerce_check_enabled: z.boolean().optional().default(false),
   tags: z.array(z.string()).optional().default([]),
   notes: z.string().optional(),
+  // Domain management fields
+  server_id: z.string().uuid().optional().nullable(),
+  lifecycle_status: z.enum([
+    'active', 'to_update', 'to_rebuild', 'in_maintenance',
+    'in_progress', 'to_delete', 'redirect_only', 'archived'
+  ]).optional().default('active'),
+  redirect_to_site_id: z.string().uuid().optional().nullable(),
+  redirect_type: z.enum(['301', '302', '307', '308', 'meta', 'js']).optional().nullable(),
+  is_redirect_source: z.boolean().optional().default(false),
+  domain_expires_at: z.string().datetime().optional().nullable(),
+  domain_registrar: z.string().optional().nullable(),
+  domain_notes: z.string().optional().nullable(),
 });
 
 export async function GET(request: NextRequest) {
@@ -168,7 +180,49 @@ export async function POST(request: NextRequest) {
     }
 
     // TODO: Encrypt API keys before storing
-    const { api_key, api_secret, client_id, ...siteData } = validation.data;
+    const {
+      api_key,
+      api_secret,
+      client_id,
+      server_id,
+      redirect_to_site_id,
+      domain_expires_at,
+      ...siteData
+    } = validation.data;
+
+    // Verify server belongs to tenant if provided
+    if (server_id) {
+      const { data: server } = await supabase
+        .from('servers')
+        .select('id')
+        .eq('id', server_id)
+        .eq('tenant_id', user.current_tenant_id)
+        .single();
+
+      if (!server) {
+        return NextResponse.json(
+          { error: 'Server non trovato' },
+          { status: 404 }
+        );
+      }
+    }
+
+    // Verify redirect target belongs to tenant if provided
+    if (redirect_to_site_id) {
+      const { data: targetSite } = await supabase
+        .from('sites')
+        .select('id')
+        .eq('id', redirect_to_site_id)
+        .eq('tenant_id', user.current_tenant_id)
+        .single();
+
+      if (!targetSite) {
+        return NextResponse.json(
+          { error: 'Sito di destinazione redirect non trovato' },
+          { status: 404 }
+        );
+      }
+    }
 
     const { data, error } = await supabase
       .from('sites')
@@ -176,6 +230,9 @@ export async function POST(request: NextRequest) {
         ...siteData,
         tenant_id: user.current_tenant_id,
         client_id: client_id || null,
+        server_id: server_id || null,
+        redirect_to_site_id: redirect_to_site_id || null,
+        domain_expires_at: domain_expires_at || null,
         api_key_encrypted: api_key || null,
         api_secret_encrypted: api_secret || null,
       })

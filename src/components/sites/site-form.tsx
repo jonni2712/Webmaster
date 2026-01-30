@@ -28,12 +28,15 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Info, ExternalLink, CheckCircle2, Building2, Tag, X, Key } from 'lucide-react';
+import { Loader2, Info, ExternalLink, CheckCircle2, Building2, Tag, X, Key, Calendar, Server } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import Link from 'next/link';
-import type { Client } from '@/types';
+import type { Client, DomainLifecycleStatus, RedirectType } from '@/types';
 import { PREDEFINED_TAGS, getTagConfig } from '@/lib/constants/tags';
+import { ServerSelect } from '@/components/servers/server-select';
+import { LifecycleStatusSelect } from '@/components/sites/lifecycle-status-select';
+import { RedirectConfig } from '@/components/sites/redirect-config';
 
 const siteFormSchema = z.object({
   name: z.string().min(1, 'Nome richiesto'),
@@ -49,6 +52,18 @@ const siteFormSchema = z.object({
   ecommerce_check_enabled: z.boolean(),
   tags: z.array(z.string()).optional(),
   notes: z.string().optional(),
+  // Domain management fields
+  server_id: z.string().optional().nullable(),
+  lifecycle_status: z.enum([
+    'active', 'to_update', 'to_rebuild', 'in_maintenance',
+    'in_progress', 'to_delete', 'redirect_only', 'archived'
+  ]).optional(),
+  redirect_to_site_id: z.string().optional().nullable(),
+  redirect_type: z.enum(['301', '302', '307', '308', 'meta', 'js']).optional().nullable(),
+  is_redirect_source: z.boolean().optional(),
+  domain_expires_at: z.string().optional().nullable(),
+  domain_registrar: z.string().optional().nullable(),
+  domain_notes: z.string().optional().nullable(),
 });
 
 type SiteFormValues = z.infer<typeof siteFormSchema>;
@@ -59,6 +74,14 @@ interface SiteFormProps {
     tags?: string[];
     hasApiKey?: boolean;
     hasApiSecret?: boolean;
+    server_id?: string | null;
+    lifecycle_status?: DomainLifecycleStatus;
+    redirect_to_site_id?: string | null;
+    redirect_type?: RedirectType | null;
+    is_redirect_source?: boolean;
+    domain_expires_at?: string | null;
+    domain_registrar?: string | null;
+    domain_notes?: string | null;
   }>;
   siteId?: string;
 }
@@ -105,6 +128,15 @@ export function SiteForm({ initialData, siteId }: SiteFormProps) {
       ecommerce_check_enabled: initialData?.ecommerce_check_enabled ?? false,
       tags: initialData?.tags || [],
       notes: initialData?.notes || '',
+      // Domain management fields
+      server_id: initialData?.server_id || null,
+      lifecycle_status: initialData?.lifecycle_status || 'active',
+      redirect_to_site_id: initialData?.redirect_to_site_id || null,
+      redirect_type: initialData?.redirect_type || null,
+      is_redirect_source: initialData?.is_redirect_source ?? false,
+      domain_expires_at: initialData?.domain_expires_at || null,
+      domain_registrar: initialData?.domain_registrar || null,
+      domain_notes: initialData?.domain_notes || null,
     },
   });
 
@@ -524,6 +556,140 @@ export function SiteForm({ initialData, siteId }: SiteFormProps) {
                       onCheckedChange={field.onChange}
                     />
                   </FormControl>
+                </FormItem>
+              )}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">Gestione Dominio</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
+              Server, stato del ciclo di vita e informazioni dominio
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0 space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="server_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Server</FormLabel>
+                    <FormControl>
+                      <ServerSelect
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Server dove e ospitato il sito
+                    </FormDescription>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="lifecycle_status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Stato Ciclo di Vita</FormLabel>
+                    <FormControl>
+                      <LifecycleStatusSelect
+                        value={field.value || 'active'}
+                        onChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Stato attuale del dominio/sito
+                    </FormDescription>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <RedirectConfig
+              isRedirectSource={form.watch('is_redirect_source') || false}
+              redirectToSiteId={form.watch('redirect_to_site_id') || null}
+              redirectType={form.watch('redirect_type') || null}
+              currentSiteId={siteId}
+              onIsRedirectSourceChange={(value) => form.setValue('is_redirect_source', value)}
+              onRedirectToSiteIdChange={(value) => form.setValue('redirect_to_site_id', value)}
+              onRedirectTypeChange={(value) => form.setValue('redirect_type', value)}
+            />
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="domain_expires_at"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Scadenza Dominio</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="date"
+                          className="h-9 sm:h-10 pl-10"
+                          value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            field.onChange(value ? new Date(value).toISOString() : null);
+                          }}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Data di scadenza della registrazione
+                    </FormDescription>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="domain_registrar"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Registrar</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Aruba, Register.it, GoDaddy..."
+                        className="h-9 sm:h-10"
+                        {...field}
+                        value={field.value || ''}
+                      />
+                    </FormControl>
+                    <FormDescription className="text-xs">
+                      Dove e registrato il dominio
+                    </FormDescription>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="domain_notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm">Note Dominio</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Note sulla registrazione dominio, DNS, ecc..."
+                      className="resize-none text-sm"
+                      rows={2}
+                      {...field}
+                      value={field.value || ''}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-xs" />
                 </FormItem>
               )}
             />
