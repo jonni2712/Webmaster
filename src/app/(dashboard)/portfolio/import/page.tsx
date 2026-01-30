@@ -40,6 +40,11 @@ interface RegisterItRow {
   Descrizione?: string;
   'Dati Supplementari'?: string;
   'Data di Scadenza'?: string;
+  // Lowercase variants
+  id?: string;
+  dominio?: string;
+  descrizione?: string;
+  'data di scadenza'?: string;
 }
 
 interface ImportResult {
