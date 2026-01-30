@@ -46,7 +46,17 @@ export async function GET(request: NextRequest) {
         is_primary_for_brand,
         domain_relation,
         weglot_language_code,
-        parent_site_id
+        parent_site_id,
+        http_status_code,
+        detected_redirect_url,
+        detected_redirect_chain,
+        is_parking_page,
+        parking_page_type,
+        last_http_check,
+        http_check_error,
+        ssl_valid,
+        ssl_error,
+        dns_resolves
       `)
       .eq('tenant_id', user.current_tenant_id)
       .order('name', { ascending: true });
