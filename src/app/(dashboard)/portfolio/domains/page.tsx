@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   ArrowLeft,
+  ArrowRight,
   Search,
   Filter,
   RefreshCw,
@@ -56,7 +57,9 @@ import {
   ChevronRight,
   Save,
   X,
+  Link as LinkIcon,
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import {
@@ -79,6 +82,10 @@ interface DomainSite {
   tags: string[];
   created_at: string;
   updated_at: string;
+  // Redirect fields
+  is_redirect_source: boolean;
+  redirect_url: string | null;
+  redirect_type: string | null;
 }
 
 interface ServerOption {
@@ -111,6 +118,9 @@ export default function DomainsPage() {
     server_id: '',
     domain_notes: '',
     domain_registrar: '',
+    is_redirect_source: false,
+    redirect_url: '',
+    redirect_type: '301',
   });
   const [isSaving, setIsSaving] = useState(false);
 
@@ -193,6 +203,9 @@ export default function DomainsPage() {
       server_id: domain.server_id || '',
       domain_notes: domain.domain_notes || '',
       domain_registrar: domain.domain_registrar || '',
+      is_redirect_source: domain.is_redirect_source || false,
+      redirect_url: domain.redirect_url || '',
+      redirect_type: domain.redirect_type || '301',
     });
   };
 
@@ -209,6 +222,9 @@ export default function DomainsPage() {
           server_id: editForm.server_id || null,
           domain_notes: editForm.domain_notes || null,
           domain_registrar: editForm.domain_registrar || null,
+          is_redirect_source: editForm.is_redirect_source,
+          redirect_url: editForm.is_redirect_source ? editForm.redirect_url || null : null,
+          redirect_type: editForm.is_redirect_source ? editForm.redirect_type || null : null,
         }),
       });
 
@@ -397,6 +413,7 @@ export default function DomainsPage() {
                 <TableHead className="hidden md:table-cell">Stato</TableHead>
                 <TableHead className="hidden lg:table-cell">Server</TableHead>
                 <TableHead className="hidden xl:table-cell">Scadenza</TableHead>
+                <TableHead className="hidden lg:table-cell">Redirect</TableHead>
                 <TableHead className="hidden xl:table-cell">Note</TableHead>
                 <TableHead className="w-12"></TableHead>
               </TableRow>
@@ -472,6 +489,29 @@ export default function DomainsPage() {
                         <span className="text-xs text-muted-foreground">-</span>
                       )}
                     </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      {domain.is_redirect_source && domain.redirect_url ? (
+                        <div className="flex items-center gap-1 text-xs">
+                          <ArrowRight className="h-3 w-3 text-blue-500" />
+                          <a
+                            href={domain.redirect_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline truncate max-w-32"
+                            title={domain.redirect_url}
+                          >
+                            {domain.redirect_url.replace(/^https?:\/\//, '').split('/')[0]}
+                          </a>
+                          {domain.redirect_type && (
+                            <Badge variant="outline" className="text-[10px] px-1">
+                              {domain.redirect_type}
+                            </Badge>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
                     <TableCell className="hidden xl:table-cell max-w-48">
                       <span className="text-sm text-muted-foreground truncate block">
                         {domain.domain_notes || '-'}
@@ -510,7 +550,7 @@ export default function DomainsPage() {
               })}
               {paginatedDomains.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     Nessun dominio trovato
                   </TableCell>
                 </TableRow>
@@ -606,8 +646,55 @@ export default function DomainsPage() {
                 value={editForm.domain_notes}
                 onChange={(e) => setEditForm(f => ({ ...f, domain_notes: e.target.value }))}
                 placeholder="Descrivi cosa fa questo sito, azioni pianificate, etc."
-                rows={4}
+                rows={3}
               />
+            </div>
+
+            {/* Redirect Section */}
+            <div className="space-y-3 pt-3 border-t">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <LinkIcon className="h-4 w-4 text-muted-foreground" />
+                  <Label htmlFor="is_redirect">Questo dominio è un redirect</Label>
+                </div>
+                <Switch
+                  id="is_redirect"
+                  checked={editForm.is_redirect_source}
+                  onCheckedChange={(checked) => setEditForm(f => ({ ...f, is_redirect_source: checked }))}
+                />
+              </div>
+
+              {editForm.is_redirect_source && (
+                <div className="space-y-3 pl-6 border-l-2 border-muted">
+                  <div className="space-y-2">
+                    <Label>URL di destinazione</Label>
+                    <Input
+                      value={editForm.redirect_url}
+                      onChange={(e) => setEditForm(f => ({ ...f, redirect_url: e.target.value }))}
+                      placeholder="https://esempio.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Tipo di redirect</Label>
+                    <Select
+                      value={editForm.redirect_type}
+                      onValueChange={(v) => setEditForm(f => ({ ...f, redirect_type: v }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="301">301 - Permanente</SelectItem>
+                        <SelectItem value="302">302 - Temporaneo</SelectItem>
+                        <SelectItem value="307">307 - Temporaneo (preserva metodo)</SelectItem>
+                        <SelectItem value="308">308 - Permanente (preserva metodo)</SelectItem>
+                        <SelectItem value="meta">Meta Refresh</SelectItem>
+                        <SelectItem value="js">JavaScript</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>

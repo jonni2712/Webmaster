@@ -37,6 +37,7 @@ const updateSiteSchema = z.object({
     'in_progress', 'to_delete', 'redirect_only', 'archived'
   ]).optional(),
   redirect_to_site_id: z.string().uuid().optional().nullable(),
+  redirect_url: z.string().optional().nullable(),
   redirect_type: z.enum(['301', '302', '307', '308', 'meta', 'js']).optional().nullable(),
   is_redirect_source: z.boolean().optional(),
   domain_expires_at: z.string().datetime().optional().nullable(),

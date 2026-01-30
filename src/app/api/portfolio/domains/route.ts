@@ -38,7 +38,10 @@ export async function GET(request: NextRequest) {
         domain_notes,
         tags,
         created_at,
-        updated_at
+        updated_at,
+        is_redirect_source,
+        redirect_url,
+        redirect_type
       `)
       .eq('tenant_id', user.current_tenant_id)
       .is('parent_site_id', null) // Exclude subsites
