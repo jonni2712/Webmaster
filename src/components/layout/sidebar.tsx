@@ -56,6 +56,7 @@ const navigation = [
     children: [
       { name: 'Dashboard', href: '/portfolio' },
       { name: 'Server', href: '/portfolio/servers', icon: Server },
+      { name: 'Importa Domini', href: '/portfolio/import', icon: Upload },
     ],
   },
   {
