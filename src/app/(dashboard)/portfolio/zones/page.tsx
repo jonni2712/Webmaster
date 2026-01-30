@@ -312,7 +312,8 @@ export default function BrandsPage() {
 
       if (!res.ok) throw new Error('Errore nell\'impostazione');
 
-      toast.success('Dominio principale impostato');
+      const data = await res.json();
+      toast.success(data.isPrimary ? 'Dominio aggiunto ai principali' : 'Dominio rimosso dai principali');
       fetchData(true);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Errore nell\'impostazione');
@@ -371,7 +372,7 @@ export default function BrandsPage() {
 
   // Group domains by relation type
   const groupDomainsByRelation = (domains: DomainSite[]) => {
-    const primary = domains.find(d => d.is_primary_for_brand);
+    const primaries = domains.filter(d => d.is_primary_for_brand);
     const redirects = domains.filter(d => d.domain_relation === 'redirect' && !d.is_primary_for_brand);
     const weglot = domains.filter(d => d.domain_relation === 'weglot_language' && !d.is_primary_for_brand);
     const subsites = domains.filter(d => d.domain_relation === 'wordpress_subsite' && !d.is_primary_for_brand);
@@ -381,7 +382,7 @@ export default function BrandsPage() {
       !['redirect', 'weglot_language', 'wordpress_subsite', 'alias'].includes(d.domain_relation || '')
     );
 
-    return { primary, redirects, weglot, subsites, aliases, others };
+    return { primaries, redirects, weglot, subsites, aliases, others };
   };
 
   // Filter brands and domains based on search
@@ -550,111 +551,191 @@ export default function BrandsPage() {
                     <p className="text-xs text-muted-foreground mt-1">{brand.description}</p>
                   )}
                 </CardHeader>
-                <CardContent className="pt-0 space-y-3">
-                  {/* Primary Domain */}
-                  {grouped.primary && (
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-                        Dominio Principale
-                      </p>
-                      <div className="flex items-center gap-2 p-2.5 rounded-lg border-2 border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-700">
-                        <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 flex-shrink-0" />
-                        <span className="text-sm font-medium flex-1 truncate">
-                          {getDomainDisplay(grouped.primary.url)}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={() => openEditDomainRelation(grouped.primary!, brand)}
-                          title="Configura dominio"
-                        >
-                          <Settings2 className="h-3 w-3" />
-                        </Button>
+                <CardContent className="pt-0 space-y-4">
+                  {/* Primary Domains Section */}
+                  {grouped.primaries.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
+                        <p className="text-[10px] font-semibold text-yellow-600 dark:text-yellow-400 uppercase tracking-wide">
+                          {grouped.primaries.length === 1 ? 'Dominio Principale' : `Domini Principali (${grouped.primaries.length})`}
+                        </p>
+                      </div>
+                      <div className="space-y-1.5">
+                        {grouped.primaries.map((domain) => (
+                          <div
+                            key={domain.id}
+                            className="group flex items-center gap-2 p-2.5 rounded-lg border-2 border-yellow-300 bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 dark:border-yellow-700 hover:shadow-md transition-shadow"
+                          >
+                            <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 flex-shrink-0" />
+                            <a
+                              href={domain.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm font-medium flex-1 truncate hover:text-primary transition-colors"
+                            >
+                              {getDomainDisplay(domain.url)}
+                            </a>
+                            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={() => openEditDomainRelation(domain, brand)}
+                                title="Configura"
+                              >
+                                <Settings2 className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-yellow-600 hover:text-yellow-700"
+                                onClick={() => handleSetPrimary(brand.id, domain.id)}
+                                title="Rimuovi da principali"
+                              >
+                                <Star className="h-3 w-3 fill-current" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
 
-                  {/* Secondary Domains */}
-                  {brand.domains.length > 1 && (
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-                        Domini Collegati ({brand.domains.length - 1})
-                      </p>
-                      <ScrollArea className={brand.domains.length > 6 ? 'h-44' : ''}>
-                        <div className="space-y-1">
-                          {/* Weglot Languages */}
-                          {grouped.weglot.map((domain) => (
-                            <DomainRow
-                              key={domain.id}
-                              domain={domain}
-                              brand={brand}
-                              onEdit={() => openEditDomainRelation(domain, brand)}
-                              onSetPrimary={() => handleSetPrimary(brand.id, domain.id)}
-                              onRemove={() => handleRemoveDomain(domain.id)}
-                              getDomainDisplay={getDomainDisplay}
-                            />
-                          ))}
-
-                          {/* Redirects */}
-                          {grouped.redirects.map((domain) => (
-                            <DomainRow
-                              key={domain.id}
-                              domain={domain}
-                              brand={brand}
-                              onEdit={() => openEditDomainRelation(domain, brand)}
-                              onSetPrimary={() => handleSetPrimary(brand.id, domain.id)}
-                              onRemove={() => handleRemoveDomain(domain.id)}
-                              getDomainDisplay={getDomainDisplay}
-                            />
-                          ))}
-
-                          {/* WordPress Subsites */}
-                          {grouped.subsites.map((domain) => (
-                            <DomainRow
-                              key={domain.id}
-                              domain={domain}
-                              brand={brand}
-                              onEdit={() => openEditDomainRelation(domain, brand)}
-                              onSetPrimary={() => handleSetPrimary(brand.id, domain.id)}
-                              onRemove={() => handleRemoveDomain(domain.id)}
-                              getDomainDisplay={getDomainDisplay}
-                            />
-                          ))}
-
-                          {/* Aliases */}
-                          {grouped.aliases.map((domain) => (
-                            <DomainRow
-                              key={domain.id}
-                              domain={domain}
-                              brand={brand}
-                              onEdit={() => openEditDomainRelation(domain, brand)}
-                              onSetPrimary={() => handleSetPrimary(brand.id, domain.id)}
-                              onRemove={() => handleRemoveDomain(domain.id)}
-                              getDomainDisplay={getDomainDisplay}
-                            />
-                          ))}
-
-                          {/* Others */}
-                          {grouped.others.map((domain) => (
-                            <DomainRow
-                              key={domain.id}
-                              domain={domain}
-                              brand={brand}
-                              onEdit={() => openEditDomainRelation(domain, brand)}
-                              onSetPrimary={() => handleSetPrimary(brand.id, domain.id)}
-                              onRemove={() => handleRemoveDomain(domain.id)}
-                              getDomainDisplay={getDomainDisplay}
-                            />
-                          ))}
+                  {/* Connected Domains Section */}
+                  {(grouped.weglot.length > 0 || grouped.redirects.length > 0 || grouped.subsites.length > 0 || grouped.aliases.length > 0 || grouped.others.length > 0) && (
+                    <div className="space-y-3">
+                      {/* Weglot Languages */}
+                      {grouped.weglot.length > 0 && (
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <Languages className="h-3.5 w-3.5 text-purple-500" />
+                            <p className="text-[10px] font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide">
+                              Lingue Weglot ({grouped.weglot.length})
+                            </p>
+                          </div>
+                          <div className="pl-2 border-l-2 border-purple-200 dark:border-purple-800 space-y-1">
+                            {grouped.weglot.map((domain) => (
+                              <DomainRow
+                                key={domain.id}
+                                domain={domain}
+                                brand={brand}
+                                onEdit={() => openEditDomainRelation(domain, brand)}
+                                onSetPrimary={() => handleSetPrimary(brand.id, domain.id)}
+                                onRemove={() => handleRemoveDomain(domain.id)}
+                                getDomainDisplay={getDomainDisplay}
+                              />
+                            ))}
+                          </div>
                         </div>
-                      </ScrollArea>
+                      )}
+
+                      {/* Redirects */}
+                      {grouped.redirects.length > 0 && (
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <ArrowRight className="h-3.5 w-3.5 text-blue-500" />
+                            <p className="text-[10px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+                              Redirect ({grouped.redirects.length})
+                            </p>
+                          </div>
+                          <div className="pl-2 border-l-2 border-blue-200 dark:border-blue-800 space-y-1">
+                            {grouped.redirects.map((domain) => (
+                              <DomainRow
+                                key={domain.id}
+                                domain={domain}
+                                brand={brand}
+                                onEdit={() => openEditDomainRelation(domain, brand)}
+                                onSetPrimary={() => handleSetPrimary(brand.id, domain.id)}
+                                onRemove={() => handleRemoveDomain(domain.id)}
+                                getDomainDisplay={getDomainDisplay}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* WordPress Subsites */}
+                      {grouped.subsites.length > 0 && (
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <LayoutGrid className="h-3.5 w-3.5 text-indigo-500" />
+                            <p className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">
+                              WordPress Subsites ({grouped.subsites.length})
+                            </p>
+                          </div>
+                          <div className="pl-2 border-l-2 border-indigo-200 dark:border-indigo-800 space-y-1">
+                            {grouped.subsites.map((domain) => (
+                              <DomainRow
+                                key={domain.id}
+                                domain={domain}
+                                brand={brand}
+                                onEdit={() => openEditDomainRelation(domain, brand)}
+                                onSetPrimary={() => handleSetPrimary(brand.id, domain.id)}
+                                onRemove={() => handleRemoveDomain(domain.id)}
+                                getDomainDisplay={getDomainDisplay}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Aliases */}
+                      {grouped.aliases.length > 0 && (
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <Copy className="h-3.5 w-3.5 text-gray-500" />
+                            <p className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                              Alias ({grouped.aliases.length})
+                            </p>
+                          </div>
+                          <div className="pl-2 border-l-2 border-gray-200 dark:border-gray-700 space-y-1">
+                            {grouped.aliases.map((domain) => (
+                              <DomainRow
+                                key={domain.id}
+                                domain={domain}
+                                brand={brand}
+                                onEdit={() => openEditDomainRelation(domain, brand)}
+                                onSetPrimary={() => handleSetPrimary(brand.id, domain.id)}
+                                onRemove={() => handleRemoveDomain(domain.id)}
+                                getDomainDisplay={getDomainDisplay}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Others (standalone) */}
+                      {grouped.others.length > 0 && (
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <Globe className="h-3.5 w-3.5 text-green-500" />
+                            <p className="text-[10px] font-semibold text-green-600 dark:text-green-400 uppercase tracking-wide">
+                              Altri Domini ({grouped.others.length})
+                            </p>
+                          </div>
+                          <div className="pl-2 border-l-2 border-green-200 dark:border-green-800 space-y-1">
+                            {grouped.others.map((domain) => (
+                              <DomainRow
+                                key={domain.id}
+                                domain={domain}
+                                brand={brand}
+                                onEdit={() => openEditDomainRelation(domain, brand)}
+                                onSetPrimary={() => handleSetPrimary(brand.id, domain.id)}
+                                onRemove={() => handleRemoveDomain(domain.id)}
+                                getDomainDisplay={getDomainDisplay}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
                   {brand.domains.length === 0 && (
-                    <div className="text-center py-4">
-                      <p className="text-xs text-muted-foreground mb-2">
+                    <div className="text-center py-6 bg-muted/30 rounded-lg border border-dashed">
+                      <Globe className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground mb-3">
                         Nessun dominio assegnato
                       </p>
                       <Button
@@ -662,16 +743,19 @@ export default function BrandsPage() {
                         size="sm"
                         onClick={() => setAddToBrandId(brand.id)}
                       >
-                        <Plus className="h-3 w-3 mr-1" />
+                        <Plus className="h-3.5 w-3.5 mr-1.5" />
                         Aggiungi Domini
                       </Button>
                     </div>
                   )}
 
-                  {brand.domains.length === 1 && !grouped.primary && (
-                    <p className="text-xs text-muted-foreground text-center py-2">
-                      Imposta un dominio come principale
-                    </p>
+                  {brand.domains.length > 0 && grouped.primaries.length === 0 && (
+                    <div className="flex items-center gap-2 p-2 rounded bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                      <Star className="h-4 w-4 text-amber-500" />
+                      <p className="text-xs text-amber-700 dark:text-amber-300">
+                        Clicca la stella per impostare uno o più domini principali
+                      </p>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -1063,18 +1147,22 @@ function DomainRow({
   const relationConfig = getDomainRelationConfig(domain.domain_relation);
 
   return (
-    <div className="flex items-center gap-2 p-2 rounded border bg-muted/30 group hover:bg-muted/50 transition-colors">
-      <RelationIcon relation={domain.domain_relation} />
+    <div className="flex items-center gap-2 py-1.5 px-2 rounded-md group hover:bg-muted/50 transition-colors">
       <div className="flex-1 min-w-0">
-        <span className="text-sm truncate block">
+        <a
+          href={domain.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm truncate block hover:text-primary transition-colors"
+        >
           {getDomainDisplay(domain.url)}
-        </span>
+        </a>
         <span className="text-[10px] text-muted-foreground">
           {domain.domain_relation === 'weglot_language' && domain.weglot_language_code
             ? getWeglotLanguageLabel(domain.weglot_language_code)
             : domain.domain_relation === 'redirect' && domain.redirect_url
-            ? `→ ${domain.redirect_url}`
-            : relationConfig.label}
+            ? `→ ${getDomainDisplay(domain.redirect_url)}`
+            : ''}
         </span>
       </div>
       <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1090,16 +1178,16 @@ function DomainRow({
         <Button
           variant="ghost"
           size="icon"
-          className="h-6 w-6"
+          className="h-6 w-6 hover:text-yellow-600"
           onClick={onSetPrimary}
-          title="Imposta come principale"
+          title="Aggiungi ai principali"
         >
           <Star className="h-3 w-3" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          className="h-6 w-6"
+          className="h-6 w-6 hover:text-red-600"
           onClick={onRemove}
           title="Rimuovi dal brand"
         >
