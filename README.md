@@ -1,152 +1,177 @@
-# Webmaster Monitor
+<p align="center">
+  <img src="public/logo.svg" alt="Webmaster Monitor" width="120" height="120">
+</p>
 
-Piattaforma di monitoraggio siti web multi-tenant per webmaster e agenzie digitali.
+<h1 align="center">Webmaster Monitor</h1>
 
-## Funzionalita
+<p align="center">
+  <strong>Piattaforma open source per monitorare e gestire tutti i tuoi siti web</strong>
+</p>
 
-- **Monitoraggio Uptime** - Controllo disponibilita siti in tempo reale
+<p align="center">
+  <a href="#funzionalità">Funzionalità</a> •
+  <a href="#demo">Demo</a> •
+  <a href="#self-hosting">Self-Hosting</a> •
+  <a href="#cloud">Cloud</a> •
+  <a href="#documentazione">Docs</a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg" alt="License">
+  <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs Welcome">
+  <img src="https://img.shields.io/badge/next.js-16-black" alt="Next.js">
+  <img src="https://img.shields.io/badge/typescript-5-blue" alt="TypeScript">
+</p>
+
+---
+
+## Funzionalità
+
+- **Monitoraggio Uptime** - Controllo disponibilità siti in tempo reale
 - **Monitoraggio SSL** - Verifica certificati e avvisi scadenza
 - **Performance Check** - Metriche Core Web Vitals (LCP, FID, CLS)
+- **Gestione Domini** - Portfolio 800+ domini con stati, redirect, scadenze
+- **Brand & Zone** - Organizza domini per brand con 5 visualizzazioni
+- **HTTP Status Check** - Rileva automaticamente redirect, parking, errori
 - **Aggiornamenti CMS** - Tracciamento update WordPress e PrestaShop
 - **E-commerce** - Monitoraggio transazioni e vendite
-- **Sistema Alert** - Notifiche via email, Slack, Telegram, Discord, webhook
+- **Sistema Alert** - Notifiche via email, Slack, Telegram, Discord
 - **Multi-tenant** - Supporto team con ruoli (owner, admin, member, viewer)
-- **Autenticazione** - Login con email/password, GitHub, Google
+
+## Demo
+
+🌐 **[Prova la demo live](https://webmaster-monitor.vercel.app)**
+
+## Self-Hosting
+
+Puoi installare Webmaster Monitor sul tuo server in 5 minuti:
+
+```bash
+# Clona
+git clone https://github.com/jonni2712/Webmaster.git
+cd Webmaster
+
+# Configura
+cp .env.example .env
+# Modifica .env con i tuoi valori
+
+# Avvia
+docker-compose up -d
+
+# Apri http://localhost:3000
+```
+
+📖 **[Guida completa Self-Hosting](docs/self-hosting.md)**
+
+### Requisiti
+
+- Docker 20.10+ e Docker Compose 2.0+
+- 2GB RAM (4GB consigliati)
+- Supabase account (gratuito) o self-hosted
+
+## Cloud (Hosted)
+
+Non vuoi gestire server? Usa la versione hosted:
+
+🚀 **[webmaster-monitor.com](https://webmaster-monitor.com)** - Inizia gratis
+
+| Feature | Self-Hosted | Cloud Free | Cloud Pro |
+|---------|:-----------:|:----------:|:---------:|
+| Siti illimitati | ✅ | 5 siti | ✅ |
+| Tutti i monitoraggi | ✅ | ✅ | ✅ |
+| Team members | ✅ | 1 | Illimitati |
+| Supporto | Community | Email | Prioritario |
+| Backup automatici | Manuale | ❌ | ✅ |
+| Prezzo | Gratis | Gratis | €19/mese |
 
 ## Tech Stack
 
 - **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS 4
-- **UI Components**: Radix UI, shadcn/ui
+- **UI**: Radix UI, shadcn/ui
 - **Database**: Supabase (PostgreSQL)
-- **Autenticazione**: NextAuth.js (OAuth + Email/Password)
+- **Auth**: NextAuth.js
 - **Email**: Resend
-- **Deploy**: Vercel
+- **Deploy**: Vercel / Docker
 
-## Setup Locale
-
-### 1. Clona il repository
+## Setup Sviluppo
 
 ```bash
-git clone https://github.com/jonni2712/Webmaster.git
-cd Webmaster
+# Installa dipendenze
 npm install
-```
 
-### 2. Configura variabili ambiente
+# Configura ambiente
+cp .env.example .env.local
 
-Crea un file `.env.local`:
-
-```env
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=xxx
-SUPABASE_SERVICE_ROLE_KEY=xxx
-
-# NextAuth
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=genera-una-chiave-segreta-32-caratteri
-
-# OAuth (opzionale)
-GITHUB_CLIENT_ID=xxx
-GITHUB_CLIENT_SECRET=xxx
-GOOGLE_CLIENT_ID=xxx
-GOOGLE_CLIENT_SECRET=xxx
-
-# Email
-RESEND_API_KEY=re_xxx
-EMAIL_FROM=Webmaster Monitor <noreply@tuodominio.com>
-
-# Cron Jobs
-CRON_SECRET=genera-una-chiave-segreta
-```
-
-### 3. Setup Database
-
-Esegui lo script SQL nel Supabase SQL Editor:
-
-```bash
-# Il file si trova in:
-supabase/deploy_all.sql
-```
-
-Questo crea:
-- Tabelle per autenticazione email/password
-- Funzioni helper RLS
-- Policy di sicurezza Row Level Security
-
-### 4. Avvia il server
-
-```bash
+# Avvia dev server
 npm run dev
 ```
-
-Apri [http://localhost:3000](http://localhost:3000)
 
 ## Struttura Progetto
 
 ```
 src/
 ├── app/
-│   ├── (auth)/          # Pagine autenticazione
-│   │   ├── login/
-│   │   ├── register/
-│   │   ├── verify-email/
-│   │   ├── forgot-password/
-│   │   └── reset-password/
-│   ├── (dashboard)/     # Pagine protette
-│   │   ├── dashboard/
-│   │   └── sites/
-│   └── api/             # API Routes
-│       ├── auth/
-│       ├── sites/
-│       └── cron/
+│   ├── (auth)/           # Login, register, reset password
+│   ├── (dashboard)/      # Dashboard, sites, portfolio
+│   └── api/              # API Routes
 ├── components/
-│   ├── ui/              # Componenti shadcn/ui
-│   ├── dashboard/
-│   └── layout/
+│   ├── ui/               # shadcn/ui components
+│   ├── dashboard/        # Dashboard components
+│   └── portfolio/        # Domain management
 ├── lib/
-│   ├── auth/            # Configurazione NextAuth
-│   ├── supabase/        # Client Supabase
-│   ├── email/           # Template email
-│   ├── monitoring/      # Logica monitoraggio
-│   └── validations/     # Schemi Zod
-└── types/               # TypeScript definitions
+│   ├── auth/             # NextAuth config
+│   ├── supabase/         # Database client
+│   └── monitoring/       # Check logic
+└── types/                # TypeScript types
 ```
 
-## Database Schema
+## Documentazione
 
-### Tabelle Principali
+- 📖 [Self-Hosting Guide](docs/self-hosting.md)
+- 🔧 [Configuration](docs/configuration.md)
+- 🔌 [API Reference](docs/api.md)
+- 🤝 [Contributing](CONTRIBUTING.md)
 
-| Tabella | Descrizione |
-|---------|-------------|
-| `tenants` | Workspace/organizzazioni |
-| `users` | Utenti registrati |
-| `user_tenants` | Relazione utenti-tenant con ruoli |
-| `sites` | Siti monitorati |
-| `uptime_checks` | Log controlli uptime |
-| `ssl_checks` | Log controlli SSL |
-| `performance_checks` | Metriche performance |
-| `alerts` | Avvisi generati |
-| `alert_channels` | Canali notifica |
-| `alert_rules` | Regole alert |
+## Contributing
 
-### Ruoli Utente
+I contributi sono benvenuti! Leggi [CONTRIBUTING.md](CONTRIBUTING.md) per iniziare.
 
-| Ruolo | Permessi |
-|-------|----------|
-| `owner` | Controllo completo, puo eliminare |
-| `admin` | Gestione siti, alert, membri |
-| `member` | Visualizzazione, acknowledge alert |
-| `viewer` | Solo visualizzazione |
+```bash
+# Fork e clone
+git clone https://github.com/tuouser/webmaster-monitor.git
 
-## Deploy su Vercel
+# Crea branch
+git checkout -b feature/mia-feature
 
-1. Importa il repository su Vercel
-2. Configura le variabili ambiente
-3. Deploy!
+# Commit
+git commit -m "feat: aggiungi mia feature"
 
-Le API cron (`/api/cron/uptime`, `/api/cron/ssl`) possono essere configurate con Vercel Cron Jobs.
+# Push e PR
+git push origin feature/mia-feature
+```
 
-## Licenza
+## Community
 
-Progetto privato - Tutti i diritti riservati
+- 💬 [GitHub Discussions](https://github.com/jonni2712/Webmaster/discussions)
+- 🐛 [Issue Tracker](https://github.com/jonni2712/Webmaster/issues)
+- 🐦 [Twitter](https://twitter.com/webmastermon)
+
+## License
+
+Webmaster Monitor è distribuito con licenza [AGPL-3.0](LICENSE).
+
+Questo significa che puoi:
+- ✅ Usarlo gratuitamente
+- ✅ Modificarlo
+- ✅ Distribuirlo
+- ✅ Usarlo commercialmente
+
+A condizione che:
+- 📝 Mantieni la stessa licenza per lavori derivati
+- 📝 Rendi disponibile il codice sorgente delle modifiche
+
+---
+
+<p align="center">
+  Made with ❤️ by <a href="https://github.com/jonni2712">Jonathan Boccotti</a>
+</p>
