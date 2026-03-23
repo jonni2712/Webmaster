@@ -39,6 +39,14 @@ export interface Server {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  // cPanel Agent fields
+  panel_type: string | null;
+  agent_token: string | null;
+  agent_status: string | null;
+  agent_version: string | null;
+  last_sync_at: string | null;
+  last_heartbeat_at: string | null;
+  sync_config: Record<string, unknown> | null;
 }
 
 // ServerWithStats represents the server_stats view which uses different column names
@@ -52,6 +60,156 @@ export interface ServerWithStats {
   sites_count: number;
   active_sites: number;
   enabled_sites: number;
+}
+
+// ============================================
+// cPanel Agent Types
+// ============================================
+
+export interface ServerAccount {
+  id: string;
+  server_id: string;
+  tenant_id: string;
+  username: string;
+  main_domain: string;
+  addon_domains: string[];
+  subdomains: string[];
+  parked_domains: string[];
+  document_roots: Record<string, string>;
+  php_version: string | null;
+  disk_used_mb: number | null;
+  disk_limit_mb: number | null;
+  bandwidth_used_mb: number | null;
+  status: 'active' | 'suspended' | 'removed';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ServerCmsDetection {
+  id: string;
+  server_account_id: string;
+  tenant_id: string;
+  domain: string;
+  cms_type: string;
+  cms_version: string | null;
+  document_root: string | null;
+  matched_site_id: string | null;
+  detected_at: string;
+  updated_at: string;
+}
+
+export interface DnsRecord {
+  type: string;
+  name: string;
+  value: string;
+  priority?: number;
+  ttl?: number;
+}
+
+export interface ServerDnsZone {
+  id: string;
+  server_id: string;
+  tenant_id: string;
+  domain: string;
+  records: DnsRecord[];
+  points_to_server: boolean;
+  resolved_ip: string | null;
+  updated_at: string;
+}
+
+export interface ServerSslCert {
+  id: string;
+  server_id: string;
+  tenant_id: string;
+  domain: string;
+  issuer: string | null;
+  expires_at: string | null;
+  auto_ssl: boolean;
+  status: 'valid' | 'expiring' | 'expired' | 'error';
+  updated_at: string;
+}
+
+export interface PendingSiteImport {
+  id: string;
+  server_id: string;
+  tenant_id: string;
+  domain: string;
+  cms_type: string | null;
+  cms_version: string | null;
+  server_account_username: string | null;
+  status: 'pending' | 'imported' | 'ignored';
+  discovered_at: string;
+  actioned_at: string | null;
+}
+
+// Phase 2: Monitoring types
+
+export interface ServerResourceSnapshot {
+  id: string;
+  server_id: string;
+  tenant_id: string;
+  cpu_cores: number | null;
+  cpu_usage_percent: number | null;
+  ram_total_mb: number | null;
+  ram_used_mb: number | null;
+  disk_total_gb: number | null;
+  disk_used_gb: number | null;
+  load_average: number[] | null;
+  recorded_at: string;
+}
+
+export interface ServerError {
+  id: string;
+  server_id: string;
+  server_account_id: string | null;
+  tenant_id: string;
+  domain: string | null;
+  error_type: string;
+  message: string | null;
+  file_path: string | null;
+  occurrence_count: number;
+  first_seen_at: string;
+  last_seen_at: string;
+  resolved: boolean;
+  resolved_at: string | null;
+}
+
+export interface ServerBackup {
+  id: string;
+  server_id: string;
+  server_account_id: string | null;
+  tenant_id: string;
+  username: string | null;
+  backup_type: string | null;
+  size_mb: number | null;
+  backup_date: string | null;
+  status: string;
+  created_at: string;
+}
+
+// Phase 3: Email and Database types
+
+export interface ServerEmail {
+  id: string;
+  server_account_id: string;
+  tenant_id: string;
+  email: string;
+  quota_mb: number | null;
+  used_mb: number | null;
+  has_forwarder: boolean;
+  forwarder_target: string | null;
+  updated_at: string;
+}
+
+export interface ServerDatabase {
+  id: string;
+  server_account_id: string;
+  tenant_id: string;
+  name: string;
+  engine: string;
+  size_mb: number | null;
+  db_users: string[];
+  updated_at: string;
 }
 
 export interface DomainPortfolioSummary {

@@ -7,7 +7,7 @@
 -- TEAM INVITATIONS
 -- ============================================
 CREATE TABLE IF NOT EXISTS team_invitations (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     email VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'member', 'viewer')),
@@ -46,7 +46,7 @@ EXCEPTION
 END $$;
 
 CREATE TABLE IF NOT EXISTS activity_logs (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     action_type activity_action_type NOT NULL,
@@ -70,7 +70,7 @@ CREATE INDEX IF NOT EXISTS idx_activity_logs_action ON activity_logs(action_type
 -- Explicit access required (no access by default)
 -- ============================================
 CREATE TABLE IF NOT EXISTS member_site_access (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_tenant_id UUID NOT NULL REFERENCES user_tenants(id) ON DELETE CASCADE,
     site_id UUID NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ DEFAULT NOW(),

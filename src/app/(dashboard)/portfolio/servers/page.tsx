@@ -28,7 +28,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ServerForm } from '@/components/servers/server-form';
+import { ServerAgentTabs } from '@/components/servers/server-agent-tabs';
 import {
   Plus,
   Server,
@@ -39,6 +41,7 @@ import {
   Loader2,
   Globe,
   ArrowLeft,
+  Monitor,
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -52,6 +55,7 @@ export default function ServersPage() {
   const [editingServer, setEditingServer] = useState<ServerWithStats | null>(null);
   const [deletingServer, setDeletingServer] = useState<ServerWithStats | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [viewingServer, setViewingServer] = useState<ServerWithStats | null>(null);
 
   const fetchServers = async (refresh = false) => {
     if (refresh) {
@@ -185,7 +189,11 @@ export default function ServersPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {servers.map((server) => (
-            <Card key={server.server_id} className={!server.is_active ? 'opacity-60' : ''}>
+            <Card
+              key={server.server_id}
+              className={`${!server.is_active ? 'opacity-60' : ''} ${(server as any).panel_type ? 'cursor-pointer hover:border-primary/50 transition-colors' : ''}`}
+              onClick={() => (server as any).panel_type && setViewingServer(server)}
+            >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
@@ -212,6 +220,12 @@ export default function ServersPage() {
                           <Edit className="h-4 w-4 mr-2" />
                           Modifica
                         </DropdownMenuItem>
+                        {(server as any).panel_type && (
+                          <DropdownMenuItem onClick={() => setViewingServer(server)}>
+                            <Monitor className="h-4 w-4 mr-2" />
+                            Pannello Agente
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem
                           className="text-red-600"
                           onClick={() => setDeletingServer(server)}
@@ -229,6 +243,22 @@ export default function ServersPage() {
                   <p className="text-sm text-muted-foreground mb-3 font-mono">
                     {server.hostname}
                   </p>
+                )}
+                {(server as any).panel_type && (
+                  <div className="flex items-center gap-1.5 mb-3">
+                    <Monitor className="h-4 w-4 text-muted-foreground" />
+                    <Badge variant="outline" className="text-xs">
+                      {(server as any).panel_type === 'cpanel' ? 'cPanel' : 'Plesk'}
+                    </Badge>
+                    <Badge
+                      variant={(server as any).agent_status === 'online' ? 'default' : 'secondary'}
+                      className="text-[10px] h-5"
+                    >
+                      {(server as any).agent_status === 'online' ? '🟢 Online' :
+                       (server as any).agent_status === 'offline' ? '🔴 Offline' :
+                       '⚪ Non installato'}
+                    </Badge>
+                  </div>
                 )}
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1.5">
@@ -297,6 +327,28 @@ export default function ServersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Agent Detail Sheet */}
+      <Sheet open={!!viewingServer} onOpenChange={(open) => !open && setViewingServer(null)}>
+        <SheetContent className="sm:max-w-[600px] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Server className="h-5 w-5" />
+              {viewingServer?.server_name}
+            </SheetTitle>
+          </SheetHeader>
+          {viewingServer && (viewingServer as any).panel_type && (
+            <div className="mt-4">
+              <ServerAgentTabs
+                serverId={viewingServer.server_id}
+                serverName={viewingServer.server_name}
+                panelType={(viewingServer as any).panel_type}
+                agentStatus={(viewingServer as any).agent_status || 'not_installed'}
+              />
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

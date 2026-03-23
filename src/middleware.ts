@@ -57,6 +57,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Salta controllo per agent routes che usano Bearer token auth (non NextAuth session)
+  // /api/agent/register e /api/agent/imports richiedono sessione utente e NON sono qui
+  if (
+    pathname === '/api/agent/sync' ||
+    pathname === '/api/agent/heartbeat' ||
+    pathname === '/api/agent/event'
+  ) {
+    return NextResponse.next();
+  }
+
   // Controlla se è un file statico pubblico (solo estensioni specifiche)
   const isPublicStaticFile = publicFileExtensions.some(ext =>
     pathname.toLowerCase().endsWith(ext)

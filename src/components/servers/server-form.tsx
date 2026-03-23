@@ -20,6 +20,13 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import type { Server } from '@/types/database';
 
@@ -28,6 +35,7 @@ const serverFormSchema = z.object({
   provider: z.string().optional(),
   hostname: z.string().optional(),
   notes: z.string().optional(),
+  panel_type: z.enum(['cpanel', 'plesk']).nullable().optional(),
   is_active: z.boolean(),
 });
 
@@ -51,6 +59,7 @@ export function ServerForm({ initialData, serverId, onSuccess }: ServerFormProps
       provider: initialData?.provider || '',
       hostname: initialData?.hostname || '',
       notes: initialData?.notes || '',
+      panel_type: initialData?.panel_type || null,
       is_active: initialData?.is_active ?? true,
     },
   });
@@ -64,6 +73,7 @@ export function ServerForm({ initialData, serverId, onSuccess }: ServerFormProps
       provider: values.provider || null,
       hostname: values.hostname || null,
       notes: values.notes || null,
+      panel_type: values.panel_type || null,
     };
 
     try {
@@ -163,6 +173,34 @@ export function ServerForm({ initialData, serverId, onSuccess }: ServerFormProps
                   </FormControl>
                   <FormDescription className="text-xs">
                     Indirizzo IP o hostname del server
+                  </FormDescription>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="panel_type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm">Pannello di Controllo</FormLabel>
+                  <FormControl>
+                    <Select
+                      value={field.value || ''}
+                      onValueChange={(val) => field.onChange(val || null)}
+                    >
+                      <SelectTrigger className="h-9 sm:h-10">
+                        <SelectValue placeholder="Nessun pannello" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cpanel">cPanel / WHM</SelectItem>
+                        <SelectItem value="plesk">Plesk</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormDescription className="text-xs">
+                    Se il server usa un pannello, puoi installare l&apos;agente per sincronizzare i dati
                   </FormDescription>
                   <FormMessage className="text-xs" />
                 </FormItem>
