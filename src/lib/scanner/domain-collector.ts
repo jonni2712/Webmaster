@@ -2,8 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 
 export interface DomainEntry {
   domain: string;
-  site_id: string | null;
-  portfolio_site_id: string | null;
+  site_id: string;
   tenant_id: string;
 }
 
@@ -20,7 +19,6 @@ function extractDomain(url: string): string {
     const parsed = new URL(clean);
     return parsed.hostname.replace(/^www\./, '');
   } catch {
-    // Fallback: strip protocol and path manually
     return url
       .replace(/^https?:\/\//, '')
       .replace(/^www\./, '')
@@ -31,18 +29,17 @@ function extractDomain(url: string): string {
 }
 
 /**
- * Collects all unique domains across sites and portfolio_sites for a tenant.
+ * Collects all unique domains from the sites table for a tenant.
+ * Includes all sites regardless of lifecycle status (active, archived, redirect, etc.)
  */
 export async function collectDomains(tenantId: string): Promise<DomainEntry[]> {
   const supabase = createAdminClient();
   const domainMap = new Map<string, DomainEntry>();
 
-  // Fetch from sites table
   const { data: sites } = await supabase
     .from('sites')
     .select('id, url')
-    .eq('tenant_id', tenantId)
-    .eq('is_active', true);
+    .eq('tenant_id', tenantId);
 
   if (sites) {
     for (const site of sites) {
@@ -50,40 +47,10 @@ export async function collectDomains(tenantId: string): Promise<DomainEntry[]> {
       const domain = extractDomain(site.url);
       if (!domain) continue;
 
-      const existing = domainMap.get(domain);
-      if (existing) {
-        existing.site_id = site.id;
-      } else {
+      if (!domainMap.has(domain)) {
         domainMap.set(domain, {
           domain,
           site_id: site.id,
-          portfolio_site_id: null,
-          tenant_id: tenantId,
-        });
-      }
-    }
-  }
-
-  // Fetch from portfolio_sites table
-  const { data: portfolioSites } = await supabase
-    .from('portfolio_sites')
-    .select('id, domain')
-    .eq('tenant_id', tenantId);
-
-  if (portfolioSites) {
-    for (const ps of portfolioSites) {
-      if (!ps.domain) continue;
-      const domain = extractDomain(ps.domain);
-      if (!domain) continue;
-
-      const existing = domainMap.get(domain);
-      if (existing) {
-        existing.portfolio_site_id = ps.id;
-      } else {
-        domainMap.set(domain, {
-          domain,
-          site_id: null,
-          portfolio_site_id: ps.id,
           tenant_id: tenantId,
         });
       }

@@ -834,7 +834,6 @@ export interface ExternalScanResult {
   id: string;
   tenant_id: string;
   site_id: string | null;
-  portfolio_site_id: string | null;
   domain: string;
   dns_a_records: string[];
   dns_mx_records: Array<{ priority: number; exchange: string }>;

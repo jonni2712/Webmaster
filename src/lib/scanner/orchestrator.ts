@@ -106,7 +106,6 @@ async function scanDomainDnsSsl(entry: DomainEntry): Promise<void> {
       {
         tenant_id: entry.tenant_id,
         site_id: entry.site_id,
-        portfolio_site_id: entry.portfolio_site_id,
         domain: entry.domain,
         // DNS
         ...(dns ? {
@@ -156,7 +155,6 @@ async function scanDomainCmsWhois(entry: DomainEntry): Promise<void> {
       {
         tenant_id: entry.tenant_id,
         site_id: entry.site_id,
-        portfolio_site_id: entry.portfolio_site_id,
         domain: entry.domain,
         // CMS
         cms_detected: cmsResult.cms_type,

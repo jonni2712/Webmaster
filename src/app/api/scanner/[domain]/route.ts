@@ -84,7 +84,6 @@ export async function POST(request: Request, { params }: RouteContext) {
   const upsertData: Record<string, unknown> = {
     tenant_id: tenantId,
     site_id: entry.site_id,
-    portfolio_site_id: entry.portfolio_site_id,
     domain,
     updated_at: now,
     last_dns_scan_at: now,

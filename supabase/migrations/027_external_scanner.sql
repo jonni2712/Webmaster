@@ -5,7 +5,6 @@ CREATE TABLE IF NOT EXISTS external_scan_results (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
   site_id UUID REFERENCES sites(id) ON DELETE CASCADE,
-  portfolio_site_id UUID REFERENCES portfolio_sites(id) ON DELETE CASCADE,
   domain TEXT NOT NULL,
 
   -- DNS
@@ -56,7 +55,6 @@ CREATE TABLE IF NOT EXISTS external_scan_results (
 
 CREATE INDEX IF NOT EXISTS idx_external_scan_tenant ON external_scan_results(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_external_scan_site ON external_scan_results(site_id);
-CREATE INDEX IF NOT EXISTS idx_external_scan_portfolio ON external_scan_results(portfolio_site_id);
 CREATE INDEX IF NOT EXISTS idx_external_scan_domain ON external_scan_results(domain);
 
 ALTER TABLE external_scan_results ENABLE ROW LEVEL SECURITY;
