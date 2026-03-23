@@ -78,6 +78,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { SiteScanRow } from '@/components/scanner/site-scan-row';
 import {
   getLifecycleStatusConfig,
   getLifecycleStatusOptions,
@@ -908,6 +909,10 @@ export default function DomainsPage() {
                                 {domain.brand_name}
                               </Badge>
                             )}
+                          </div>
+                          {/* Scanner badges */}
+                          <div className="mt-1">
+                            <SiteScanRow domain={getDomainDisplay(domain.url)} />
                           </div>
                         </div>
                       </TableCell>
