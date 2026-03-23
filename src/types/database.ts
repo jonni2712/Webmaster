@@ -827,3 +827,44 @@ export interface SecuritySummary {
   recommendations_count: number;
   critical_issues: number;
 }
+
+// External Scanner types
+
+export interface ExternalScanResult {
+  id: string;
+  tenant_id: string;
+  site_id: string | null;
+  portfolio_site_id: string | null;
+  domain: string;
+  dns_a_records: string[];
+  dns_mx_records: Array<{ priority: number; exchange: string }>;
+  dns_ns_records: string[];
+  dns_txt_records: string[];
+  dns_cname: string | null;
+  dns_provider: string | null;
+  email_provider: string | null;
+  spf_configured: boolean;
+  dmarc_configured: boolean;
+  ssl_issuer: string | null;
+  ssl_expires_at: string | null;
+  ssl_valid: boolean | null;
+  ssl_protocol: string | null;
+  http_status: number | null;
+  http_redirect_chain: Array<{ url: string; status: number }>;
+  http_final_url: string | null;
+  http_response_time_ms: number | null;
+  cms_detected: string | null;
+  cms_version: string | null;
+  cms_confidence: 'high' | 'medium' | 'low' | null;
+  cms_detection_method: string | null;
+  cms_extras: Record<string, unknown>;
+  whois_registrar: string | null;
+  whois_expires_at: string | null;
+  whois_nameservers: string[];
+  whois_updated_at: string | null;
+  last_dns_scan_at: string | null;
+  last_cms_scan_at: string | null;
+  last_whois_scan_at: string | null;
+  created_at: string;
+  updated_at: string;
+}

@@ -19,6 +19,14 @@
     {
       "path": "/api/cron/cleanup",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/scan-dns-ssl",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/scan-cms-whois",
+      "schedule": "0 3 * * *"
     }
   ]
 }
