@@ -1,8 +1,4 @@
-import { NextResponse } from 'next/server';
-
 export async function GET() {
-  // Serve install script inline — this avoids needing to read from filesystem
-  // which may not work in serverless environments
   const script = getInstallScript();
 
   return new Response(script, {
@@ -15,78 +11,82 @@ export async function GET() {
 }
 
 function getInstallScript(): string {
-  return `#!/bin/bash
-set -e
+  // Using array join to avoid template literal parsing issues with bash syntax
+  const lines = [
+    '#!/bin/bash',
+    'set -e',
+    '',
+    'TOKEN=""',
+    'PLATFORM_URL=""',
+    'INSTALL_DIR="/opt/webmaster-monitor"',
+    '',
+    "RED='\\033[0;31m'",
+    "GREEN='\\033[0;32m'",
+    "YELLOW='\\033[1;33m'",
+    "NC='\\033[0m'",
+    '',
+    'while [[ $# -gt 0 ]]; do',
+    '  case $1 in',
+    '    --token=*) TOKEN="${1#*=}"; shift ;;',
+    '    --url=*) PLATFORM_URL="${1#*=}"; shift ;;',
+    '    --dir=*) INSTALL_DIR="${1#*=}"; shift ;;',
+    '    *) echo -e "${RED}Unknown option: $1${NC}"; exit 1 ;;',
+    '  esac',
+    'done',
+    '',
+    'if [ -z "$TOKEN" ] || [ -z "$PLATFORM_URL" ]; then',
+    '  echo -e "${RED}Error: --token and --url are required${NC}"',
+    '  exit 1',
+    'fi',
+    '',
+    'echo -e "${GREEN}=== Webmaster Monitor Agent Installer ===${NC}"',
+    'echo ""',
+    '',
+    '# Check PHP',
+    'echo -n "Checking PHP... "',
+    'if ! command -v php &> /dev/null; then',
+    '  echo -e "${RED}NOT FOUND${NC}"',
+    '  exit 1',
+    'fi',
+    "echo -e \"${GREEN}$(php -r 'echo PHP_VERSION;')${NC}\"",
+    '',
+    '# Create directories',
+    'mkdir -p "${INSTALL_DIR}"',
+    '',
+    "# Write config",
+    "cat > \"${INSTALL_DIR}/config.php\" <<'PHPEOF'",
+    '<?php',
+    'return [',
+    "    'platform_url' => 'PLATFORM_URL_PLACEHOLDER',",
+    "    'agent_token' => 'TOKEN_PLACEHOLDER',",
+    "    'panel_type' => 'cpanel',",
+    "    'whm_host' => 'localhost',",
+    "    'whm_port' => 2087,",
+    "    'whm_username' => 'root',",
+    "    'whm_api_token' => '',",
+    "    'enabled_modules' => ['accounts', 'cms_detector', 'dns', 'ssl'],",
+    "    'full_sync_interval_hours' => 6,",
+    "    'heartbeat_interval_minutes' => 5,",
+    "    'log_file' => '/var/log/wm_agent.log',",
+    "    'log_max_size_mb' => 5,",
+    "    'queue_dir' => '/tmp/wm_queue',",
+    "    'queue_max_files' => 50,",
+    '];',
+    'PHPEOF',
+    '',
+    '# Replace placeholders',
+    'sed -i "s|PLATFORM_URL_PLACEHOLDER|${PLATFORM_URL}|g" "${INSTALL_DIR}/config.php"',
+    'sed -i "s|TOKEN_PLACEHOLDER|${TOKEN}|g" "${INSTALL_DIR}/config.php"',
+    '',
+    '# Setup cron',
+    'CRON_LINE="*/15 * * * * php ${INSTALL_DIR}/agent.php >> /var/log/wm_agent.log 2>&1"',
+    '(crontab -l 2>/dev/null | grep -v "webmaster-monitor\\|wm_agent" ; echo "${CRON_LINE}") | crontab -',
+    '',
+    'echo -e "${GREEN}Cron job installed${NC}"',
+    'echo ""',
+    'echo -e "${YELLOW}Next: Copy agent PHP files to ${INSTALL_DIR} and set WHM API token in config.php${NC}"',
+    'echo -e "${GREEN}=== Done ===${NC}"',
+  ];
 
-TOKEN=""
-PLATFORM_URL=""
-INSTALL_DIR="/opt/webmaster-monitor"
-
-RED='\\033[0;31m'
-GREEN='\\033[0;32m'
-YELLOW='\\033[1;33m'
-NC='\\033[0m'
-
-while [[ \\$# -gt 0 ]]; do
-  case \\$1 in
-    --token=*) TOKEN="\\${1#*=}"; shift ;;
-    --url=*) PLATFORM_URL="\\${1#*=}"; shift ;;
-    --dir=*) INSTALL_DIR="\\${1#*=}"; shift ;;
-    *) echo -e "\\${RED}Unknown option: \\$1\\${NC}"; exit 1 ;;
-  esac
-done
-
-if [ -z "\\$TOKEN" ] || [ -z "\\$PLATFORM_URL" ]; then
-  echo -e "\\${RED}Error: --token and --url are required\\${NC}"
-  exit 1
-fi
-
-echo -e "\\${GREEN}=== Webmaster Monitor Agent Installer ===\\${NC}"
-echo ""
-
-# Check PHP
-echo -n "Checking PHP... "
-if ! command -v php &> /dev/null; then
-  echo -e "\\${RED}NOT FOUND\\${NC}"
-  exit 1
-fi
-echo -e "\\${GREEN}$(php -r 'echo PHP_VERSION;')\\${NC}"
-
-# Create directories
-mkdir -p "\\${INSTALL_DIR}"
-
-# Write config
-cat > "\\${INSTALL_DIR}/config.php" <<'PHPEOF'
-<?php
-return [
-    'platform_url' => 'PLATFORM_URL_PLACEHOLDER',
-    'agent_token' => 'TOKEN_PLACEHOLDER',
-    'panel_type' => 'cpanel',
-    'whm_host' => 'localhost',
-    'whm_port' => 2087,
-    'whm_username' => 'root',
-    'whm_api_token' => '',
-    'enabled_modules' => ['accounts', 'cms_detector', 'dns', 'ssl'],
-    'full_sync_interval_hours' => 6,
-    'heartbeat_interval_minutes' => 5,
-    'log_file' => '/var/log/wm_agent.log',
-    'log_max_size_mb' => 5,
-    'queue_dir' => '/tmp/wm_queue',
-    'queue_max_files' => 50,
-];
-PHPEOF
-
-# Replace placeholders
-sed -i "s|PLATFORM_URL_PLACEHOLDER|\\${PLATFORM_URL}|g" "\\${INSTALL_DIR}/config.php"
-sed -i "s|TOKEN_PLACEHOLDER|\\${TOKEN}|g" "\\${INSTALL_DIR}/config.php"
-
-# Setup cron
-CRON_LINE="*/15 * * * * php \\${INSTALL_DIR}/agent.php >> /var/log/wm_agent.log 2>&1"
-(crontab -l 2>/dev/null | grep -v "webmaster-monitor\\\\|wm_agent" ; echo "\\${CRON_LINE}") | crontab -
-
-echo -e "\\${GREEN}Cron job installed\\${NC}"
-echo ""
-echo -e "\\${YELLOW}Next: Copy agent PHP files to \\${INSTALL_DIR} and set WHM API token in config.php\\${NC}"
-echo -e "\\${GREEN}=== Done ===\\${NC}"
-`;
+  return lines.join('\n') + '\n';
 }

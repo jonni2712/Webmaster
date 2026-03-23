@@ -59,7 +59,7 @@ export function ServerForm({ initialData, serverId, onSuccess }: ServerFormProps
       provider: initialData?.provider || '',
       hostname: initialData?.hostname || '',
       notes: initialData?.notes || '',
-      panel_type: initialData?.panel_type || null,
+      panel_type: (initialData?.panel_type as 'cpanel' | 'plesk' | undefined) || null,
       is_active: initialData?.is_active ?? true,
     },
   });

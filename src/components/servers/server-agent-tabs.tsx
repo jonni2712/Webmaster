@@ -32,7 +32,14 @@ interface AgentData {
   dns_zones: React.ComponentProps<typeof DnsTab>['zones'];
   ssl_certs: React.ComponentProps<typeof SslTab>['certs'];
   pending_imports: React.ComponentProps<typeof OverviewTab>['pendingImports'];
-  stats: React.ComponentProps<typeof OverviewTab>['stats'];
+  stats: React.ComponentProps<typeof OverviewTab>['stats'] & {
+    unresolved_errors?: number;
+    latest_resource?: React.ComponentProps<typeof ResourcesTab>['latestResource'];
+    total_emails?: number;
+    total_databases?: number;
+  };
+  resource_snapshots: React.ComponentProps<typeof ResourcesTab>['snapshots'];
+  errors: React.ComponentProps<typeof ErrorsTab>['errors'];
   emails: React.ComponentProps<typeof EmailTab>['emails'];
   databases: React.ComponentProps<typeof DatabasesTab>['databases'];
 }
@@ -123,9 +130,9 @@ export function ServerAgentTabs({ serverId, serverName, panelType, agentStatus: 
           <TabsTrigger value="resources">Risorse</TabsTrigger>
           <TabsTrigger value="errors">
             Errori
-            {data.stats.unresolved_errors > 0 && (
+            {(data.stats.unresolved_errors ?? 0) > 0 && (
               <Badge variant="destructive" className="ml-1 h-5 px-1 text-[10px]">
-                {data.stats.unresolved_errors}
+                {data.stats.unresolved_errors ?? 0}
               </Badge>
             )}
           </TabsTrigger>
@@ -156,7 +163,7 @@ export function ServerAgentTabs({ serverId, serverName, panelType, agentStatus: 
         <TabsContent value="resources">
           <ResourcesTab
             snapshots={data.resource_snapshots || []}
-            latestResource={data.stats.latest_resource}
+            latestResource={data.stats.latest_resource ?? null}
           />
         </TabsContent>
         <TabsContent value="errors">
