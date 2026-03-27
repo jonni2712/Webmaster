@@ -67,6 +67,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Sentry tunnel route (bypassa ad-blocker, gestito da @sentry/nextjs)
+  if (pathname.startsWith('/monitoring')) {
+    return NextResponse.next();
+  }
+
   // Controlla se è un file statico pubblico (solo estensioni specifiche)
   const isPublicStaticFile = publicFileExtensions.some(ext =>
     pathname.toLowerCase().endsWith(ext)
