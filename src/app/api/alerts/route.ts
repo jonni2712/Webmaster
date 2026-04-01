@@ -76,8 +76,8 @@ export async function GET(request: NextRequest) {
     const siteUpdates = alert.site_id ? updatesBySite.get(alert.site_id) : null;
     return {
       ...alert,
-      site_name: (alert.site as { name: string; url: string } | null)?.name,
-      site_url: (alert.site as { name: string; url: string } | null)?.url,
+      site_name: (alert.site as unknown as { name: string; url: string } | null)?.name,
+      site_url: (alert.site as unknown as { name: string; url: string } | null)?.url,
       pending_updates: siteUpdates?.total || 0,
       critical_updates: siteUpdates?.critical || 0,
     };
