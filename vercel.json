@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/uptime",
-      "schedule": "*/5 * * * *"
+      "schedule": "*/15 * * * *"
     },
     {
       "path": "/api/cron/ssl",
@@ -22,7 +22,7 @@
     },
     {
       "path": "/api/cron/scan-dns-ssl",
-      "schedule": "0 */6 * * *"
+      "schedule": "0 */12 * * *"
     },
     {
       "path": "/api/cron/scan-cms-whois",

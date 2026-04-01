@@ -47,7 +47,7 @@ async function getDashboardData() {
   // Get sites from sites table
   const { data: sites } = await supabase
     .from('sites')
-    .select('*')
+    .select('id, name, url, platform, tenant_id, client_id, is_active, tags, created_at, status, ssl_status, ssl_expires_at, uptime_percentage, response_time_avg, last_check, last_sync, performance_score, server_id, lifecycle_status, redirect_to_site_id, is_redirect_source, domain_expires_at, parent_site_id, is_multisite, is_main_site')
     .eq('tenant_id', user.current_tenant_id)
     .order('name');
 

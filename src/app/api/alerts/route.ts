@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
   let query = supabase
     .from('alerts')
     .select(`
-      *,
+      id, tenant_id, site_id, trigger_type, severity, status, title, message, created_at, resolved_at,
       site:sites(id, name, url)
     `, { count: 'exact' })
     .eq('tenant_id', user.current_tenant_id);

@@ -71,20 +71,29 @@ export async function GET(request: NextRequest) {
             throw new Error(`Failed to save check for ${site.url}: ${insertError.message}`);
           }
 
-          // Calculate uptime percentage from last 30 days
+          // Calculate uptime percentage from last 30 days using COUNT (no row transfer)
           const thirtyDaysAgo = new Date();
           thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-          const { data: recentChecks } = await supabase
-            .from('uptime_checks')
-            .select('is_up')
-            .eq('site_id', site.id)
-            .gte('checked_at', thirtyDaysAgo.toISOString());
+          const [totalResult, upResult] = await Promise.all([
+            supabase
+              .from('uptime_checks')
+              .select('*', { count: 'exact', head: true })
+              .eq('site_id', site.id)
+              .gte('checked_at', thirtyDaysAgo.toISOString()),
+            supabase
+              .from('uptime_checks')
+              .select('*', { count: 'exact', head: true })
+              .eq('site_id', site.id)
+              .eq('is_up', true)
+              .gte('checked_at', thirtyDaysAgo.toISOString()),
+          ]);
 
           let uptimePercentage = null;
-          if (recentChecks && recentChecks.length > 0) {
-            const upCount = recentChecks.filter(c => c.is_up).length;
-            uptimePercentage = (upCount / recentChecks.length) * 100;
+          const totalCount = totalResult.count ?? 0;
+          const upCount = upResult.count ?? 0;
+          if (totalCount > 0) {
+            uptimePercentage = (upCount / totalCount) * 100;
           }
 
           // Update site status fields

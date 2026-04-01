@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from('sites')
-    .select('*', { count: 'exact' })
+    .select('id, name, url, platform, tenant_id, client_id, is_active, tags, created_at, status, ssl_status, ssl_expires_at, uptime_percentage, response_time_avg, last_check, last_sync, performance_score, server_id, lifecycle_status, redirect_to_site_id, is_redirect_source, domain_expires_at, parent_site_id, is_multisite, is_main_site, notes', { count: 'exact' })
     .eq('tenant_id', user.current_tenant_id);
 
   // Apply site access filter for non-admin users
