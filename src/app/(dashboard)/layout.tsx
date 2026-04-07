@@ -1,21 +1,18 @@
+import { redirect } from 'next/navigation';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth/config';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
-
-// TODO: Riabilitare autenticazione quando OAuth è configurato
-// import { redirect } from 'next/navigation';
-// import { getServerSession } from 'next-auth';
-// import { authOptions } from '@/lib/auth/config';
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // TODO: Riabilitare quando OAuth è pronto
-  // const session = await getServerSession(authOptions);
-  // if (!session) {
-  //   redirect('/login');
-  // }
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    redirect('/login');
+  }
 
   return (
     <div className="flex min-h-screen bg-background">

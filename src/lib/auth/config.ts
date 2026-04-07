@@ -1,4 +1,5 @@
 import { NextAuthOptions } from 'next-auth';
+import type { Provider } from 'next-auth/providers/index';
 import GitHubProvider from 'next-auth/providers/github';
 import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
@@ -9,17 +10,31 @@ import { verifyPassword } from './password';
 const DEFAULT_SESSION_MAX_AGE = 24 * 60 * 60; // 1 day
 const REMEMBER_ME_MAX_AGE = 30 * 24 * 60 * 60; // 30 days
 
-export const authOptions: NextAuthOptions = {
-  providers: [
+// Conditionally enable OAuth providers only if credentials are configured.
+// Without this guard, NextAuth would initialize providers with `undefined`
+// clientId/clientSecret and crash at runtime.
+const providers: Provider[] = [];
+
+if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
+  providers.push(
     GitHubProvider({
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-    }),
+      clientId: process.env.GITHUB_CLIENT_ID,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET,
+    })
+  );
+}
+
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  providers.push(
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-    CredentialsProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    })
+  );
+}
+
+providers.push(
+  CredentialsProvider({
       id: 'credentials',
       name: 'Email e Password',
       credentials: {
@@ -81,8 +96,11 @@ export const authOptions: NextAuthOptions = {
           image: user.avatar_url,
         };
       },
-    }),
-  ],
+    })
+);
+
+export const authOptions: NextAuthOptions = {
+  providers,
   callbacks: {
     async signIn({ user, account }) {
       if (!user.email) return false;
