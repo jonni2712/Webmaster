@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth/config';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { userCanAccessSite } from '@/lib/supabase/helpers';
 import { logActivity } from '@/lib/activity/logger';
+import { encrypt } from '@/lib/crypto';
 import { z } from 'zod';
 
 const alertSettingsSchema = z.object({
@@ -95,9 +96,19 @@ export async function GET(
     return NextResponse.json({ error: 'Site not found' }, { status: 404 });
   }
 
-  // Map database fields to expected frontend fields
+  // Redact sensitive fields before returning to client.
+  // Frontend only needs to know whether keys are configured, not their values.
+  // We keep `api_key_encrypted` as a `string | null` placeholder so existing
+  // truthiness checks (`!!site.api_key_encrypted`) keep working without type changes.
+  const REDACTED = '***';
+  const { api_key_encrypted, api_secret_encrypted, ...siteWithoutSecrets } = site;
+
   const mappedSite = {
-    ...site,
+    ...siteWithoutSecrets,
+    api_key_encrypted: api_key_encrypted ? REDACTED : null,
+    api_secret_encrypted: api_secret_encrypted ? REDACTED : null,
+    has_api_key: !!api_key_encrypted,
+    has_api_secret: !!api_secret_encrypted,
     status: site.status || 'unknown',
     ssl_status: site.ssl_status || null,
     ssl_expiry: site.ssl_expires_at || null,
@@ -191,10 +202,10 @@ export async function PUT(
     // Solo aggiorna api_key se viene fornito un valore non vuoto
     // Stringa vuota = mantieni il valore esistente
     if (api_key !== undefined && api_key !== '') {
-      updatePayload.api_key_encrypted = api_key;
+      updatePayload.api_key_encrypted = encrypt(api_key);
     }
     if (api_secret !== undefined && api_secret !== '') {
-      updatePayload.api_secret_encrypted = api_secret;
+      updatePayload.api_secret_encrypted = encrypt(api_secret);
     }
     if (client_id !== undefined) {
       updatePayload.client_id = client_id || null;

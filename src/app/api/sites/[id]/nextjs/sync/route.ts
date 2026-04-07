@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { userCanAccessSite } from '@/lib/supabase/helpers';
+import { decrypt } from '@/lib/crypto';
 
 /**
  * POST /api/sites/[id]/nextjs/sync
@@ -60,6 +61,14 @@ export async function POST(
     );
   }
 
+  const apiKey = decrypt(site.api_key_encrypted);
+  if (!apiKey) {
+    return NextResponse.json(
+      { error: 'Failed to decrypt API key' },
+      { status: 500 }
+    );
+  }
+
   try {
     // Build the monitor endpoint URL
     const siteUrl = site.url.replace(/\/$/, '');
@@ -69,7 +78,7 @@ export async function POST(
     const response = await fetch(monitorUrl, {
       method: 'GET',
       headers: {
-        'X-WM-API-Key': site.api_key_encrypted,
+        'X-WM-API-Key': apiKey,
         'User-Agent': 'Webmaster-Monitor/1.0',
       },
       signal: AbortSignal.timeout(30000),

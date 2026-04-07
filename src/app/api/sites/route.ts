@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { processWordPressUpdates } from '@/lib/updates/processor';
 import { getSiteAccessFilter } from '@/lib/supabase/helpers';
 import { logActivity } from '@/lib/activity/logger';
+import { encrypt } from '@/lib/crypto';
 import { z } from 'zod';
 
 const siteSchema = z.object({
@@ -233,8 +234,8 @@ export async function POST(request: NextRequest) {
         server_id: server_id || null,
         redirect_to_site_id: redirect_to_site_id || null,
         domain_expires_at: domain_expires_at || null,
-        api_key_encrypted: api_key || null,
-        api_secret_encrypted: api_secret || null,
+        api_key_encrypted: encrypt(api_key),
+        api_secret_encrypted: encrypt(api_secret),
       })
       .select()
       .single();

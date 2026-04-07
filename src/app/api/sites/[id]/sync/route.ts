@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth/config';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { processWordPressUpdates } from '@/lib/updates/processor';
 import { processMultisiteSubsites } from '@/lib/multisite/processor';
+import { decrypt } from '@/lib/crypto';
 import type { MultisiteNetworkInfo } from '@/types';
 
 interface WordPressStatus {
@@ -132,6 +133,14 @@ export async function POST(
       );
     }
 
+    const apiKey = decrypt(site.api_key_encrypted);
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'Impossibile decifrare la API key' },
+        { status: 500 }
+      );
+    }
+
     // Build the WordPress REST API URL
     const siteUrl = site.url.replace(/\/$/, '');
     const apiUrl = `${siteUrl}/wp-json/webmaster-monitor/v1/status`;
@@ -140,7 +149,7 @@ export async function POST(
     const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
-        'X-WM-API-Key': site.api_key_encrypted,
+        'X-WM-API-Key': apiKey,
         'User-Agent': 'Webmaster-Monitor/1.0',
       },
       signal: AbortSignal.timeout(30000), // 30 second timeout
@@ -312,6 +321,14 @@ export async function GET(
       );
     }
 
+    const apiKey = decrypt(site.api_key_encrypted);
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'Impossibile decifrare la API key' },
+        { status: 500 }
+      );
+    }
+
     // Test connection with ping endpoint
     const siteUrl = site.url.replace(/\/$/, '');
     const pingUrl = `${siteUrl}/wp-json/webmaster-monitor/v1/ping`;
@@ -319,7 +336,7 @@ export async function GET(
     const response = await fetch(pingUrl, {
       method: 'GET',
       headers: {
-        'X-WM-API-Key': site.api_key_encrypted,
+        'X-WM-API-Key': apiKey,
         'User-Agent': 'Webmaster-Monitor/1.0',
       },
       signal: AbortSignal.timeout(10000), // 10 second timeout for ping

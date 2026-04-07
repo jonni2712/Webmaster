@@ -7,6 +7,7 @@ import {
   getBackupStatus,
   deleteBackupFromPlugin,
 } from '@/lib/backup/manager';
+import { decrypt } from '@/lib/crypto';
 
 /**
  * GET /api/sites/[id]/backups/[backupId]
@@ -82,9 +83,17 @@ export async function GET(
         );
       }
 
+      const apiKey = decrypt(site.api_key_encrypted);
+      if (!apiKey) {
+        return NextResponse.json(
+          { error: 'Impossibile decifrare la API key' },
+          { status: 500 }
+        );
+      }
+
       const downloadResult = await getBackupDownloadUrl(
         site.url,
-        site.api_key_encrypted,
+        apiKey,
         backupId
       );
 
@@ -106,9 +115,16 @@ export async function GET(
     // Handle status check action
     if (action === 'status' && site.api_key_encrypted) {
       if (backup.status === 'pending' || backup.status === 'creating') {
+        const apiKey = decrypt(site.api_key_encrypted);
+        if (!apiKey) {
+          return NextResponse.json(
+            { error: 'Impossibile decifrare la API key' },
+            { status: 500 }
+          );
+        }
         const statusResult = await getBackupStatus(
           site.url,
-          site.api_key_encrypted,
+          apiKey,
           backupId
         );
 
@@ -204,15 +220,20 @@ export async function DELETE(
 
     // Try to delete from WordPress plugin
     if (site.api_key_encrypted && backup.status === 'completed') {
-      const deleteResult = await deleteBackupFromPlugin(
-        site.url,
-        site.api_key_encrypted,
-        backupId
-      );
+      const apiKey = decrypt(site.api_key_encrypted);
+      if (apiKey) {
+        const deleteResult = await deleteBackupFromPlugin(
+          site.url,
+          apiKey,
+          backupId
+        );
 
-      if (!deleteResult.success) {
-        console.warn('Could not delete backup from plugin:', deleteResult.error);
-        // Continue anyway - we'll mark as deleted in database
+        if (!deleteResult.success) {
+          console.warn('Could not delete backup from plugin:', deleteResult.error);
+          // Continue anyway - we'll mark as deleted in database
+        }
+      } else {
+        console.warn('Could not decrypt API key for backup deletion');
       }
     }
 

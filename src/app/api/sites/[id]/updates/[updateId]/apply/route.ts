@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { decrypt } from '@/lib/crypto';
 
 export async function POST(
   request: NextRequest,
@@ -62,6 +63,14 @@ export async function POST(
       );
     }
 
+    const apiKey = decrypt(site.api_key_encrypted);
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'Impossibile decifrare la API key' },
+        { status: 500 }
+      );
+    }
+
     // Get update details
     const { data: update } = await supabase
       .from('wp_updates')
@@ -94,7 +103,7 @@ export async function POST(
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
-        'X-WM-API-Key': site.api_key_encrypted,
+        'X-WM-API-Key': apiKey,
         'Content-Type': 'application/json',
         'User-Agent': 'Webmaster-Monitor/1.0',
       },

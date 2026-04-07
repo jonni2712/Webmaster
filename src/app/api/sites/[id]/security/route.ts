@@ -8,6 +8,7 @@ import {
   generateMockSecurityData,
 } from '@/lib/security/scanner';
 import { generateRecommendations } from '@/lib/security/recommendations';
+import { decrypt } from '@/lib/crypto';
 import type { SecurityScan, SecurityScanData } from '@/types/database';
 
 interface SecurityResponse {
@@ -163,7 +164,8 @@ export async function POST(
     let securityData: SecurityScanData;
 
     // Try to fetch security data from WordPress plugin
-    if (site.api_key_encrypted) {
+    const apiKey = site.api_key_encrypted ? decrypt(site.api_key_encrypted) : null;
+    if (apiKey) {
       try {
         const siteUrl = site.url.replace(/\/$/, '');
         const apiUrl = `${siteUrl}/wp-json/webmaster-monitor/v1/security`;
@@ -171,7 +173,7 @@ export async function POST(
         const response = await fetch(apiUrl, {
           method: 'GET',
           headers: {
-            'X-WM-API-Key': site.api_key_encrypted,
+            'X-WM-API-Key': apiKey,
             'User-Agent': 'Webmaster-Monitor/1.0',
           },
           signal: AbortSignal.timeout(30000),

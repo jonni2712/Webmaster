@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { processWordPressUpdates } from '@/lib/updates/processor';
+import { decrypt } from '@/lib/crypto';
 
 /**
  * POST /api/sites/sync-all
@@ -101,6 +102,11 @@ async function syncSite(
     return { success: false, message: 'API key mancante', updates: 0 };
   }
 
+  const apiKey = decrypt(site.api_key_encrypted);
+  if (!apiKey) {
+    return { success: false, message: 'Impossibile decifrare API key', updates: 0 };
+  }
+
   try {
     const url = site.url.replace(/\/$/, '');
     const apiUrl = `${url}/wp-json/webmaster-monitor/v1/status`;
@@ -108,7 +114,7 @@ async function syncSite(
     const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
-        'X-WM-API-Key': site.api_key_encrypted,
+        'X-WM-API-Key': apiKey,
         'User-Agent': 'Webmaster-Monitor/1.0',
       },
       signal: AbortSignal.timeout(30000),

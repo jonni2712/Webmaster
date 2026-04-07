@@ -1,6 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { decrypt } from '@/lib/crypto';
 import crypto from 'crypto';
+
+/**
+ * Constant-time API key comparison to prevent timing attacks.
+ * Returns false on any error (decryption failure, length mismatch).
+ */
+function verifyApiKey(stored: string | null, provided: string): boolean {
+  if (!stored) return false;
+  const decrypted = (() => {
+    try {
+      return decrypt(stored);
+    } catch {
+      return null;
+    }
+  })();
+  if (!decrypted) return false;
+  const a = Buffer.from(decrypted);
+  const b = Buffer.from(provided);
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
 
 /**
  * POST /api/sites/[id]/nextjs/status
@@ -36,8 +57,8 @@ export async function POST(
       return NextResponse.json({ error: 'Not a Next.js site' }, { status: 400 });
     }
 
-    // Verify API key matches
-    if (site.api_key_encrypted !== apiKey) {
+    // Verify API key matches (constant-time comparison after decryption)
+    if (!verifyApiKey(site.api_key_encrypted, apiKey)) {
       return NextResponse.json({ error: 'Invalid API key' }, { status: 401 });
     }
 
@@ -152,7 +173,7 @@ export async function GET(
     .eq('id', id)
     .single();
 
-  if (!site || site.api_key_encrypted !== apiKey) {
+  if (!site || !verifyApiKey(site.api_key_encrypted, apiKey)) {
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 

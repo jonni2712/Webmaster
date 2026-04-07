@@ -7,6 +7,7 @@ import {
   listBackupsFromPlugin,
   type BackupOptions,
 } from '@/lib/backup/manager';
+import { decrypt } from '@/lib/crypto';
 import type { BackupType, SiteBackup } from '@/types/database';
 
 /**
@@ -166,6 +167,14 @@ export async function POST(
       );
     }
 
+    const apiKey = decrypt(site.api_key_encrypted);
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'Impossibile decifrare la API key' },
+        { status: 500 }
+      );
+    }
+
     // Check if there's already a backup in progress
     const { data: pendingBackup } = await supabase
       .from('site_backups')
@@ -220,7 +229,7 @@ export async function POST(
 
     const backupResult = await createBackupRequest(
       site.url,
-      site.api_key_encrypted,
+      apiKey,
       backupOptions
     );
 
