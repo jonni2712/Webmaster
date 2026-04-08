@@ -6,6 +6,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyPassword } from './password';
 import { checkRateLimit, AUTH_RATE_LIMITS } from '@/lib/rate-limit';
+import { getPlan } from '@/lib/billing/plans';
 
 /**
  * Extracts client IP from NextAuth's internal request object.
@@ -194,13 +195,21 @@ export const authOptions: NextAuthOptions = {
             ? `${user.name}'s Workspace`
             : `${user.email.split('@')[0]}'s Workspace`;
 
+          // Load free plan to keep limits in sync with the plans table.
+          const freePlan = await getPlan('free');
+          if (!freePlan) {
+            console.error('Failed to load free plan during OAuth signup');
+            return false;
+          }
+
           const { data: newTenant, error: tenantError } = await supabase
             .from('tenants')
             .insert({
               name: tenantName,
               slug: tenantSlug,
-              plan: 'free',
-              max_sites: 3,
+              plan: freePlan.id,
+              plan_id: freePlan.id,
+              max_sites: freePlan.maxSites,
             })
             .select('id')
             .single();

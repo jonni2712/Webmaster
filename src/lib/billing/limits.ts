@@ -1,12 +1,12 @@
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getPlanForTenant } from './plans';
 
 /**
  * Plan limit enforcement helpers.
  *
- * These functions currently read the `tenants.max_sites` column directly.
- * When Phase 1.1 introduces a dedicated `plans` table, the bodies here
- * will switch to `getPlanFor(tenantId).max_sites` without changing the
- * call-site API.
+ * Reads plan limits via `getPlanForTenant()` from the `plans` table.
+ * Falls back to `tenants.max_sites` column if the tenant has no plan_id
+ * assigned yet (shouldn't happen post-migration-029, but defensive).
  */
 
 export interface SiteLimitStatus {
@@ -26,12 +26,8 @@ export async function getSiteLimitStatus(
 ): Promise<SiteLimitStatus> {
   const supabase = createAdminClient();
 
-  const [tenantResult, siteCountResult] = await Promise.all([
-    supabase
-      .from('tenants')
-      .select('max_sites')
-      .eq('id', tenantId)
-      .single(),
+  const [planResult, siteCountResult] = await Promise.all([
+    getPlanForTenant(tenantId),
     supabase
       .from('sites')
       .select('*', { count: 'exact', head: true })
@@ -41,7 +37,7 @@ export async function getSiteLimitStatus(
       .is('parent_site_id', null),
   ]);
 
-  const max = tenantResult.data?.max_sites ?? 0;
+  const max = planResult?.maxSites ?? 0;
   const current = siteCountResult.count ?? 0;
 
   return {

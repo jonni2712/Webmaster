@@ -11,6 +11,7 @@ import {
   AUTH_RATE_LIMITS,
   rateLimitResponse,
 } from '@/lib/rate-limit';
+import { getPlan } from '@/lib/billing/plans';
 
 /**
  * Generates a URL-safe slug from a string, falling back to a random suffix if empty.
@@ -108,13 +109,25 @@ export async function POST(request: NextRequest) {
       ? `${displayName}'s Workspace`
       : `${normalizedEmail.split('@')[0]}'s Workspace`;
 
+    // Load the free plan so that limits (max_sites, etc.) come from the
+    // centralized plans table instead of being hardcoded here.
+    const freePlan = await getPlan('free');
+    if (!freePlan) {
+      console.error('Failed to load free plan from database');
+      return NextResponse.json(
+        { error: 'Configurazione piani non disponibile' },
+        { status: 500 }
+      );
+    }
+
     const { data: newTenant, error: tenantError } = await supabase
       .from('tenants')
       .insert({
         name: tenantName,
         slug: tenantSlug,
-        plan: 'free',
-        max_sites: 3,
+        plan: freePlan.id,
+        plan_id: freePlan.id,
+        max_sites: freePlan.maxSites, // Legacy column, kept in sync
       })
       .select('id')
       .single();
