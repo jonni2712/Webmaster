@@ -205,8 +205,14 @@ export async function POST(request: NextRequest) {
 
     // Generate and send verification email.
     try {
+      console.log(
+        `[register] generating verification token for user ${newUser.id} (${normalizedEmail})`
+      );
       const token = await generateToken(newUser.id, 'email_verification');
       const verifyUrl = `${process.env.NEXTAUTH_URL}/verify-email?token=${token}`;
+      console.log(
+        `[register] verification token generated, calling sendEmail() to ${normalizedEmail}`
+      );
 
       const result = await sendEmail({
         to: normalizedEmail,
@@ -216,6 +222,20 @@ export async function POST(request: NextRequest) {
           verificationUrl: verifyUrl,
         }),
       });
+
+      console.log(
+        `[register] sendEmail() returned for ${normalizedEmail}:`,
+        JSON.stringify({
+          traceId: result.traceId,
+          success: result.success,
+          backend: result.backend,
+          messageId: result.messageId,
+          error:
+            result.error instanceof Error
+              ? { name: result.error.name, message: result.error.message }
+              : result.error,
+        })
+      );
 
       if (!result.success) {
         console.warn(
