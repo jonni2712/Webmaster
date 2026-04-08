@@ -5,6 +5,29 @@ import GoogleProvider from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { verifyPassword } from './password';
+import { checkRateLimit, AUTH_RATE_LIMITS } from '@/lib/rate-limit';
+
+/**
+ * Extracts client IP from NextAuth's internal request object.
+ * Falls back to "unknown" so rate limiting still happens against a
+ * stable per-deployment key when no forwarded header is present.
+ */
+function getIpFromNextAuthReq(req: unknown): string {
+  if (!req || typeof req !== 'object') return 'unknown';
+  const headers = (req as { headers?: Record<string, string | string[]> })
+    .headers;
+  if (!headers) return 'unknown';
+  const xff = headers['x-forwarded-for'];
+  const xffValue = Array.isArray(xff) ? xff[0] : xff;
+  if (xffValue) {
+    const first = xffValue.split(',')[0]?.trim();
+    if (first) return first;
+  }
+  const xri = headers['x-real-ip'];
+  const xriValue = Array.isArray(xri) ? xri[0] : xri;
+  if (xriValue) return xriValue.trim();
+  return 'unknown';
+}
 
 // Session durations
 const DEFAULT_SESSION_MAX_AGE = 24 * 60 * 60; // 1 day
@@ -42,9 +65,32 @@ providers.push(
         password: { label: 'Password', type: 'password' },
         rememberMe: { label: 'Ricordami', type: 'checkbox' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error('Email e password richiesti');
+        }
+
+        const normalizedEmail = credentials.email.toLowerCase().trim();
+        const ip = getIpFromNextAuthReq(req);
+
+        // Rate limit by IP (coarse abuse prevention).
+        const ipLimit = await checkRateLimit({
+          name: 'login_ip',
+          identifier: `ip:${ip}`,
+          ...AUTH_RATE_LIMITS.login,
+        });
+        if (!ipLimit.allowed) {
+          throw new Error('Troppi tentativi di accesso. Riprova più tardi.');
+        }
+
+        // Rate limit by email (targeted brute-force prevention).
+        const emailLimit = await checkRateLimit({
+          name: 'login_email',
+          identifier: `email:${normalizedEmail}`,
+          ...AUTH_RATE_LIMITS.loginEmail,
+        });
+        if (!emailLimit.allowed) {
+          throw new Error('Troppi tentativi di accesso. Riprova più tardi.');
         }
 
         const supabase = createAdminClient();
@@ -53,7 +99,7 @@ providers.push(
         const { data: user, error: userError } = await supabase
           .from('users')
           .select('id, email, name, avatar_url, email_verified')
-          .eq('email', credentials.email.toLowerCase())
+          .eq('email', normalizedEmail)
           .single();
 
         if (userError || !user) {

@@ -5,6 +5,12 @@ import { generateToken } from '@/lib/auth/tokens';
 import { registerSchema } from '@/lib/validations/auth';
 import { sendEmail } from '@/lib/email/client';
 import { VerifyEmailTemplate } from '@/lib/email/templates/verify-email';
+import {
+  checkRateLimit,
+  getClientIp,
+  AUTH_RATE_LIMITS,
+  rateLimitResponse,
+} from '@/lib/rate-limit';
 
 /**
  * Generates a URL-safe slug from a string, falling back to a random suffix if empty.
@@ -48,6 +54,17 @@ async function generateUniqueTenantSlug(
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: max 3 signups per IP in 10 minutes.
+    const ip = getClientIp(request);
+    const rl = await checkRateLimit({
+      name: 'register',
+      identifier: `ip:${ip}`,
+      ...AUTH_RATE_LIMITS.register,
+    });
+    if (!rl.allowed) {
+      return rateLimitResponse(rl);
+    }
+
     const body = await request.json();
     const parsed = registerSchema.safeParse(body);
 

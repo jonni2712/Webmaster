@@ -3,9 +3,26 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { hashPassword } from '@/lib/auth/password';
 import { validateToken, markTokenAsUsed } from '@/lib/auth/tokens';
 import { resetPasswordSchema } from '@/lib/validations/auth';
+import {
+  checkRateLimit,
+  getClientIp,
+  AUTH_RATE_LIMITS,
+  rateLimitResponse,
+} from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: protects against token guessing / brute-force.
+    const ip = getClientIp(request);
+    const rl = await checkRateLimit({
+      name: 'reset_password',
+      identifier: `ip:${ip}`,
+      ...AUTH_RATE_LIMITS.resetPasswordIp,
+    });
+    if (!rl.allowed) {
+      return rateLimitResponse(rl);
+    }
+
     const body = await request.json();
     const { password, token } = resetPasswordSchema.parse(body);
 

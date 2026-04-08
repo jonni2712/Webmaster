@@ -77,9 +77,18 @@ export async function GET(request: Request) {
     }
   }
 
+  // 3. Delete rate-limit attempts older than 24h.
+  // Keeps the table small for fast COUNT queries on auth endpoints.
+  const rateLimitCutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const { count: rateLimitDeleted } = await supabase
+    .from('rate_limit_attempts')
+    .delete({ count: 'exact' })
+    .lt('created_at', rateLimitCutoff.toISOString());
+
   return NextResponse.json({
     ok: true,
     deleted_old: deletedOld,
     compacted,
+    rate_limit_deleted: rateLimitDeleted || 0,
   });
 }

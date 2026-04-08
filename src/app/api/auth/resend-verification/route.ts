@@ -3,9 +3,26 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { generateToken } from '@/lib/auth/tokens';
 import { sendEmail } from '@/lib/email/client';
 import { VerifyEmailTemplate } from '@/lib/email/templates/verify-email';
+import {
+  checkRateLimit,
+  getClientIp,
+  AUTH_RATE_LIMITS,
+  rateLimitResponse,
+} from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit per IP: caps distributed abuse of the email resend.
+    const ip = getClientIp(request);
+    const rl = await checkRateLimit({
+      name: 'resend_verification',
+      identifier: `ip:${ip}`,
+      ...AUTH_RATE_LIMITS.resendVerificationIp,
+    });
+    if (!rl.allowed) {
+      return rateLimitResponse(rl);
+    }
+
     const { email } = await request.json();
 
     if (!email) {
