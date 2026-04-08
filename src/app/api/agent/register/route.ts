@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { generateAgentToken } from '@/lib/agent/token';
+import { getAppBaseUrl } from '@/lib/urls';
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
     })
     .eq('id', server_id);
 
-  const baseUrl = process.env.NEXTAUTH_URL || 'https://app.webmaster-monitor.com';
+  const baseUrl = getAppBaseUrl();
 
   return NextResponse.json({
     ok: true,

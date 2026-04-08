@@ -10,6 +10,7 @@ import {
   AUTH_RATE_LIMITS,
   rateLimitResponse,
 } from '@/lib/rate-limit';
+import { absoluteUrl } from '@/lib/urls';
 
 export async function POST(request: NextRequest) {
   try {
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
 
     // Generate reset token
     const token = await generateToken(user.id, 'password_reset');
-    const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`;
+    const resetUrl = absoluteUrl(`/reset-password?token=${token}`);
 
     // Send reset email (SMTP if configured, Resend as fallback)
     await sendEmail({

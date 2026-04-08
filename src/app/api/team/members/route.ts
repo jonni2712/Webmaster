@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logActivity } from '@/lib/activity/logger';
 import { sendEmail } from '@/lib/email/client';
 import { TeamInviteTemplate } from '@/lib/email/templates/team-invite';
+import { absoluteUrl } from '@/lib/urls';
 import crypto from 'crypto';
 import type { TeamMember, MemberRole } from '@/types/database';
 
@@ -244,7 +245,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Send invitation email
-    const inviteUrl = `${process.env.NEXTAUTH_URL}/accept-invite/${token}`;
+    const inviteUrl = absoluteUrl(`/accept-invite/${token}`);
 
     try {
       await sendEmail({

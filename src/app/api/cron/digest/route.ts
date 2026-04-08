@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendEmail } from '@/lib/email/client';
 import { DigestEmail } from '@/lib/email/templates/digest';
+import { getAppBaseUrl } from '@/lib/urls';
 import { format, subDays, subWeeks } from 'date-fns';
 import { it } from 'date-fns/locale';
 import type { DigestPreferences } from '@/types/database';
@@ -161,7 +162,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Send digest email
-        const dashboardUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://webmaster-monitor.com';
+        const dashboardUrl = getAppBaseUrl();
 
         await sendEmail({
           to: recipientEmail,

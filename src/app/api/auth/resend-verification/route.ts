@@ -9,6 +9,7 @@ import {
   AUTH_RATE_LIMITS,
   rateLimitResponse,
 } from '@/lib/rate-limit';
+import { absoluteUrl } from '@/lib/urls';
 
 export async function POST(request: NextRequest) {
   try {
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     // Generate new token
     const token = await generateToken(user.id, 'email_verification');
-    const verificationUrl = `${process.env.NEXTAUTH_URL}/verify-email?token=${token}`;
+    const verificationUrl = absoluteUrl(`/verify-email?token=${token}`);
 
     await sendEmail({
       to: email,

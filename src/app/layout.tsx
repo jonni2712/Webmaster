@@ -9,7 +9,7 @@ import { Analytics } from '@vercel/analytics/next';
 
 const inter = Inter({ subsets: ['latin'] });
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://webmaster-monitor.com';
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://webmaster-monitor.it';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

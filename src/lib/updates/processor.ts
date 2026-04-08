@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { dispatchNotification } from '@/lib/notifications/dispatcher';
+import { absoluteUrl } from '@/lib/urls';
 import type { UpdateType, UpdateStatus } from '@/types/database';
 
 interface PluginInfo {
@@ -368,7 +369,7 @@ async function generateUpdateAlert(
           newVersion: u.new_version,
           isCritical: u.is_critical,
         })),
-        dashboardUrl: `${process.env.NEXTAUTH_URL || ''}/sites/${siteId}`,
+        dashboardUrl: absoluteUrl(`/sites/${siteId}`),
       },
     });
 

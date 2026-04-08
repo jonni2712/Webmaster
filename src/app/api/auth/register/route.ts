@@ -12,6 +12,7 @@ import {
   rateLimitResponse,
 } from '@/lib/rate-limit';
 import { getPlan } from '@/lib/billing/plans';
+import { absoluteUrl } from '@/lib/urls';
 
 /**
  * Generates a URL-safe slug from a string, falling back to a random suffix if empty.
@@ -209,7 +210,7 @@ export async function POST(request: NextRequest) {
         `[register] generating verification token for user ${newUser.id} (${normalizedEmail})`
       );
       const token = await generateToken(newUser.id, 'email_verification');
-      const verifyUrl = `${process.env.NEXTAUTH_URL}/verify-email?token=${token}`;
+      const verifyUrl = absoluteUrl(`/verify-email?token=${token}`);
       console.log(
         `[register] verification token generated, calling sendEmail() to ${normalizedEmail}`
       );
