@@ -176,28 +176,36 @@
 
 ## Piano Commerciale
 
-### Free Tier
+> Aggiornato 2026-04-08 — limiti allineati al codice e alle reali capacità tecniche.
+
+### Free Tier — €0
 - 3 siti
 - Uptime check ogni 15 minuti
-- 30 giorni storico
-- Email notifications
+- Storico 7 giorni
+- Notifiche email
+- Supporto via email
 
-### Pro Tier
+### Pro Tier — €29/mese
 - 25 siti
-- Uptime check ogni 5 minuti
-- 1 anno storico
-- Tutte le notifiche
-- Report PDF
-- Team (3 membri)
+- Uptime check ogni 5 minuti (target — vedi note throughput)
+- Storico 30 giorni
+- Notifiche multi-canale (Slack, Telegram, Discord, Webhook)
+- Scanner DNS, SSL, CMS, WHOIS
+- Supporto prioritario
 
-### Enterprise Tier
+### Enterprise Tier — €79/mese
 - Siti illimitati
-- Uptime check ogni 1 minuto
+- Uptime check ogni 5 minuti (target — vedi note throughput)
 - Storico illimitato
-- White label
-- API access
-- Team illimitato
-- Support prioritario
+- Notifiche multi-canale complete
+- Monitoraggio server cPanel/Plesk via agent
+- Account manager dedicato
+
+### Note tecniche da risolvere prima della vendita
+- [ ] **Throughput cron uptime**: il cron processa solo ~70 siti per run di 60s; serve fix (maxDuration=300s + BATCH_SIZE=30) per onorare i 5 minuti del Pro/Enterprise
+- [ ] **Enforcement `max_sites`**: nessun controllo applicato su `POST /api/sites` — un free tier può aggiungere siti illimitati
+- [ ] **Retention storico per piano**: cron di pulizia uptime_checks/ssl_checks/alerts non implementato (storico è di fatto illimitato per tutti)
+- [ ] **Stripe**: nessuna integrazione di pagamento — Pro/Enterprise vendibili solo via "Contattaci"
 
 ---
 

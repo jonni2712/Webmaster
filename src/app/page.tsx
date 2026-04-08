@@ -66,44 +66,44 @@ const features = [
 
 const plans = [
   {
-    name: 'Starter',
-    price: '9',
-    description: 'Perfetto per freelancer e piccoli progetti',
+    name: 'Free',
+    price: '0',
+    description: 'Per iniziare a monitorare i tuoi primi siti',
     features: [
-      'Fino a 5 siti',
-      'Controllo ogni 5 minuti',
+      'Fino a 3 siti',
+      'Uptime check ogni 15 minuti',
       'Notifiche email',
       'Storico 7 giorni',
-      'Supporto email',
+      'Supporto via email',
     ],
-    cta: 'Contattaci',
+    cta: 'Inizia Gratis',
     popular: false,
   },
   {
     name: 'Pro',
     price: '29',
-    description: 'Ideale per agenzie e professionisti',
+    description: 'Ideale per freelancer e piccole agenzie',
     features: [
       'Fino a 25 siti',
-      'Controllo ogni 1 minuto',
-      'Notifiche multi-canale',
+      'Uptime check ogni 5 minuti',
+      'Notifiche multi-canale (Slack, Telegram, Discord)',
+      'Scanner DNS, SSL, CMS, WHOIS',
       'Storico 30 giorni',
-      'API access',
       'Supporto prioritario',
     ],
     cta: 'Contattaci',
     popular: true,
   },
   {
-    name: 'Agency',
+    name: 'Enterprise',
     price: '79',
-    description: 'Per agenzie con molti clienti',
+    description: 'Per agenzie con molti clienti e server',
     features: [
       'Siti illimitati',
-      'Controllo ogni 30 secondi',
-      'White-label reports',
+      'Uptime check ogni 5 minuti',
+      'Tutte le notifiche multi-canale',
+      'Monitoraggio server cPanel/Plesk via agent',
       'Storico illimitato',
-      'Multi-tenant',
       'Account manager dedicato',
     ],
     cta: 'Contattaci',
@@ -315,7 +315,7 @@ export default function LandingPage() {
               Piani semplici e trasparenti
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Scegli il piano più adatto alle tue esigenze. Tutti includono una prova gratuita di 14 giorni.
+              Scegli il piano più adatto alle tue esigenze. Inizia gratis, passa a Pro o Enterprise quando ne hai bisogno.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto items-stretch">
@@ -334,7 +334,9 @@ export default function LandingPage() {
                   <CardDescription>{plan.description}</CardDescription>
                   <div className="py-4">
                     <span className="text-4xl font-bold">€{plan.price}</span>
-                    <span className="text-muted-foreground">/mese</span>
+                    {plan.price !== '0' && (
+                      <span className="text-muted-foreground">/mese</span>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="flex flex-col flex-grow">
@@ -346,9 +348,19 @@ export default function LandingPage() {
                       </li>
                     ))}
                   </ul>
-                  <Button className="w-full mt-6" variant={plan.popular ? 'default' : 'outline'}>
-                    {plan.cta}
-                  </Button>
+                  {plan.name === 'Free' ? (
+                    <Link href="/register" className="block mt-6">
+                      <Button className="w-full" variant={plan.popular ? 'default' : 'outline'}>
+                        {plan.cta}
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Link href="/contact" className="block mt-6">
+                      <Button className="w-full" variant={plan.popular ? 'default' : 'outline'}>
+                        {plan.cta}
+                      </Button>
+                    </Link>
+                  )}
                 </CardContent>
               </Card>
             ))}
