@@ -63,6 +63,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // TEMP: debug endpoint protetto da DEBUG_EMAIL_SECRET (rimuovere dopo)
+  if (pathname.startsWith('/api/debug/')) {
+    return NextResponse.next();
+  }
+
   // Salta controllo per agent routes che usano Bearer token auth (non NextAuth session)
   // /api/agent/register e /api/agent/imports richiedono sessione utente e NON sono qui
   if (
