@@ -6,6 +6,7 @@ import { processWordPressUpdates } from '@/lib/updates/processor';
 import { getSiteAccessFilter } from '@/lib/supabase/helpers';
 import { logActivity } from '@/lib/activity/logger';
 import { encrypt } from '@/lib/crypto';
+import { assertCanAddSite, PlanLimitError } from '@/lib/billing/limits';
 import { z } from 'zod';
 
 const siteSchema = z.object({
@@ -180,7 +181,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Encrypt API keys before storing
+    // Enforce plan limit on number of sites.
+    try {
+      await assertCanAddSite(user.current_tenant_id);
+    } catch (err) {
+      if (err instanceof PlanLimitError) {
+        return NextResponse.json(
+          {
+            error: `Limite del piano raggiunto: ${err.current}/${err.max} siti. Aggiorna il piano per aggiungerne di più.`,
+            code: 'PLAN_LIMIT_REACHED',
+            limit: { current: err.current, max: err.max, kind: err.kind },
+          },
+          { status: 403 }
+        );
+      }
+      throw err;
+    }
+
     const {
       api_key,
       api_secret,

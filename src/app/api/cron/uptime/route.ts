@@ -7,7 +7,9 @@ import type { SiteAlertSettings } from '@/types/database';
 
 // Uses default Node.js runtime (Fluid Compute) so that downstream
 // notification dispatchers can load nodemailer for SMTP.
-export const maxDuration = 60;
+// maxDuration bumped to 300s (Vercel default since 2025) to allow
+// processing all sites in a single run even at 1000+ scale.
+export const maxDuration = 300;
 
 export async function GET(request: NextRequest) {
   // Verify Vercel Cron secret
@@ -40,8 +42,11 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Process in batches to respect rate limits
-    const BATCH_SIZE = 10;
+    // Process in batches to respect rate limits.
+    // At 755 active sites: 755/30 = ~26 batches × ~5s/batch = ~130s,
+    // well within the 300s budget. Leaves ~170s of headroom for DB
+    // writes and alert dispatching.
+    const BATCH_SIZE = 30;
     const results = {
       processed: 0,
       successful: 0,

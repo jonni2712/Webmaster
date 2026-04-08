@@ -7,7 +7,9 @@ import { DEFAULT_ALERT_SETTINGS, type SiteAlertSettings } from '@/types/database
 
 // Uses default Node.js runtime (Fluid Compute) so that downstream
 // notification dispatchers can load nodemailer for SMTP.
-export const maxDuration = 60;
+// SSL checks are TLS handshakes — slow (~2-5s each). Bumped to 300s
+// for the same reason as the uptime cron.
+export const maxDuration = 300;
 
 export async function GET(request: NextRequest) {
   const headersList = await headers();
@@ -38,7 +40,8 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const BATCH_SIZE = 10;
+    // TLS handshakes are slower than HTTP checks, keep batch smaller.
+    const BATCH_SIZE = 20;
     const results = {
       processed: 0,
       successful: 0,
