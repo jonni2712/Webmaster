@@ -122,13 +122,56 @@ export const authOptions: NextAuthOptions = {
           .single();
 
         if (!existingUser) {
-          // Create new user
+          // Create a dedicated tenant (workspace) for the new OAuth user.
+          // This mirrors the behavior of /api/auth/register and prevents
+          // new signups from landing in the shared Personal tenant.
+          const baseSlug = (user.name || user.email.split('@')[0])
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .slice(0, 40) || `workspace-${Date.now().toString(36)}`;
+
+          // Try to find a unique slug by appending -2, -3, ... if needed.
+          let tenantSlug = baseSlug;
+          for (let i = 2; i < 50; i++) {
+            const { data: existing } = await supabase
+              .from('tenants')
+              .select('id')
+              .eq('slug', tenantSlug)
+              .maybeSingle();
+            if (!existing) break;
+            tenantSlug = `${baseSlug}-${i}`;
+          }
+
+          const tenantName = user.name
+            ? `${user.name}'s Workspace`
+            : `${user.email.split('@')[0]}'s Workspace`;
+
+          const { data: newTenant, error: tenantError } = await supabase
+            .from('tenants')
+            .insert({
+              name: tenantName,
+              slug: tenantSlug,
+              plan: 'free',
+              max_sites: 3,
+            })
+            .select('id')
+            .single();
+
+          if (tenantError || !newTenant) {
+            console.error('Error creating tenant for OAuth user:', tenantError);
+            return false;
+          }
+
+          // Create the user record linked to their new tenant.
           const { data: newUser, error } = await supabase
             .from('users')
             .insert({
               email: user.email,
               name: user.name,
               avatar_url: user.image,
+              current_tenant_id: newTenant.id,
               email_verified: new Date().toISOString(), // OAuth = verified
             })
             .select()
@@ -136,15 +179,27 @@ export const authOptions: NextAuthOptions = {
 
           if (error) {
             console.error('Error creating user:', error);
+            // Rollback the tenant to avoid an orphan.
+            await supabase.from('tenants').delete().eq('id', newTenant.id);
             return false;
           }
 
-          // Add user to default tenant
-          await supabase.from('user_tenants').insert({
-            user_id: newUser.id,
-            tenant_id: '00000000-0000-0000-0000-000000000001',
-            role: 'owner',
-          });
+          // Link user to their own tenant as owner.
+          const { error: membershipError } = await supabase
+            .from('user_tenants')
+            .insert({
+              user_id: newUser.id,
+              tenant_id: newTenant.id,
+              role: 'owner',
+            });
+
+          if (membershipError) {
+            console.error('Error creating user_tenants:', membershipError);
+            // Rollback user + tenant.
+            await supabase.from('users').delete().eq('id', newUser.id);
+            await supabase.from('tenants').delete().eq('id', newTenant.id);
+            return false;
+          }
         } else {
           // Update existing user
           await supabase
