@@ -1,4 +1,4 @@
-import { resend, EMAIL_FROM } from '@/lib/email/client';
+import { sendEmail } from '@/lib/email/client';
 import { AlertDowntimeEmail } from '@/lib/email/templates/alert-downtime';
 import { AlertSSLEmail } from '@/lib/email/templates/alert-ssl';
 import { AlertRecoveryEmail } from '@/lib/email/templates/alert-recovery';
@@ -16,11 +16,6 @@ export async function sendEmailNotification(
   payload: NotificationPayload,
   config: Record<string, unknown>
 ): Promise<boolean> {
-  if (!resend) {
-    console.warn('Resend client not configured - skipping email notification');
-    return false;
-  }
-
   const emailConfig = config as EmailConfig;
   const recipients = emailConfig.recipients || [];
 
@@ -122,19 +117,20 @@ export async function sendEmailNotification(
         });
     }
 
-    const { error } = await resend.emails.send({
-      from: EMAIL_FROM,
+    const result = await sendEmail({
       to: recipients,
       subject,
       react: emailComponent,
     });
 
-    if (error) {
-      console.error('Resend email error:', error);
+    if (!result.success) {
+      console.error(`Email send failed (backend=${result.backend}):`, result.error);
       return false;
     }
 
-    console.log(`Email sent successfully to ${recipients.join(', ')}`);
+    console.log(
+      `Email sent via ${result.backend} to ${recipients.join(', ')}`
+    );
     return true;
   } catch (err) {
     console.error('Error sending email notification:', err);

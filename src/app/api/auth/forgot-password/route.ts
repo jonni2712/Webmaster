@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { generateToken } from '@/lib/auth/tokens';
 import { forgotPasswordSchema } from '@/lib/validations/auth';
-import { resend, EMAIL_FROM } from '@/lib/email/client';
+import { sendEmail } from '@/lib/email/client';
 import { ResetPasswordTemplate } from '@/lib/email/templates/reset-password';
 
 export async function POST(request: NextRequest) {
@@ -49,18 +49,15 @@ export async function POST(request: NextRequest) {
     const token = await generateToken(user.id, 'password_reset');
     const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`;
 
-    // Send reset email
-    if (resend) {
-      await resend.emails.send({
-        from: EMAIL_FROM,
-        to: email,
-        subject: 'Reimposta la tua password - Webmaster Monitor',
-        react: ResetPasswordTemplate({
-          userName: user.name || '',
-          resetUrl,
-        }),
-      });
-    }
+    // Send reset email (SMTP if configured, Resend as fallback)
+    await sendEmail({
+      to: email,
+      subject: 'Reimposta la tua password - Webmaster Monitor',
+      react: ResetPasswordTemplate({
+        userName: user.name || '',
+        resetUrl,
+      }),
+    });
 
     return NextResponse.json({
       success: true,

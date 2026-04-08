@@ -3,7 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { hashPassword } from '@/lib/auth/password';
 import { generateToken } from '@/lib/auth/tokens';
 import { registerSchema } from '@/lib/validations/auth';
-import { resend, EMAIL_FROM } from '@/lib/email/client';
+import { sendEmail } from '@/lib/email/client';
 import { VerifyEmailTemplate } from '@/lib/email/templates/verify-email';
 
 /**
@@ -178,19 +178,18 @@ export async function POST(request: NextRequest) {
       const token = await generateToken(newUser.id, 'email_verification');
       const verifyUrl = `${process.env.NEXTAUTH_URL}/verify-email?token=${token}`;
 
-      if (resend) {
-        await resend.emails.send({
-          from: EMAIL_FROM,
-          to: normalizedEmail,
-          subject: 'Verifica il tuo indirizzo email - Webmaster Monitor',
-          react: VerifyEmailTemplate({
-            userName: displayName || '',
-            verificationUrl: verifyUrl,
-          }),
-        });
-      } else {
+      const result = await sendEmail({
+        to: normalizedEmail,
+        subject: 'Verifica il tuo indirizzo email - Webmaster Monitor',
+        react: VerifyEmailTemplate({
+          userName: displayName || '',
+          verificationUrl: verifyUrl,
+        }),
+      });
+
+      if (!result.success) {
         console.warn(
-          `[register] Resend not configured - verification link for ${normalizedEmail}: ${verifyUrl}`
+          `[register] Failed to send verification email (backend=${result.backend}) - link for ${normalizedEmail}: ${verifyUrl}`
         );
       }
     } catch (emailError) {

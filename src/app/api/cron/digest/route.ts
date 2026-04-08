@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { Resend } from 'resend';
+import { sendEmail } from '@/lib/email/client';
 import { DigestEmail } from '@/lib/email/templates/digest';
 import { format, subDays, subWeeks } from 'date-fns';
 import { it } from 'date-fns/locale';
 import type { DigestPreferences } from '@/types/database';
 
-export const runtime = 'edge';
+// Uses default Node.js runtime (Fluid Compute) so nodemailer (SMTP) works.
 export const maxDuration = 60;
-
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export async function GET(request: NextRequest) {
   const headersList = await headers();
@@ -20,10 +18,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  if (!resend) {
-    console.warn('RESEND_API_KEY not configured, skipping digest');
-    return NextResponse.json({ message: 'Email not configured' });
-  }
+  // Email backend availability is checked inside sendEmail() per call.
+  // If neither SMTP nor Resend is configured, emails are logged to console.
 
   try {
     const supabase = createAdminClient();
@@ -167,8 +163,7 @@ export async function GET(request: NextRequest) {
         // Send digest email
         const dashboardUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://webmaster-monitor.com';
 
-        await resend.emails.send({
-          from: process.env.EMAIL_FROM || 'Webmaster Monitor <noreply@webmaster-monitor.com>',
+        await sendEmail({
           to: recipientEmail,
           subject: `Riepilogo ${periodLabel} - ${stats.sitesOnline}/${stats.totalSites} siti online`,
           react: DigestEmail({

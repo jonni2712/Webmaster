@@ -5,7 +5,8 @@ import { checkUptime } from '@/lib/monitoring/uptime-checker';
 import { createAlert, resolveAlerts, getCooldownMinutes, shouldNotifyRecovery } from '@/lib/alerts/generator';
 import type { SiteAlertSettings } from '@/types/database';
 
-export const runtime = 'edge';
+// Uses default Node.js runtime (Fluid Compute) so that downstream
+// notification dispatchers can load nodemailer for SMTP.
 export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
