@@ -156,7 +156,7 @@ These items are LIVE in production. Not part of the remaining plan but listed fo
 **Total effort**: 30-50 hours
 **Prerequisite**: Phase 0 complete
 
-### 1.1 Plans table (KEYSTONE)
+### 1.1 Plans table (KEYSTONE) ✅
 
 **Why**: Currently plan limits are spread across:
 - DB enum: `tenants.plan IN ('free', 'pro', 'enterprise')`
@@ -221,7 +221,7 @@ UPDATE tenants SET plan_id = plan;  -- migrate existing values
 
 ---
 
-### 1.2 Retention per plan (cron cleanup)
+### 1.2 Retention per plan (cron cleanup) ✅
 
 **Why**: Currently `uptime_checks`, `ssl_checks`, `alerts`, `external_scan_results`, `wp_updates` grow forever. The DB will explode and we promise different retention per plan.
 
@@ -245,7 +245,7 @@ UPDATE tenants SET plan_id = plan;  -- migrate existing values
 
 ---
 
-### 1.3 GDPR data export endpoint
+### 1.3 GDPR data export endpoint ✅
 
 **Why**: Required by law for EU customers. They must be able to download all their data.
 
@@ -265,7 +265,7 @@ UPDATE tenants SET plan_id = plan;  -- migrate existing values
 
 ---
 
-### 1.4 GDPR data delete endpoint
+### 1.4 GDPR data delete endpoint ✅
 
 **Why**: "Right to be forgotten". Users must be able to delete their account and all data.
 
@@ -291,7 +291,7 @@ UPDATE tenants SET plan_id = plan;  -- migrate existing values
 
 ---
 
-### 1.5 Test notification button on alert channels
+### 1.5 Test notification endpoint ✅ (UI button moved to 1.6)
 
 **Why**: Users currently configure Slack/Telegram/webhook channels with no way to verify they work until a real alert fires. High frustration.
 
