@@ -1,6 +1,6 @@
 'use client';
 
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import { Bell, LogOut, User, Moon, Sun, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,6 +18,16 @@ import { MobileSidebar } from './sidebar';
 
 export function Header() {
   const { theme, setTheme } = useTheme();
+  const { data: session } = useSession();
+
+  const userName = session?.user?.name || session?.user?.email?.split('@')[0] || 'Utente';
+  const userEmail = session?.user?.email || '';
+  const initials = userName
+    .split(' ')
+    .map((w: string) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
 
   function handleLogout() {
     signOut({ callbackUrl: '/login' });
@@ -65,16 +75,16 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-full">
               <Avatar className="h-9 w-9 sm:h-10 sm:w-10">
-                <AvatarFallback className="text-xs sm:text-sm">WM</AvatarFallback>
+                <AvatarFallback className="text-xs sm:text-sm">{initials}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">Admin</p>
+                <p className="text-sm font-medium leading-none">{userName}</p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  Webmaster Monitor
+                  {userEmail}
                 </p>
               </div>
             </DropdownMenuLabel>
