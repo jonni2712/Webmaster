@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { GeistMono } from 'geist/font/mono';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/lib/auth/providers';
@@ -90,7 +91,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="it" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${inter.className} ${GeistMono.variable}`}>
         <AuthProvider>
           <ThemeProvider
             attribute="class"

@@ -40,19 +40,19 @@ function CustomTooltip({ active, payload, label }: any) {
         {data.avg_response_time && (
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Media:</span>
-            <span className="font-medium text-blue-600">{data.avg_response_time}ms</span>
+            <span className="font-medium text-sky-500">{data.avg_response_time}ms</span>
           </div>
         )}
         {data.min_response_time && (
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Min:</span>
-            <span className="text-green-600">{data.min_response_time}ms</span>
+            <span className="text-emerald-600">{data.min_response_time}ms</span>
           </div>
         )}
         {data.max_response_time && (
           <div className="flex justify-between gap-4">
             <span className="text-muted-foreground">Max:</span>
-            <span className="text-orange-600">{data.max_response_time}ms</span>
+            <span className="text-amber-500">{data.max_response_time}ms</span>
           </div>
         )}
       </div>
@@ -97,8 +97,8 @@ export function ResponseTimeChart({ data, height = 300, showRange = true }: Resp
       >
         <defs>
           <linearGradient id="responseGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
-            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+            <stop offset="5%" stopColor="#0EA5E9" stopOpacity={0.2} />
+            <stop offset="95%" stopColor="#0EA5E9" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -128,17 +128,17 @@ export function ResponseTimeChart({ data, height = 300, showRange = true }: Resp
         <Line
           type="monotone"
           dataKey="avg_response_time"
-          stroke="#3b82f6"
+          stroke="#0EA5E9"
           strokeWidth={2}
           dot={false}
-          activeDot={{ r: 4, fill: '#3b82f6' }}
+          activeDot={{ r: 4, fill: '#0EA5E9' }}
         />
         {showRange && (
           <>
             <Line
               type="monotone"
               dataKey="min_response_time"
-              stroke="#22c55e"
+              stroke="#10B981"
               strokeWidth={1}
               strokeDasharray="3 3"
               dot={false}
@@ -146,7 +146,7 @@ export function ResponseTimeChart({ data, height = 300, showRange = true }: Resp
             <Line
               type="monotone"
               dataKey="max_response_time"
-              stroke="#f97316"
+              stroke="#F59E0B"
               strokeWidth={1}
               strokeDasharray="3 3"
               dot={false}

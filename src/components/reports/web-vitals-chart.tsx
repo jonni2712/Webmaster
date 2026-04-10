@@ -32,35 +32,35 @@ const metricConfig = {
   lcp: {
     key: 'avg_lcp',
     name: 'LCP',
-    color: '#3b82f6',
+    color: '#0EA5E9',
     unit: 'ms',
     thresholds: { good: 2500, poor: 4000 },
   },
   fid: {
     key: 'avg_fid',
     name: 'FID',
-    color: '#22c55e',
+    color: '#10B981',
     unit: 'ms',
     thresholds: { good: 100, poor: 300 },
   },
   cls: {
     key: 'avg_cls',
     name: 'CLS',
-    color: '#f59e0b',
+    color: '#F59E0B',
     unit: '',
     thresholds: { good: 0.1, poor: 0.25 },
   },
   fcp: {
     key: 'avg_fcp',
     name: 'FCP',
-    color: '#8b5cf6',
+    color: '#8B5CF6',
     unit: 'ms',
     thresholds: { good: 1800, poor: 3000 },
   },
   ttfb: {
     key: 'avg_ttfb',
     name: 'TTFB',
-    color: '#ec4899',
+    color: '#EF4444',
     unit: 'ms',
     thresholds: { good: 800, poor: 1800 },
   },
@@ -80,9 +80,9 @@ function CustomTooltip({ active, payload, label }: any) {
           const metric = Object.values(metricConfig).find(m => m.key === entry.dataKey);
           if (!metric) return null;
 
-          let statusColor = '#22c55e';
-          if (entry.value > metric.thresholds.poor) statusColor = '#ef4444';
-          else if (entry.value > metric.thresholds.good) statusColor = '#f59e0b';
+          let statusColor = '#10B981';
+          if (entry.value > metric.thresholds.poor) statusColor = '#EF4444';
+          else if (entry.value > metric.thresholds.good) statusColor = '#F59E0B';
 
           return (
             <div key={index} className="flex justify-between gap-4">

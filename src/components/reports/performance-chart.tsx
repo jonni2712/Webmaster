@@ -25,9 +25,9 @@ interface PerformanceChartProps {
 }
 
 function getScoreColor(score: number): string {
-  if (score >= 90) return '#22c55e'; // green
-  if (score >= 50) return '#f59e0b'; // yellow
-  return '#ef4444'; // red
+  if (score >= 90) return '#10B981'; // emerald
+  if (score >= 50) return '#F59E0B'; // amber
+  return '#EF4444'; // red
 }
 
 function CustomTooltip({ active, payload, label }: any) {
@@ -108,23 +108,23 @@ export function PerformanceChart({ data, height = 300 }: PerformanceChartProps) 
         <Tooltip content={<CustomTooltip />} />
         <ReferenceLine
           y={90}
-          stroke="#22c55e"
+          stroke="#10B981"
           strokeDasharray="5 5"
-          label={{ value: 'Buono', position: 'right', fill: '#22c55e', fontSize: 10 }}
+          label={{ value: 'Buono', position: 'right', fill: '#10B981', fontSize: 10 }}
         />
         <ReferenceLine
           y={50}
-          stroke="#f59e0b"
+          stroke="#F59E0B"
           strokeDasharray="5 5"
-          label={{ value: 'Medio', position: 'right', fill: '#f59e0b', fontSize: 10 }}
+          label={{ value: 'Medio', position: 'right', fill: '#F59E0B', fontSize: 10 }}
         />
         <Line
           type="monotone"
           dataKey="avg_score"
-          stroke="#8b5cf6"
+          stroke="#8B5CF6"
           strokeWidth={2}
           dot={false}
-          activeDot={{ r: 4, fill: '#8b5cf6' }}
+          activeDot={{ r: 4, fill: '#8B5CF6' }}
         />
       </LineChart>
     </ResponsiveContainer>

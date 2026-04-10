@@ -89,7 +89,7 @@ export function ResourcesTab({ snapshots, latestResource }: ResourcesTabProps) {
                   <XAxis dataKey="time" tick={{ fontSize: 10 }} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
                   <Tooltip />
-                  <Area type="monotone" dataKey="cpu" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.1} name="CPU %" />
+                  <Area type="monotone" dataKey="cpu" stroke="#0EA5E9" fill="#0EA5E9" fillOpacity={0.1} name="CPU %" />
                 </AreaChart>
               </ResponsiveContainer>
             </CardContent>
@@ -106,7 +106,7 @@ export function ResourcesTab({ snapshots, latestResource }: ResourcesTabProps) {
                   <XAxis dataKey="time" tick={{ fontSize: 10 }} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
                   <Tooltip />
-                  <Area type="monotone" dataKey="ramPercent" stroke="#10b981" fill="#10b981" fillOpacity={0.1} name="RAM %" />
+                  <Area type="monotone" dataKey="ramPercent" stroke="#10B981" fill="#10B981" fillOpacity={0.1} name="RAM %" />
                 </AreaChart>
               </ResponsiveContainer>
             </CardContent>
@@ -123,7 +123,7 @@ export function ResourcesTab({ snapshots, latestResource }: ResourcesTabProps) {
                   <XAxis dataKey="time" tick={{ fontSize: 10 }} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
                   <Tooltip />
-                  <Area type="monotone" dataKey="diskPercent" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.1} name="Disco %" />
+                  <Area type="monotone" dataKey="diskPercent" stroke="#F59E0B" fill="#F59E0B" fillOpacity={0.1} name="Disco %" />
                 </AreaChart>
               </ResponsiveContainer>
             </CardContent>

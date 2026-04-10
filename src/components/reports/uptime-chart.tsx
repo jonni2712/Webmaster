@@ -81,8 +81,8 @@ export function UptimeChart({ data, slaTarget = 99.9, height = 300 }: UptimeChar
       >
         <defs>
           <linearGradient id="uptimeGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-            <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+            <stop offset="5%" stopColor="#10B981" stopOpacity={0.3} />
+            <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -108,12 +108,12 @@ export function UptimeChart({ data, slaTarget = 99.9, height = 300 }: UptimeChar
         {slaTarget && (
           <ReferenceLine
             y={slaTarget}
-            stroke="#f59e0b"
+            stroke="#F59E0B"
             strokeDasharray="5 5"
             label={{
               value: `SLA ${slaTarget}%`,
               position: 'right',
-              fill: '#f59e0b',
+              fill: '#F59E0B',
               fontSize: 10,
             }}
           />
@@ -121,11 +121,11 @@ export function UptimeChart({ data, slaTarget = 99.9, height = 300 }: UptimeChar
         <Area
           type="monotone"
           dataKey="uptime_percentage"
-          stroke="#22c55e"
+          stroke="#10B981"
           strokeWidth={2}
           fill="url(#uptimeGradient)"
           dot={false}
-          activeDot={{ r: 4, fill: '#22c55e' }}
+          activeDot={{ r: 4, fill: '#10B981' }}
         />
       </AreaChart>
     </ResponsiveContainer>

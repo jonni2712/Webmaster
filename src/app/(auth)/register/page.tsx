@@ -23,7 +23,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Globe, Loader2, AlertCircle } from 'lucide-react';
+import { Activity, Loader2, AlertCircle } from 'lucide-react';
 import { registerSchema, type RegisterInput } from '@/lib/validations/auth';
 
 export default function RegisterPage() {
@@ -78,8 +78,8 @@ export default function RegisterPage() {
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
         <div className="flex justify-center mb-4">
-          <div className="rounded-full bg-primary/10 p-3">
-            <Globe className="h-8 w-8 text-primary" />
+          <div className="rounded-full bg-emerald-500/10 p-3">
+            <Activity className="h-8 w-8 text-emerald-500" />
           </div>
         </div>
         <CardTitle className="text-2xl">Crea il tuo account</CardTitle>

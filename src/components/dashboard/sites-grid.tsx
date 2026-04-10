@@ -42,19 +42,19 @@ function StatusIndicator({ isUp }: { isUp: boolean | null }) {
   if (isUp === null) {
     return (
       <div className="flex items-center gap-1.5">
-        <div className="h-2.5 w-2.5 rounded-full bg-gray-400 animate-pulse" />
+        <div className="h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse" />
         <span className="text-xs text-muted-foreground">Sconosciuto</span>
       </div>
     );
   }
   return isUp ? (
     <div className="flex items-center gap-1.5">
-      <div className="h-2.5 w-2.5 rounded-full bg-green-500" />
-      <span className="text-xs text-green-600 dark:text-green-400 font-medium">Online</span>
+      <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse-online" />
+      <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Online</span>
     </div>
   ) : (
     <div className="flex items-center gap-1.5">
-      <div className="h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse" />
+      <div className="h-2.5 w-2.5 rounded-full bg-red-500" />
       <span className="text-xs text-red-600 dark:text-red-400 font-medium">Offline</span>
     </div>
   );

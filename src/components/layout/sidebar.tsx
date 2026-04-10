@@ -18,6 +18,7 @@ import {
   Map,
   FolderKanban,
   Server,
+  Activity,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -99,11 +100,11 @@ function SidebarContent({ collapsed, onNavigate }: { collapsed: boolean; onNavig
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-100 border-l-2 border-emerald-500'
+                  : 'text-muted-foreground hover:bg-emerald-50 dark:hover:bg-emerald-950/20 hover:text-foreground'
               )}
             >
-              <item.icon className="h-5 w-5 flex-shrink-0" />
+              <item.icon className={cn('h-5 w-5 flex-shrink-0', isActive ? 'text-emerald-600 dark:text-emerald-400' : '')} />
               {!collapsed && <span>{item.name}</span>}
             </Link>
 
@@ -151,7 +152,9 @@ export function MobileSidebar() {
         <SheetTitle className="sr-only">Menu navigazione</SheetTitle>
         <div className="flex h-16 items-center border-b px-4">
           <Link href="/dashboard" className="flex items-center gap-2" onClick={() => setOpen(false)}>
-            <Globe className="h-6 w-6 text-primary" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500">
+              <Activity className="h-5 w-5 text-white" />
+            </div>
             <span className="font-bold text-lg">Webmaster</span>
           </Link>
         </div>
@@ -181,13 +184,17 @@ export function Sidebar() {
       <div className="flex h-16 items-center justify-between border-b px-4">
         {!collapsed && (
           <Link href="/dashboard" className="flex items-center gap-2">
-            <Globe className="h-6 w-6 text-primary" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500">
+              <Activity className="h-5 w-5 text-white" />
+            </div>
             <span className="font-bold text-lg">Webmaster</span>
           </Link>
         )}
         {collapsed && (
           <Link href="/dashboard">
-            <Globe className="h-6 w-6 text-primary mx-auto" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 mx-auto">
+              <Activity className="h-5 w-5 text-white" />
+            </div>
           </Link>
         )}
         <Button
