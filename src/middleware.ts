@@ -17,6 +17,15 @@ const publicRoutes = [
   '/cookies',
   '/gdpr',
   '/contact',
+  // Pagine marketing
+  '/pricing',
+  '/features',
+  '/docs',
+  '/about',
+  '/changelog',
+  '/status',
+  '/use-cases',
+  '/compare',
   // SEO
   '/sitemap.xml',
   '/robots.txt',
