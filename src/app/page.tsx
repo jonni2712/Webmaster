@@ -1,21 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-  SheetTitle,
-} from '@/components/ui/sheet';
 import {
   Activity,
   Shield,
   Zap,
   CheckCircle2,
   ArrowRight,
-  Menu,
   Lock,
   Headphones,
   BarChart3,
@@ -24,16 +17,12 @@ import {
   Bell,
   Clock,
   ChevronDown,
-  Plug,
-  Workflow,
-  MessageSquare,
-  Mail,
-  Send,
 } from 'lucide-react';
-import { CookieSettingsButton } from '@/components/cookie-banner';
 import { UptimeHeroAnimation } from '@/components/landing/uptime-hero-animation';
 import { AnimatedCounter } from '@/components/landing/animated-counter';
 import { LandingSection } from '@/components/landing/section';
+import { MarketingNavbar } from '@/components/marketing/navbar';
+import { MarketingFooter } from '@/components/marketing/footer';
 
 const plans = [
   {
@@ -135,123 +124,20 @@ const faqs = [
   },
 ];
 
+const homepageLinks = [
+  { href: '#come-funziona', label: 'Come funziona' },
+  { href: '#features', label: "Funzionalita'" },
+  { href: '#pricing', label: 'Prezzi' },
+  { href: '#faq', label: 'FAQ' },
+];
+
 export default function LandingPage() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const [annual, setAnnual] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  useEffect(() => {
-    function onScroll() {
-      setScrolled(window.scrollY > 50);
-    }
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  const navLinks = [
-    { href: '#come-funziona', label: 'Come funziona' },
-    { href: '#features', label: "Funzionalita'" },
-    { href: '#pricing', label: 'Prezzi' },
-    { href: '#faq', label: 'FAQ' },
-  ];
-
   return (
     <div className="landing-dark min-h-screen bg-[#0A0A0A] text-white">
-      {/* ── Navbar ── */}
-      <nav
-        className={`sticky top-0 z-50 transition-all duration-300 ${
-          scrolled
-            ? 'bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-white/5'
-            : 'bg-transparent'
-        }`}
-      >
-        <div className="container mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="h-9 w-9 rounded-lg bg-emerald-500 flex items-center justify-center">
-              <Activity className="h-5 w-5 text-white" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-lg font-bold leading-tight text-white">Webmaster</span>
-              <span className="text-[10px] text-zinc-500 leading-tight -mt-0.5 tracking-widest">MONITOR</span>
-            </div>
-          </Link>
-
-          {/* Desktop nav links */}
-          <div className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="px-4 py-2 text-sm font-medium text-zinc-400 hover:text-white rounded-md transition-colors"
-              >
-                {link.label}
-              </a>
-            ))}
-          </div>
-
-          {/* Desktop CTA */}
-          <div className="hidden md:flex items-center gap-3">
-            <Link href="/login">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-zinc-400 hover:text-white hover:bg-white/5"
-              >
-                Accedi
-              </Button>
-            </Link>
-            <Link href="/register">
-              <Button
-                size="sm"
-                className="bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-all"
-              >
-                Inizia Gratis
-              </Button>
-            </Link>
-          </div>
-
-          {/* Mobile hamburger */}
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white hover:bg-white/5">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Apri menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-72 bg-[#111111] border-white/10 text-white">
-              <SheetTitle className="sr-only">Menu navigazione</SheetTitle>
-              <div className="flex flex-col gap-6 mt-6">
-                <div className="flex flex-col gap-1">
-                  {navLinks.map((link) => (
-                    <a
-                      key={link.href}
-                      href={link.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="px-3 py-2.5 text-base font-medium text-zinc-400 hover:text-white hover:bg-white/5 rounded-md transition-colors"
-                    >
-                      {link.label}
-                    </a>
-                  ))}
-                </div>
-                <div className="border-t border-white/10 pt-4 flex flex-col gap-2">
-                  <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="outline" className="w-full border-white/20 text-white hover:bg-white/5">
-                      Accedi
-                    </Button>
-                  </Link>
-                  <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
-                    <Button className="w-full bg-emerald-500 hover:bg-emerald-600 text-white">
-                      Inizia Gratis
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-      </nav>
+      <MarketingNavbar links={homepageLinks} />
 
       {/* ── Hero ── */}
       <section
@@ -805,91 +691,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Footer ── */}
-      <footer className="bg-[#0A0A0A] border-t border-white/5 py-16">
-        <div className="container mx-auto px-4 md:px-6">
-          <div className="grid md:grid-cols-4 gap-10 mb-12">
-            {/* Logo + tagline */}
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="h-9 w-9 rounded-lg bg-emerald-500 flex items-center justify-center">
-                  <Activity className="h-5 w-5 text-white" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-lg font-bold leading-tight text-white">Webmaster</span>
-                  <span className="text-[10px] text-zinc-500 leading-tight -mt-0.5 tracking-widest">MONITOR</span>
-                </div>
-              </div>
-              <p className="text-zinc-500 text-sm leading-relaxed">
-                La piattaforma di monitoraggio professionale per webmaster e agenzie.
-              </p>
-            </div>
-
-            {/* Prodotto */}
-            <div>
-              <h4 className="font-semibold text-white mb-4 text-sm">Prodotto</h4>
-              <ul className="space-y-2.5 text-sm text-zinc-500">
-                <li><a href="#come-funziona" className="hover:text-emerald-400 transition-colors">Come funziona</a></li>
-                <li><a href="#features" className="hover:text-emerald-400 transition-colors">Funzionalit&agrave;</a></li>
-                <li><a href="#pricing" className="hover:text-emerald-400 transition-colors">Prezzi</a></li>
-                <li><a href="#faq" className="hover:text-emerald-400 transition-colors">FAQ</a></li>
-              </ul>
-            </div>
-
-            {/* Supporto */}
-            <div>
-              <h4 className="font-semibold text-white mb-4 text-sm">Supporto</h4>
-              <ul className="space-y-2.5 text-sm text-zinc-500">
-                <li><Link href="/contact" className="hover:text-emerald-400 transition-colors">Contatti</Link></li>
-                <li>
-                  <a href="mailto:support@webmaster-monitor.com" className="hover:text-emerald-400 transition-colors">
-                    Assistenza
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            {/* Legale */}
-            <div>
-              <h4 className="font-semibold text-white mb-4 text-sm">Legale</h4>
-              <ul className="space-y-2.5 text-sm text-zinc-500">
-                <li><Link href="/privacy" className="hover:text-emerald-400 transition-colors">Privacy Policy</Link></li>
-                <li><Link href="/terms" className="hover:text-emerald-400 transition-colors">Termini di Servizio</Link></li>
-                <li><Link href="/cookies" className="hover:text-emerald-400 transition-colors">Cookie Policy</Link></li>
-                <li><Link href="/gdpr" className="hover:text-emerald-400 transition-colors">GDPR</Link></li>
-                <li><CookieSettingsButton /></li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-zinc-600">
-              &copy; {new Date().getFullYear()} Webmaster Monitor. Tutti i diritti riservati.
-            </p>
-            <div className="flex items-center gap-5 text-zinc-600">
-              <Link href="https://twitter.com" className="hover:text-emerald-400 transition-colors">
-                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                </svg>
-              </Link>
-              <Link href="https://github.com" className="hover:text-emerald-400 transition-colors">
-                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    fillRule="evenodd"
-                    d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </Link>
-              <Link href="https://linkedin.com" className="hover:text-emerald-400 transition-colors">
-                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
-                </svg>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <MarketingFooter />
     </div>
   );
 }
