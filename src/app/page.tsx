@@ -19,6 +19,16 @@ import {
   Lock,
   Headphones,
   BarChart3,
+  Globe,
+  Users,
+  Bell,
+  Clock,
+  ChevronDown,
+  Plug,
+  Workflow,
+  MessageSquare,
+  Mail,
+  Send,
 } from 'lucide-react';
 import { CookieSettingsButton } from '@/components/cookie-banner';
 import { UptimeHeroAnimation } from '@/components/landing/uptime-hero-animation';
@@ -27,51 +37,57 @@ import { LandingSection } from '@/components/landing/section';
 
 const plans = [
   {
-    name: 'Free',
+    name: 'Starter',
     price: '0',
+    priceAnnual: '0',
     description: 'Per iniziare a monitorare i tuoi primi siti',
     features: [
       { text: 'Fino a 3 siti', included: true },
       { text: 'Uptime check ogni 15 minuti', included: true },
       { text: 'Notifiche email', included: true },
       { text: 'Storico 7 giorni', included: true },
-      { text: 'Supporto via email', included: true },
+      { text: 'Dashboard base', included: true },
       { text: 'Notifiche multi-canale', included: false },
-      { text: 'Scanner DNS, SSL, CMS, WHOIS', included: false },
+      { text: 'Scanner DNS/SSL/CMS', included: false },
+      { text: 'Supporto prioritario', included: false },
     ],
     cta: 'Inizia Gratis',
     href: '/register',
     popular: false,
   },
   {
-    name: 'Pro',
+    name: 'Professional',
     price: '29',
-    description: 'Ideale per freelancer e piccole agenzie',
+    priceAnnual: '24',
+    description: 'Per freelancer e piccole agenzie',
     features: [
       { text: 'Fino a 25 siti', included: true },
       { text: 'Uptime check ogni 5 minuti', included: true },
-      { text: 'Notifiche multi-canale (Slack, Telegram, Discord)', included: true },
+      { text: 'Slack, Telegram, Discord, Webhook', included: true },
       { text: 'Scanner DNS, SSL, CMS, WHOIS', included: true },
       { text: 'Storico 30 giorni', included: true },
+      { text: 'Gestione clienti (CRM)', included: true },
+      { text: 'Report esportabili', included: true },
       { text: 'Supporto prioritario', included: true },
-      { text: 'Account manager dedicato', included: false },
     ],
-    cta: 'Contattaci',
-    href: '/contact',
+    cta: 'Inizia la Prova Gratuita',
+    href: '/register',
     popular: true,
   },
   {
-    name: 'Enterprise',
+    name: 'Agency',
     price: '79',
+    priceAnnual: '66',
     description: 'Per agenzie con molti clienti e server',
     features: [
       { text: 'Siti illimitati', included: true },
-      { text: 'Uptime check ogni 5 minuti', included: true },
-      { text: 'Tutte le notifiche multi-canale', included: true },
-      { text: 'Monitoraggio server cPanel/Plesk via agent', included: true },
+      { text: 'Uptime check ogni 1 minuto', included: true },
+      { text: 'Tutti i canali di notifica', included: true },
+      { text: 'Agent cPanel e Plesk', included: true },
       { text: 'Storico illimitato', included: true },
+      { text: 'Team fino a 50 membri', included: true },
+      { text: 'API pubblica', included: true },
       { text: 'Account manager dedicato', included: true },
-      { text: 'SLA garantito', included: true },
     ],
     cta: 'Contattaci',
     href: '/contact',
@@ -79,9 +95,38 @@ const plans = [
   },
 ];
 
+const faqs = [
+  {
+    q: "Quanto tempo serve per configurare il monitoraggio?",
+    a: "Meno di 3 minuti. Aggiungi l'URL del tuo sito, scegli l'intervallo di controllo e i canali di notifica. Per WordPress e PrestaShop puoi installare il nostro plugin per dati ancora piu' dettagliati."
+  },
+  {
+    q: "Quali piattaforme supportate?",
+    a: "Monitoriamo qualsiasi sito web accessibile via HTTP/HTTPS. Abbiamo integrazioni native per WordPress, PrestaShop e Next.js con dati aggiuntivi come aggiornamenti disponibili, versioni plugin e Core Web Vitals."
+  },
+  {
+    q: "Come funzionano le notifiche?",
+    a: "Quando un sito va offline o un certificato SSL sta per scadere, ricevi una notifica immediata sul canale che preferisci: email, Slack, Telegram, Discord o webhook. Puoi configurare soglie e cooldown per evitare alert ridondanti."
+  },
+  {
+    q: "Posso monitorare i server oltre ai siti?",
+    a: "Si, con il piano Agency puoi installare il nostro agent su server cPanel e Plesk per monitorare risorse (CPU, RAM, disco), account, certificati SSL, zone DNS e molto altro."
+  },
+  {
+    q: "I dati sono al sicuro?",
+    a: "Assolutamente. Le API key sono crittografate con AES-256-GCM, le password con bcrypt, e tutta la piattaforma e' conforme al GDPR. I dati sono ospitati in Europa."
+  },
+  {
+    q: "Posso provare il piano Professional gratis?",
+    a: "Si, offriamo 14 giorni di prova gratuita del piano Professional senza carta di credito. Al termine, puoi continuare con il piano Starter gratuito o effettuare l'upgrade."
+  },
+];
+
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [annual, setAnnual] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   useEffect(() => {
     function onScroll() {
@@ -92,9 +137,10 @@ export default function LandingPage() {
   }, []);
 
   const navLinks = [
+    { href: '#come-funziona', label: 'Come funziona' },
     { href: '#features', label: "Funzionalita'" },
     { href: '#pricing', label: 'Prezzi' },
-    { href: '#benefits', label: 'Vantaggi' },
+    { href: '#faq', label: 'FAQ' },
   ];
 
   return (
@@ -274,6 +320,43 @@ export default function LandingPage() {
           </p>
         </div>
       </div>
+
+      {/* ── Come funziona ── */}
+      <LandingSection id="come-funziona">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="text-center mb-16">
+            <span className="inline-block px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-semibold tracking-widest uppercase mb-4">
+              Come funziona
+            </span>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 tracking-tight">
+              Operativo in 3 minuti
+            </h2>
+            <p className="text-zinc-400 max-w-2xl mx-auto text-lg">
+              Nessuna configurazione complessa. Aggiungi i tuoi siti e inizia a monitorare.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto relative">
+            {/* Connecting line (desktop only) */}
+            <div className="hidden md:block absolute top-12 left-[20%] right-[20%] h-px bg-gradient-to-r from-emerald-500/50 via-emerald-500/20 to-emerald-500/50" />
+
+            {[
+              { step: '01', title: 'Aggiungi i tuoi siti', description: 'Inserisci gli URL dei siti da monitorare. Supporto nativo per WordPress, PrestaShop, Next.js e qualsiasi sito web.', icon: Globe },
+              { step: '02', title: 'Configura gli avvisi', description: 'Scegli come e quando ricevere le notifiche: email, Slack, Telegram, Discord o webhook personalizzati.', icon: Bell },
+              { step: '03', title: 'Monitora e intervieni', description: 'Dashboard in tempo reale con uptime, SSL, performance e aggiornamenti. Intervieni prima che i tuoi clienti se ne accorgano.', icon: Activity },
+            ].map((item) => (
+              <div key={item.step} className="relative text-center">
+                <div className="inline-flex items-center justify-center w-24 h-24 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 mb-6 mx-auto">
+                  <item.icon className="h-10 w-10 text-emerald-400" />
+                </div>
+                <div className="font-mono text-emerald-500/50 text-sm mb-2">{item.step}</div>
+                <h3 className="text-xl font-bold text-white mb-3">{item.title}</h3>
+                <p className="text-zinc-400 text-sm leading-relaxed">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </LandingSection>
 
       {/* ── Features Section ── */}
       <div id="features">
@@ -456,6 +539,51 @@ export default function LandingPage() {
         </LandingSection>
       </div>
 
+      {/* ── Integrazioni ── */}
+      <LandingSection className="border-t border-white/5">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="text-center mb-16">
+            <span className="inline-block px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-semibold tracking-widest uppercase mb-4">
+              Integrazioni
+            </span>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 tracking-tight">
+              Si integra con i tuoi strumenti
+            </h2>
+            <p className="text-zinc-400 max-w-2xl mx-auto text-lg">
+              Piattaforme CMS, pannelli hosting e canali di notifica — tutto collegato.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
+            {[
+              { name: 'WordPress', category: 'CMS', color: 'text-sky-400' },
+              { name: 'PrestaShop', category: 'E-Commerce', color: 'text-pink-400' },
+              { name: 'Next.js', category: 'Framework', color: 'text-white' },
+              { name: 'cPanel', category: 'Hosting', color: 'text-orange-400' },
+              { name: 'Plesk', category: 'Hosting', color: 'text-sky-400' },
+              { name: 'Slack', category: 'Notifiche', color: 'text-purple-400' },
+              { name: 'Telegram', category: 'Notifiche', color: 'text-sky-400' },
+              { name: 'Discord', category: 'Notifiche', color: 'text-indigo-400' },
+              { name: 'Email SMTP', category: 'Notifiche', color: 'text-emerald-400' },
+              { name: 'Webhook', category: 'API', color: 'text-amber-400' },
+              { name: 'Vercel', category: 'Deploy', color: 'text-white' },
+              { name: 'Google PageSpeed', category: 'Performance', color: 'text-green-400' },
+            ].map((integration) => (
+              <div
+                key={integration.name}
+                className="group bg-[#141414] border border-white/5 hover:border-white/15 rounded-xl p-5 text-center transition-all duration-200 hover:bg-white/[0.03]"
+              >
+                <div className={`text-2xl font-bold ${integration.color} mb-2 group-hover:scale-110 transition-transform duration-200`}>
+                  {integration.name.charAt(0)}
+                </div>
+                <div className="text-sm text-white font-medium">{integration.name}</div>
+                <div className="text-[10px] text-zinc-600 uppercase tracking-wider mt-1">{integration.category}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </LandingSection>
+
       {/* ── Stats Section ── */}
       <section className="bg-[#141414] border-y border-white/5 py-20">
         <div className="container mx-auto px-4 md:px-6">
@@ -499,9 +627,22 @@ export default function LandingPage() {
               Piani semplici e trasparenti
             </h2>
             <p className="text-zinc-400 max-w-2xl mx-auto text-lg">
-              Scegli il piano piu&apos; adatto alle tue esigenze. Inizia gratis, passa a Pro o
-              Enterprise quando ne hai bisogno.
+              Scegli il piano piu&apos; adatto alle tue esigenze. Inizia gratis, passa a Professional o
+              Agency quando ne hai bisogno.
             </p>
+
+            <div className="flex items-center justify-center gap-3 mt-8">
+              <span className={`text-sm ${!annual ? 'text-white' : 'text-zinc-500'}`}>Mensile</span>
+              <button
+                onClick={() => setAnnual(!annual)}
+                className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${annual ? 'bg-emerald-500' : 'bg-zinc-700'}`}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-200 ${annual ? 'translate-x-6' : ''}`} />
+              </button>
+              <span className={`text-sm ${annual ? 'text-white' : 'text-zinc-500'}`}>
+                Annuale <span className="text-emerald-400 text-xs font-medium">-17%</span>
+              </span>
+            </div>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto items-stretch">
@@ -529,8 +670,10 @@ export default function LandingPage() {
 
                 <div className="mb-8">
                   <div className="flex items-baseline gap-1">
-                    <span className="font-mono text-4xl font-bold text-white">€{plan.price}</span>
-                    {plan.price !== '0' && (
+                    <span className="font-mono text-4xl font-bold text-white">
+                      €{annual ? plan.priceAnnual : plan.price}
+                    </span>
+                    {(annual ? plan.priceAnnual : plan.price) !== '0' && (
                       <span className="text-zinc-500 text-sm">/mese</span>
                     )}
                   </div>
@@ -566,6 +709,32 @@ export default function LandingPage() {
                     {plan.cta}
                   </Button>
                 </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </LandingSection>
+
+      {/* ── FAQ ── */}
+      <LandingSection id="faq">
+        <div className="container mx-auto px-4 md:px-6 max-w-3xl">
+          <div className="text-center mb-16">
+            <span className="inline-block px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-semibold tracking-widest uppercase mb-4">FAQ</span>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 tracking-tight">Domande frequenti</h2>
+          </div>
+          <div className="space-y-3">
+            {faqs.map((faq, i) => (
+              <div key={i} className="border border-white/10 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-white/[0.02] transition-colors"
+                >
+                  <span className="text-white font-medium pr-4">{faq.q}</span>
+                  <ChevronDown className={`h-5 w-5 text-zinc-500 shrink-0 transition-transform duration-200 ${openFaq === i ? 'rotate-180' : ''}`} />
+                </button>
+                <div className={`overflow-hidden transition-all duration-200 ${openFaq === i ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'}`}>
+                  <div className="px-6 pb-5 text-zinc-400 text-sm leading-relaxed">{faq.a}</div>
+                </div>
               </div>
             ))}
           </div>
@@ -641,10 +810,10 @@ export default function LandingPage() {
             <div>
               <h4 className="font-semibold text-white mb-4 text-sm">Prodotto</h4>
               <ul className="space-y-2.5 text-sm text-zinc-500">
-                <li><a href="#features" className="hover:text-emerald-400 transition-colors">Funzionalita&apos;</a></li>
+                <li><a href="#come-funziona" className="hover:text-emerald-400 transition-colors">Come funziona</a></li>
+                <li><a href="#features" className="hover:text-emerald-400 transition-colors">Funzionalit&agrave;</a></li>
                 <li><a href="#pricing" className="hover:text-emerald-400 transition-colors">Prezzi</a></li>
-                <li><a href="#benefits" className="hover:text-emerald-400 transition-colors">Vantaggi</a></li>
-                <li><Link href="/login" className="hover:text-emerald-400 transition-colors">Accedi</Link></li>
+                <li><a href="#faq" className="hover:text-emerald-400 transition-colors">FAQ</a></li>
               </ul>
             </div>
 
