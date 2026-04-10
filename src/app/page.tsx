@@ -40,53 +40,66 @@ const plans = [
     name: 'Starter',
     price: '0',
     priceAnnual: '0',
-    description: 'Per iniziare a monitorare i tuoi primi siti',
+    description: 'Per testare il monitoraggio sui tuoi siti',
     features: [
-      { text: 'Fino a 3 siti', included: true },
+      { text: 'Fino a 5 siti', included: true },
       { text: 'Uptime check ogni 15 minuti', included: true },
       { text: 'Notifiche email', included: true },
       { text: 'Storico 7 giorni', included: true },
       { text: 'Dashboard base', included: true },
-      { text: 'Notifiche multi-canale', included: false },
-      { text: 'Scanner DNS/SSL/CMS', included: false },
-      { text: 'Supporto prioritario', included: false },
     ],
     cta: 'Inizia Gratis',
     href: '/register',
     popular: false,
   },
   {
-    name: 'Professional',
-    price: '29',
-    priceAnnual: '24',
-    description: 'Per freelancer e piccole agenzie',
+    name: 'Pro',
+    price: '19',
+    priceAnnual: '15',
+    description: 'Per freelancer e piccoli team',
     features: [
-      { text: 'Fino a 25 siti', included: true },
+      { text: 'Fino a 30 siti', included: true },
       { text: 'Uptime check ogni 5 minuti', included: true },
       { text: 'Slack, Telegram, Discord, Webhook', included: true },
       { text: 'Scanner DNS, SSL, CMS, WHOIS', included: true },
       { text: 'Storico 30 giorni', included: true },
-      { text: 'Gestione clienti (CRM)', included: true },
-      { text: 'Report esportabili', included: true },
-      { text: 'Supporto prioritario', included: true },
+      { text: 'Team fino a 5 membri', included: true },
     ],
-    cta: 'Inizia la Prova Gratuita',
+    cta: 'Prova Gratuita 14 giorni',
     href: '/register',
     popular: true,
   },
   {
+    name: 'Business',
+    price: '49',
+    priceAnnual: '41',
+    description: 'Per agenzie in crescita',
+    features: [
+      { text: 'Fino a 100 siti', included: true },
+      { text: 'Uptime check ogni 3 minuti', included: true },
+      { text: 'Tutti i canali di notifica', included: true },
+      { text: 'Gestione clienti (CRM)', included: true },
+      { text: 'Report esportabili', included: true },
+      { text: 'API pubblica', included: true },
+      { text: 'Team fino a 10 membri', included: true },
+      { text: 'Storico 90 giorni', included: true },
+    ],
+    cta: 'Prova Gratuita 14 giorni',
+    href: '/register',
+    popular: false,
+  },
+  {
     name: 'Agency',
-    price: '79',
-    priceAnnual: '66',
+    price: '129',
+    priceAnnual: '109',
     description: 'Per agenzie con molti clienti e server',
     features: [
-      { text: 'Siti illimitati', included: true },
+      { text: 'Fino a 300 siti', included: true },
       { text: 'Uptime check ogni 1 minuto', included: true },
-      { text: 'Tutti i canali di notifica', included: true },
       { text: 'Agent cPanel e Plesk', included: true },
-      { text: 'Storico illimitato', included: true },
+      { text: 'API pubblica avanzata', included: true },
       { text: 'Team fino a 50 membri', included: true },
-      { text: 'API pubblica', included: true },
+      { text: 'Storico 1 anno', included: true },
       { text: 'Account manager dedicato', included: true },
     ],
     cta: 'Contattaci',
@@ -117,8 +130,8 @@ const faqs = [
     a: "Assolutamente. Le API key sono crittografate con AES-256-GCM, le password con bcrypt, e tutta la piattaforma e' conforme al GDPR. I dati sono ospitati in Europa."
   },
   {
-    q: "Posso provare il piano Professional gratis?",
-    a: "Si, offriamo 14 giorni di prova gratuita del piano Professional senza carta di credito. Al termine, puoi continuare con il piano Starter gratuito o effettuare l'upgrade."
+    q: "Posso provare i piani a pagamento?",
+    a: "Si, offriamo 14 giorni di prova gratuita dei piani Pro, Business e Agency senza carta di credito. Al termine, puoi continuare con il piano Starter gratuito o effettuare l'upgrade."
   },
 ];
 
@@ -645,7 +658,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto items-stretch">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto items-stretch">
             {plans.map((plan) => (
               <div
                 key={plan.name}
@@ -712,6 +725,12 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+          <p className="text-center text-zinc-500 text-sm mt-8">
+            Hai piu&apos; di 300 siti?{' '}
+            <Link href="/contact" className="text-emerald-400 hover:text-emerald-300 underline underline-offset-4">
+              Contattaci per un piano Enterprise personalizzato
+            </Link>
+          </p>
         </div>
       </LandingSection>
 

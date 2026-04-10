@@ -11,7 +11,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 
 // ---------- Types ----------
 
-export type PlanId = 'free' | 'pro' | 'enterprise';
+export type PlanId = 'free' | 'pro' | 'business' | 'agency';
 
 export type NotificationChannel =
   | 'email'
