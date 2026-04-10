@@ -78,6 +78,12 @@ VALUES (
     sort_order = EXCLUDED.sort_order,
     updated_at = NOW();
 
+-- Drop the legacy CHECK constraint that only allows free/pro/enterprise,
+-- then re-create it with the new plan IDs including business and agency.
+ALTER TABLE tenants DROP CONSTRAINT IF EXISTS tenants_plan_check;
+ALTER TABLE tenants ADD CONSTRAINT tenants_plan_check
+    CHECK (plan IN ('free', 'pro', 'business', 'agency', 'enterprise'));
+
 -- Migrate tenants from enterprise to agency (FK column first, then legacy column)
 UPDATE tenants SET plan_id = 'agency' WHERE plan_id = 'enterprise';
 UPDATE tenants SET plan = 'agency' WHERE plan = 'enterprise';
