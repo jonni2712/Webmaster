@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { JsonLd } from '@/components/seo/json-ld';
+import { breadcrumbSchema } from '@/lib/seo/schemas';
 
 export const metadata: Metadata = {
   title: 'API Reference — Documentazione',
@@ -24,7 +26,15 @@ const methodColor: Record<string, string> = {
 
 export default function ApiReferencePage() {
   return (
-    <div className="container mx-auto px-4 md:px-6 py-24 max-w-4xl">
+    <>
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: 'Home', url: '/' },
+          { name: 'Documentazione', url: '/docs' },
+          { name: 'API Reference', url: '/docs/api' },
+        ])}
+      />
+      <div className="container mx-auto px-4 md:px-6 py-24 max-w-4xl">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-zinc-500 mb-10">
         <Link href="/docs" className="hover:text-zinc-300 transition-colors">
@@ -107,5 +117,6 @@ export default function ApiReferencePage() {
         </p>
       </div>
     </div>
+    </>
   );
 }

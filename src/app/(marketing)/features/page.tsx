@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Activity, Shield, Zap, Bell, Plug, Globe } from 'lucide-react';
+import { JsonLd } from '@/components/seo/json-ld';
+import { breadcrumbSchema } from '@/lib/seo/schemas';
 
 export const metadata: Metadata = {
   title: "Funzionalita'",
@@ -67,7 +69,14 @@ const features = [
 
 export default function FeaturesPage() {
   return (
-    <div className="container mx-auto px-4 md:px-6 py-24">
+    <>
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: 'Home', url: '/' },
+          { name: "Funzionalita'", url: '/features' },
+        ])}
+      />
+      <div className="container mx-auto px-4 md:px-6 py-24">
       {/* Hero */}
       <div className="text-center mb-16">
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 tracking-tight">
@@ -112,5 +121,6 @@ export default function FeaturesPage() {
         })}
       </div>
     </div>
+    </>
   );
 }

@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { JsonLd } from '@/components/seo/json-ld';
+import { organizationSchema, softwareApplicationSchema, webSiteSchema } from '@/lib/seo/schemas';
 import { Button } from '@/components/ui/button';
 import {
   Activity,
@@ -137,6 +139,7 @@ export default function LandingPage() {
 
   return (
     <div className="landing-dark min-h-screen bg-[#0A0A0A] text-white">
+      <JsonLd data={[organizationSchema(), softwareApplicationSchema(), webSiteSchema()]} />
       <MarketingNavbar links={homepageLinks} />
 
       {/* ── Hero ── */}

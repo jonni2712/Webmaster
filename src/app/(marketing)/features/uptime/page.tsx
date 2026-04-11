@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { JsonLd } from '@/components/seo/json-ld';
+import { breadcrumbSchema } from '@/lib/seo/schemas';
 
 export const metadata: Metadata = {
   title: 'Monitoraggio Uptime',
@@ -34,7 +36,15 @@ const bars = [60, 75, 65, 80, 72, 88, 70, 95, 82, 90, 78, 100];
 
 export default function UptimePage() {
   return (
-    <div className="container mx-auto px-4 md:px-6 py-24 max-w-4xl">
+    <>
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: 'Home', url: '/' },
+          { name: "Funzionalita'", url: '/features' },
+          { name: 'Uptime', url: '/features/uptime' },
+        ])}
+      />
+      <div className="container mx-auto px-4 md:px-6 py-24 max-w-4xl">
       {/* Badge */}
       <div className="mb-6">
         <span className="inline-block px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-semibold tracking-widest uppercase">
@@ -99,5 +109,6 @@ export default function UptimePage() {
         </Link>
       </div>
     </div>
+    </>
   );
 }

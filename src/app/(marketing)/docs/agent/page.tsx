@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { JsonLd } from '@/components/seo/json-ld';
+import { breadcrumbSchema } from '@/lib/seo/schemas';
 
 export const metadata: Metadata = {
   title: 'Agent cPanel/Plesk — Documentazione',
@@ -32,7 +34,15 @@ const monitored = [
 
 export default function AgentDocsPage() {
   return (
-    <div className="container mx-auto px-4 md:px-6 py-24 max-w-3xl">
+    <>
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: 'Home', url: '/' },
+          { name: 'Documentazione', url: '/docs' },
+          { name: 'Agent', url: '/docs/agent' },
+        ])}
+      />
+      <div className="container mx-auto px-4 md:px-6 py-24 max-w-3xl">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-zinc-500 mb-10">
         <Link href="/docs" className="hover:text-zinc-300 transition-colors">
@@ -112,5 +122,6 @@ export default function AgentDocsPage() {
         </div>
       </section>
     </div>
+    </>
   );
 }

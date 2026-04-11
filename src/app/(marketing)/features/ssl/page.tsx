@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Lock, Shield } from 'lucide-react';
+import { JsonLd } from '@/components/seo/json-ld';
+import { breadcrumbSchema } from '@/lib/seo/schemas';
 
 export const metadata: Metadata = {
   title: 'Monitoraggio SSL',
@@ -31,7 +33,15 @@ const details = [
 
 export default function SslPage() {
   return (
-    <div className="container mx-auto px-4 md:px-6 py-24 max-w-4xl">
+    <>
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: 'Home', url: '/' },
+          { name: "Funzionalita'", url: '/features' },
+          { name: 'SSL', url: '/features/ssl' },
+        ])}
+      />
+      <div className="container mx-auto px-4 md:px-6 py-24 max-w-4xl">
       {/* Badge */}
       <div className="mb-6">
         <span className="inline-block px-3 py-1 rounded-full border border-sky-500/30 bg-sky-500/10 text-sky-400 text-xs font-semibold tracking-widest uppercase">
@@ -106,5 +116,6 @@ export default function SslPage() {
         </Link>
       </div>
     </div>
+    </>
   );
 }

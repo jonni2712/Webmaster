@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Zap, Globe, Code, Server } from 'lucide-react';
+import { JsonLd } from '@/components/seo/json-ld';
+import { breadcrumbSchema } from '@/lib/seo/schemas';
 
 export const metadata: Metadata = {
   title: 'Documentazione',
@@ -36,7 +38,14 @@ const sections = [
 
 export default function DocsPage() {
   return (
-    <div className="container mx-auto px-4 md:px-6 py-24">
+    <>
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: 'Home', url: '/' },
+          { name: 'Documentazione', url: '/docs' },
+        ])}
+      />
+      <div className="container mx-auto px-4 md:px-6 py-24">
       {/* Hero */}
       <div className="text-center max-w-2xl mx-auto mb-16">
         <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">Documentazione</h1>
@@ -72,5 +81,6 @@ export default function DocsPage() {
         })}
       </div>
     </div>
+    </>
   );
 }
