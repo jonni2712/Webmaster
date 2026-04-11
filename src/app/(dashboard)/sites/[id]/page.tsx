@@ -2,7 +2,6 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -36,6 +35,8 @@ import {
   Download,
   Rocket,
 } from 'lucide-react';
+import { PageHeader } from '@/components/layout/page-header';
+import { StatCard } from '@/components/layout/stat-card';
 import { AlertSettingsForm } from '@/components/sites/alert-settings-form';
 import { UpdatesList } from '@/components/sites/updates-list';
 import { SecurityTab } from '@/components/security/security-tab';
@@ -202,6 +203,7 @@ export default function SiteDetailPage({
   const [uptimeReportData, setUptimeReportData] = useState<any>(null);
   const [performanceReportData, setPerformanceReportData] = useState<any>(null);
   const [reportLoading, setReportLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('uptime');
 
   useEffect(() => {
     fetchSite();
@@ -448,202 +450,131 @@ export default function SiteDetailPage({
   const status = statusConfig[site.status] || statusConfig.unknown;
   const StatusIcon = status.icon;
 
-  return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-start gap-2 sm:gap-4">
-          <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0" onClick={() => router.push('/sites')}>
-            <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-          </Button>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <h1 className="text-xl sm:text-3xl font-bold truncate">{site.name}</h1>
-              <Badge className={`${status.color} text-xs sm:text-sm`}>
-                <StatusIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1" />
-                {status.label}
-              </Badge>
-            </div>
-            <a
-              href={site.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm sm:text-base text-muted-foreground hover:text-primary flex items-center gap-1 mt-1 truncate"
-            >
-              <span className="truncate">{site.url}</span>
-              <ExternalLink className="h-3 w-3 flex-shrink-0" />
-            </a>
-          </div>
-        </div>
-        <div className="flex gap-2 ml-10 sm:ml-0">
-          <Button variant="outline" size="sm" onClick={() => router.push(`/sites/${id}/edit`)}>
-            <Settings className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Modifica</span>
-          </Button>
-          <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deleting}>
-            <Trash2 className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Elimina</span>
-          </Button>
-        </div>
-      </div>
+  const tabDefs = [
+    { label: 'Uptime', value: 'uptime' },
+    { label: 'SSL', value: 'ssl' },
+    { label: 'Performance', value: 'performance' },
+    { label: 'Report', value: 'report' },
+    ...(site.platform === 'wordpress' ? [{ label: 'Aggiornamenti', value: 'updates' }] : []),
+    ...(site.platform === 'wordpress' ? [{ label: 'Server', value: 'wordpress' }] : []),
+    ...(site.platform === 'nextjs' ? [{ label: 'Server', value: 'nextjs-info' }] : []),
+    ...(site.ecommerce_check_enabled ? [{ label: 'E-commerce', value: 'ecommerce' }] : []),
+    ...(site.platform === 'wordpress' ? [{ label: 'Sicurezza', value: 'security' }] : []),
+    ...(site.platform === 'nextjs' ? [{ label: 'Vercel', value: 'vercel' }] : []),
+    { label: 'Alert', value: 'alerts' },
+  ];
 
-      {/* Stats Overview */}
-      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6 sm:pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Uptime</CardTitle>
-            <Activity className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
-            <div className="text-xl sm:text-2xl font-bold">
-              {site.uptime_percentage !== null
-                ? `${site.uptime_percentage.toFixed(2)}%`
-                : 'N/A'}
-            </div>
-            <p className="text-[10px] sm:text-xs text-muted-foreground">Ultimi 30 giorni</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6 sm:pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Tempo Risposta</CardTitle>
-            <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
-            <div className="text-xl sm:text-2xl font-bold">
-              {site.response_time_avg !== null
-                ? `${site.response_time_avg}ms`
-                : 'N/A'}
-            </div>
-            <p className="text-[10px] sm:text-xs text-muted-foreground">Media</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6 sm:pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">SSL</CardTitle>
-            <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
-            <div className="text-xl sm:text-2xl font-bold">
-              {site.ssl_status === 'valid' ? (
-                <span className="text-green-500">Valido</span>
-              ) : site.ssl_status === 'expiring' ? (
-                <span className="text-yellow-500">In scadenza</span>
-              ) : site.ssl_status === 'expired' ? (
-                <span className="text-red-500">Scaduto</span>
-              ) : (
-                'N/A'
-              )}
-            </div>
-            {site.ssl_expiry && (
-              <p className="text-[10px] sm:text-xs text-muted-foreground">
-                Scade: {format(new Date(site.ssl_expiry), 'dd MMM yyyy', { locale: it })}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6 sm:pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Ultimo Check</CardTitle>
-            <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
-            <div className="text-lg sm:text-2xl font-bold">
-              {site.last_check
-                ? formatDistanceToNow(new Date(site.last_check), {
-                    addSuffix: true,
-                    locale: it,
-                  })
-                : 'Mai'}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+  return (
+    <div>
+      <PageHeader
+        title={site.name}
+        description={site.url}
+        tabs={tabDefs.map(t => ({
+          ...t,
+          active: activeTab === t.value,
+        }))}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => router.push(`/sites/${id}/edit`)}>
+              Modifica
+            </Button>
+            <Button
+              size="sm"
+              className="bg-emerald-500 hover:bg-emerald-600 text-white"
+              onClick={() => runCheck('uptime')}
+            >
+              Check ora
+            </Button>
+          </div>
+        }
+      />
+
+      <div className="p-6 space-y-6">
+        {/* Status badge */}
+        <div className="flex items-center gap-2">
+          <span className={`inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded border ${
+            site.status === 'online'
+              ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
+              : site.status === 'offline'
+              ? 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'
+              : site.status === 'degraded'
+              ? 'bg-yellow-50 dark:bg-yellow-950/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800'
+              : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-white/5'
+          }`}>
+            <StatusIcon className="h-3 w-3" />
+            {status.label}
+          </span>
+          <a
+            href={site.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-white flex items-center gap-1 transition-colors"
+          >
+            {site.url}
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
+
+        {/* Stats Overview */}
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            label="Uptime"
+            value={site.uptime_percentage !== null ? `${site.uptime_percentage.toFixed(2)}%` : 'N/A'}
+            change={{ value: 'Ultimi 30 giorni' }}
+            icon={<Activity className="h-4 w-4" />}
+          />
+          <StatCard
+            label="Tempo Risposta"
+            value={site.response_time_avg !== null ? `${site.response_time_avg}ms` : 'N/A'}
+            change={{ value: 'Media' }}
+            icon={<Zap className="h-4 w-4" />}
+          />
+          <StatCard
+            label="SSL"
+            value={
+              site.ssl_status === 'valid' ? 'Valido' :
+              site.ssl_status === 'expiring' ? 'In scadenza' :
+              site.ssl_status === 'expired' ? 'Scaduto' : 'N/A'
+            }
+            change={site.ssl_expiry ? {
+              value: `Scade: ${format(new Date(site.ssl_expiry), 'dd MMM yyyy', { locale: it })}`,
+              positive: site.ssl_status === 'valid',
+            } : undefined}
+            icon={<Shield className="h-4 w-4" />}
+          />
+          <StatCard
+            label="Ultimo Check"
+            value={site.last_check
+              ? formatDistanceToNow(new Date(site.last_check), { addSuffix: true, locale: it })
+              : 'Mai'}
+            icon={<Clock className="h-4 w-4" />}
+          />
+        </div>
 
       {/* Detailed Tabs */}
-      <Tabs defaultValue="uptime" className="space-y-4">
-        <TabsList className="w-full sm:w-auto flex flex-wrap h-auto gap-1 p-1">
-          <TabsTrigger value="uptime" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
-            <Activity className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden xs:inline">Uptime</span>
-          </TabsTrigger>
-          <TabsTrigger value="ssl" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
-            <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden xs:inline">SSL</span>
-          </TabsTrigger>
-          <TabsTrigger value="performance" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
-            <Zap className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden xs:inline">Perf.</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="report"
-            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3"
-            onClick={() => {
-              if (!uptimeReportData && !reportLoading) {
-                fetchReportData(reportDateRange);
-              }
-            }}
-          >
-            <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden xs:inline">Report</span>
-          </TabsTrigger>
-          {site.platform === 'wordpress' && (
-            <TabsTrigger value="updates" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
-              <Package className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">Update</span>
-            </TabsTrigger>
-          )}
-          {site.platform === 'wordpress' && (
-            <TabsTrigger value="wordpress" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
-              <Server className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">Server</span>
-            </TabsTrigger>
-          )}
-          {site.platform === 'nextjs' && (
-            <TabsTrigger value="nextjs-info" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
-              <Server className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">Server</span>
-            </TabsTrigger>
-          )}
-          {site.ecommerce_check_enabled && (
-            <TabsTrigger value="ecommerce" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
-              <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">E-com.</span>
-            </TabsTrigger>
-          )}
-          {site.platform === 'wordpress' && (
-            <TabsTrigger value="security" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
-              <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">Security</span>
-            </TabsTrigger>
-          )}
-          {site.platform === 'nextjs' && (
-            <TabsTrigger value="vercel" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
-              <Rocket className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">Vercel</span>
-            </TabsTrigger>
-          )}
-          <TabsTrigger value="alerts" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
-            <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden xs:inline">Alert</span>
-          </TabsTrigger>
+      <Tabs value={activeTab} onValueChange={(val) => {
+        setActiveTab(val);
+        if (val === 'report' && !uptimeReportData && !reportLoading) {
+          fetchReportData(reportDateRange);
+        }
+      }} className="space-y-4">
+        <TabsList className="hidden">
+          {tabDefs.map(t => (
+            <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>
+          ))}
         </TabsList>
 
         {/* Uptime Tab */}
         <TabsContent value="uptime">
-          <Card>
-            <CardHeader className="p-3 sm:p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <CardTitle className="text-base sm:text-lg">Cronologia Uptime</CardTitle>
-                  <CardDescription className="text-xs sm:text-sm">Ultimi 50 controlli</CardDescription>
-                </div>
-                <Button size="sm" variant="outline" onClick={() => runCheck('uptime')}>
-                  <RefreshCw className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Controlla ora</span>
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+          <div className="bg-white dark:bg-[#0c0c0c] border border-zinc-200 dark:border-white/5 rounded-lg">
+            <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/5 flex items-center justify-between">
+              <span className="text-sm font-semibold">Cronologia Uptime</span>
+              <Button size="sm" variant="outline" onClick={() => runCheck('uptime')}>
+                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                Controlla ora
+              </Button>
+            </div>
+            <div className="p-4">
               {uptimeChecks.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
                   Nessun controllo disponibile
@@ -671,26 +602,21 @@ export default function SiteDetailPage({
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
         {/* SSL Tab */}
         <TabsContent value="ssl">
-          <Card>
-            <CardHeader className="p-3 sm:p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <CardTitle className="text-base sm:text-lg">Certificato SSL</CardTitle>
-                  <CardDescription className="text-xs sm:text-sm">Dettagli e cronologia</CardDescription>
-                </div>
-                <Button size="sm" variant="outline" onClick={() => runCheck('ssl')}>
-                  <RefreshCw className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Controlla ora</span>
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+          <div className="bg-white dark:bg-[#0c0c0c] border border-zinc-200 dark:border-white/5 rounded-lg">
+            <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/5 flex items-center justify-between">
+              <span className="text-sm font-semibold">Certificato SSL</span>
+              <Button size="sm" variant="outline" onClick={() => runCheck('ssl')}>
+                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                Controlla ora
+              </Button>
+            </div>
+            <div className="p-4">
               {sslChecks.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
                   Nessun controllo SSL disponibile
@@ -733,26 +659,21 @@ export default function SiteDetailPage({
                   ))}
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
         {/* Performance Tab */}
         <TabsContent value="performance">
-          <Card>
-            <CardHeader className="p-3 sm:p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <CardTitle className="text-base sm:text-lg">Core Web Vitals</CardTitle>
-                  <CardDescription className="text-xs sm:text-sm">Metriche di performance</CardDescription>
-                </div>
-                <Button size="sm" variant="outline" onClick={() => runCheck('performance')}>
-                  <RefreshCw className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Controlla ora</span>
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+          <div className="bg-white dark:bg-[#0c0c0c] border border-zinc-200 dark:border-white/5 rounded-lg">
+            <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/5 flex items-center justify-between">
+              <span className="text-sm font-semibold">Core Web Vitals</span>
+              <Button size="sm" variant="outline" onClick={() => runCheck('performance')}>
+                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                Controlla ora
+              </Button>
+            </div>
+            <div className="p-4">
               {performanceChecks.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
                   Nessun controllo performance disponibile
@@ -812,41 +733,34 @@ export default function SiteDetailPage({
                   ))}
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
         {/* Report Tab */}
         <TabsContent value="report">
           <div className="space-y-4">
             {/* Report Header with Date Selector */}
-            <Card>
-              <CardHeader className="p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <CardTitle className="text-base sm:text-lg">Report Analitici</CardTitle>
-                    <CardDescription className="text-xs sm:text-sm">
-                      Analisi dettagliata delle prestazioni del sito
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <DateRangeSelector
-                      value={reportDateRange}
-                      onChange={handleDateRangeChange}
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={exportCSV}
-                      disabled={!uptimeReportData?.data?.length && !performanceReportData?.data?.length}
-                    >
-                      <Download className="h-4 w-4 sm:mr-2" />
-                      <span className="hidden sm:inline">CSV</span>
-                    </Button>
-                  </div>
+            <div className="bg-white dark:bg-[#0c0c0c] border border-zinc-200 dark:border-white/5 rounded-lg">
+              <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/5 flex flex-wrap items-center justify-between gap-3">
+                <span className="text-sm font-semibold">Report Analitici</span>
+                <div className="flex items-center gap-2">
+                  <DateRangeSelector
+                    value={reportDateRange}
+                    onChange={handleDateRangeChange}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={exportCSV}
+                    disabled={!uptimeReportData?.data?.length && !performanceReportData?.data?.length}
+                  >
+                    <Download className="h-3.5 w-3.5 mr-1.5" />
+                    CSV
+                  </Button>
                 </div>
-              </CardHeader>
-            </Card>
+              </div>
+            </div>
 
             {reportLoading ? (
               <div className="flex items-center justify-center h-64">
@@ -856,196 +770,138 @@ export default function SiteDetailPage({
               <>
                 {/* Summary Stats */}
                 {(uptimeReportData?.summary || performanceReportData?.summary) && (
-                  <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+                  <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
                     {uptimeReportData?.summary && (
                       <>
-                        <Card>
-                          <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6 sm:pb-2">
-                            <CardTitle className="text-xs sm:text-sm font-medium">Uptime Medio</CardTitle>
-                            <Activity className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
-                          </CardHeader>
-                          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
-                            <div className={`text-xl sm:text-2xl font-bold ${
-                              uptimeReportData.summary.average_uptime >= 99.5 ? 'text-green-500' :
-                              uptimeReportData.summary.average_uptime >= 95 ? 'text-yellow-500' : 'text-red-500'
-                            }`}>
-                              {uptimeReportData.summary.average_uptime.toFixed(2)}%
-                            </div>
-                            <p className="text-[10px] sm:text-xs text-muted-foreground">
-                              {uptimeReportData.summary.total_checks} controlli totali
-                            </p>
-                          </CardContent>
-                        </Card>
-                        <Card>
-                          <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6 sm:pb-2">
-                            <CardTitle className="text-xs sm:text-sm font-medium">Risposta Media</CardTitle>
-                            <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
-                          </CardHeader>
-                          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
-                            <div className="text-xl sm:text-2xl font-bold">
-                              {uptimeReportData.summary.avg_response_time}ms
-                            </div>
-                            <p className="text-[10px] sm:text-xs text-muted-foreground">
-                              P95: {uptimeReportData.summary.p95_response_time}ms
-                            </p>
-                          </CardContent>
-                        </Card>
+                        <StatCard
+                          label="Uptime Medio"
+                          value={`${uptimeReportData.summary.average_uptime.toFixed(2)}%`}
+                          change={{ value: `${uptimeReportData.summary.total_checks} controlli totali` }}
+                          icon={<Activity className="h-4 w-4" />}
+                        />
+                        <StatCard
+                          label="Risposta Media"
+                          value={`${uptimeReportData.summary.avg_response_time}ms`}
+                          change={{ value: `P95: ${uptimeReportData.summary.p95_response_time}ms` }}
+                          icon={<Zap className="h-4 w-4" />}
+                        />
                       </>
                     )}
                     {performanceReportData?.summary && (
                       <>
-                        <Card>
-                          <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6 sm:pb-2">
-                            <CardTitle className="text-xs sm:text-sm font-medium">Performance</CardTitle>
-                            <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
-                          </CardHeader>
-                          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
-                            <div className={`text-xl sm:text-2xl font-bold ${
-                              performanceReportData.summary.average_score >= 90 ? 'text-green-500' :
-                              performanceReportData.summary.average_score >= 50 ? 'text-yellow-500' : 'text-red-500'
-                            }`}>
-                              {performanceReportData.summary.average_score}
-                            </div>
-                            <p className="text-[10px] sm:text-xs text-muted-foreground">
-                              Trend: {performanceReportData.summary.score_trend === 'improving' ? 'In miglioramento' :
-                                      performanceReportData.summary.score_trend === 'degrading' ? 'In peggioramento' : 'Stabile'}
-                            </p>
-                          </CardContent>
-                        </Card>
-                        <Card>
-                          <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-6 sm:pb-2">
-                            <CardTitle className="text-xs sm:text-sm font-medium">LCP</CardTitle>
-                            <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
-                          </CardHeader>
-                          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
-                            <div className={`text-xl sm:text-2xl font-bold ${
-                              performanceReportData.summary.lcp_status === 'good' ? 'text-green-500' :
-                              performanceReportData.summary.lcp_status === 'needs-improvement' ? 'text-yellow-500' : 'text-red-500'
-                            }`}>
-                              {performanceReportData.summary.avg_lcp}ms
-                            </div>
-                            <p className="text-[10px] sm:text-xs text-muted-foreground">
-                              Largest Contentful Paint
-                            </p>
-                          </CardContent>
-                        </Card>
+                        <StatCard
+                          label="Performance"
+                          value={performanceReportData.summary.average_score}
+                          change={{
+                            value: performanceReportData.summary.score_trend === 'improving' ? 'In miglioramento' :
+                                   performanceReportData.summary.score_trend === 'degrading' ? 'In peggioramento' : 'Stabile',
+                            positive: performanceReportData.summary.score_trend === 'improving' ? true :
+                                      performanceReportData.summary.score_trend === 'degrading' ? false : undefined,
+                          }}
+                          icon={<BarChart3 className="h-4 w-4" />}
+                        />
+                        <StatCard
+                          label="LCP"
+                          value={`${performanceReportData.summary.avg_lcp}ms`}
+                          change={{ value: 'Largest Contentful Paint' }}
+                          icon={<Clock className="h-4 w-4" />}
+                        />
                       </>
                     )}
                   </div>
                 )}
 
                 {/* Uptime Chart */}
-                <Card>
-                  <CardHeader className="p-4 sm:p-6">
-                    <CardTitle className="text-base sm:text-lg">Uptime nel Tempo</CardTitle>
-                    <CardDescription className="text-xs sm:text-sm">
-                      Percentuale di disponibilita' giornaliera
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                <div className="bg-white dark:bg-[#0c0c0c] border border-zinc-200 dark:border-white/5 rounded-lg">
+                  <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/5">
+                    <span className="text-sm font-semibold">Uptime nel Tempo</span>
+                  </div>
+                  <div className="p-4">
                     <UptimeChart
                       data={uptimeReportData?.data || []}
                       slaTarget={99.9}
                       height={300}
                     />
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
 
                 {/* Response Time Chart */}
-                <Card>
-                  <CardHeader className="p-4 sm:p-6">
-                    <CardTitle className="text-base sm:text-lg">Tempi di Risposta</CardTitle>
-                    <CardDescription className="text-xs sm:text-sm">
-                      Media, minimo e massimo tempi di risposta
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                <div className="bg-white dark:bg-[#0c0c0c] border border-zinc-200 dark:border-white/5 rounded-lg">
+                  <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/5">
+                    <span className="text-sm font-semibold">Tempi di Risposta</span>
+                  </div>
+                  <div className="p-4">
                     <ResponseTimeChart
                       data={uptimeReportData?.data || []}
                       height={300}
                       showRange={true}
                     />
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
 
                 {/* Performance Score Chart */}
-                <Card>
-                  <CardHeader className="p-4 sm:p-6">
-                    <CardTitle className="text-base sm:text-lg">Performance Score</CardTitle>
-                    <CardDescription className="text-xs sm:text-sm">
-                      Punteggio complessivo delle prestazioni
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                <div className="bg-white dark:bg-[#0c0c0c] border border-zinc-200 dark:border-white/5 rounded-lg">
+                  <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/5">
+                    <span className="text-sm font-semibold">Performance Score</span>
+                  </div>
+                  <div className="p-4">
                     <PerformanceChart
                       data={performanceReportData?.data || []}
                       height={300}
                     />
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
 
                 {/* Web Vitals Charts */}
                 <div className="grid gap-4 md:grid-cols-2">
-                  <Card>
-                    <CardHeader className="p-4 sm:p-6">
-                      <CardTitle className="text-base sm:text-lg">LCP (Largest Contentful Paint)</CardTitle>
-                      <CardDescription className="text-xs sm:text-sm">
-                        Tempo di caricamento dell'elemento principale
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                  <div className="bg-white dark:bg-[#0c0c0c] border border-zinc-200 dark:border-white/5 rounded-lg">
+                    <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/5">
+                      <span className="text-sm font-semibold">LCP (Largest Contentful Paint)</span>
+                    </div>
+                    <div className="p-4">
                       <WebVitalsChart
                         data={performanceReportData?.data || []}
                         metric="lcp"
                         height={250}
                       />
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="p-4 sm:p-6">
-                      <CardTitle className="text-base sm:text-lg">FID (First Input Delay)</CardTitle>
-                      <CardDescription className="text-xs sm:text-sm">
-                        Tempo di risposta alla prima interazione
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                    </div>
+                  </div>
+                  <div className="bg-white dark:bg-[#0c0c0c] border border-zinc-200 dark:border-white/5 rounded-lg">
+                    <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/5">
+                      <span className="text-sm font-semibold">FID (First Input Delay)</span>
+                    </div>
+                    <div className="p-4">
                       <WebVitalsChart
                         data={performanceReportData?.data || []}
                         metric="fid"
                         height={250}
                       />
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="p-4 sm:p-6">
-                      <CardTitle className="text-base sm:text-lg">CLS (Cumulative Layout Shift)</CardTitle>
-                      <CardDescription className="text-xs sm:text-sm">
-                        Stabilita' visiva della pagina
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                    </div>
+                  </div>
+                  <div className="bg-white dark:bg-[#0c0c0c] border border-zinc-200 dark:border-white/5 rounded-lg">
+                    <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/5">
+                      <span className="text-sm font-semibold">CLS (Cumulative Layout Shift)</span>
+                    </div>
+                    <div className="p-4">
                       <WebVitalsChart
                         data={performanceReportData?.data || []}
                         metric="cls"
                         height={250}
                       />
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="p-4 sm:p-6">
-                      <CardTitle className="text-base sm:text-lg">TTFB (Time To First Byte)</CardTitle>
-                      <CardDescription className="text-xs sm:text-sm">
-                        Tempo di risposta del server
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+                    </div>
+                  </div>
+                  <div className="bg-white dark:bg-[#0c0c0c] border border-zinc-200 dark:border-white/5 rounded-lg">
+                    <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/5">
+                      <span className="text-sm font-semibold">TTFB (Time To First Byte)</span>
+                    </div>
+                    <div className="p-4">
                       <WebVitalsChart
                         data={performanceReportData?.data || []}
                         metric="ttfb"
                         height={250}
                       />
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 </div>
               </>
             )}
@@ -1055,17 +911,14 @@ export default function SiteDetailPage({
         {/* Updates Tab */}
         {site.platform === 'wordpress' && (
           <TabsContent value="updates">
-            <Card>
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="text-base sm:text-lg">Aggiornamenti</CardTitle>
-                <CardDescription className="text-xs sm:text-sm">
-                  Plugin, temi e core WordPress disponibili per l'aggiornamento
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+            <div className="bg-white dark:bg-[#0c0c0c] border border-zinc-200 dark:border-white/5 rounded-lg">
+              <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/5">
+                <span className="text-sm font-semibold">Aggiornamenti</span>
+              </div>
+              <div className="p-4">
                 <UpdatesList siteId={site.id} onSync={fetchSite} />
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </TabsContent>
         )}
 
@@ -1074,14 +927,12 @@ export default function SiteDetailPage({
           <TabsContent value="wordpress">
             <div className="grid gap-4 md:grid-cols-2">
               {/* WordPress Info Card */}
-              <Card>
-                <CardHeader className="p-4 sm:p-6">
-                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                    <Globe className="h-5 w-5" />
-                    WordPress
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+              <div className="bg-white dark:bg-[#0c0c0c] border border-zinc-200 dark:border-white/5 rounded-lg">
+                <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/5 flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-zinc-400" />
+                  <span className="text-sm font-semibold">WordPress</span>
+                </div>
+                <div className="p-4">
                   {site.wp_info?.core ? (
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
@@ -1238,18 +1089,16 @@ export default function SiteDetailPage({
                       )}
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
               {/* Server Info Card */}
-              <Card>
-                <CardHeader className="p-4 sm:p-6">
-                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                    <Server className="h-5 w-5" />
-                    Server
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+              <div className="bg-white dark:bg-[#0c0c0c] border border-zinc-200 dark:border-white/5 rounded-lg">
+                <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/5 flex items-center gap-2">
+                  <Server className="h-4 w-4 text-zinc-400" />
+                  <span className="text-sm font-semibold">Server</span>
+                </div>
+                <div className="p-4">
                   {site.server_info ? (
                     <div className="space-y-3">
                       {site.server_info.php && (
@@ -1360,22 +1209,20 @@ export default function SiteDetailPage({
                       )}
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
               {/* Sync Info Card */}
-              <Card className="md:col-span-2">
-                <CardHeader className="p-4 sm:p-6">
-                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                    <RefreshCw className="h-5 w-5" />
-                    Sincronizzazione
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+              <div className="bg-white dark:bg-[#0c0c0c] border border-zinc-200 dark:border-white/5 rounded-lg md:col-span-2">
+                <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/5 flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4 text-zinc-400" />
+                  <span className="text-sm font-semibold">Sincronizzazione</span>
+                </div>
+                <div className="p-4">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="space-y-1">
                       <p className="text-sm">
-                        <span className="text-muted-foreground">Ultima sincronizzazione: </span>
+                        <span className="text-zinc-500">Ultima sincronizzazione: </span>
                         <span className="font-medium">
                           {site.last_sync
                             ? formatDistanceToNow(new Date(site.last_sync), { addSuffix: true, locale: it })
@@ -1384,12 +1231,12 @@ export default function SiteDetailPage({
                       </p>
                       {site.plugin_version && (
                         <p className="text-sm">
-                          <span className="text-muted-foreground">Versione plugin: </span>
+                          <span className="text-zinc-500">Versione plugin: </span>
                           <Badge variant="outline">{site.plugin_version}</Badge>
                         </p>
                       )}
                       {site.api_key_encrypted && (
-                        <p className="text-sm text-green-600 flex items-center gap-1">
+                        <p className="text-sm text-emerald-600 flex items-center gap-1">
                           <CheckCircle className="h-3 w-3" />
                           Plugin collegato
                         </p>
@@ -1397,15 +1244,16 @@ export default function SiteDetailPage({
                     </div>
                     <Button
                       variant="outline"
+                      size="sm"
                       onClick={runSync}
                       disabled={syncing || !site.api_key_encrypted}
                     >
-                      <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+                      <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${syncing ? 'animate-spin' : ''}`} />
                       {syncing ? 'Sincronizzazione...' : 'Sincronizza'}
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </div>
           </TabsContent>
         )}
@@ -1413,17 +1261,16 @@ export default function SiteDetailPage({
         {/* E-commerce Tab */}
         {site.ecommerce_check_enabled && (
           <TabsContent value="ecommerce">
-            <Card>
-              <CardHeader>
-                <CardTitle>E-commerce</CardTitle>
-                <CardDescription>Monitoraggio vendite e transazioni</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-center text-muted-foreground py-8">
+            <div className="bg-white dark:bg-[#0c0c0c] border border-zinc-200 dark:border-white/5 rounded-lg">
+              <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/5">
+                <span className="text-sm font-semibold">E-commerce</span>
+              </div>
+              <div className="p-4">
+                <p className="text-center text-zinc-500 py-8 text-sm">
                   Funzionalita' e-commerce in arrivo
                 </p>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </TabsContent>
         )}
 
@@ -1468,23 +1315,21 @@ export default function SiteDetailPage({
 
         {/* Alert Settings Tab */}
         <TabsContent value="alerts">
-          <Card>
-            <CardHeader className="p-4 sm:p-6">
-              <CardTitle className="text-base sm:text-lg">Impostazioni Alert</CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                Configura le soglie e le preferenze di notifica per questo sito
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+          <div className="bg-white dark:bg-[#0c0c0c] border border-zinc-200 dark:border-white/5 rounded-lg">
+            <div className="px-4 py-3 border-b border-zinc-200 dark:border-white/5">
+              <span className="text-sm font-semibold">Impostazioni Alert</span>
+            </div>
+            <div className="p-4">
               <AlertSettingsForm
                 siteId={site.id}
                 initialSettings={site.alert_settings}
                 onUpdate={fetchSite}
               />
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }

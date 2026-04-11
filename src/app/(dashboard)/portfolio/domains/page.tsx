@@ -79,6 +79,7 @@ import {
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { SiteScanRow } from '@/components/scanner/site-scan-row';
+import { PageHeader } from '@/components/layout/page-header';
 import {
   getLifecycleStatusConfig,
   getLifecycleStatusOptions,
@@ -667,54 +668,55 @@ export default function DomainsPage() {
     error: domains.filter(d => !!d.http_check_error || (d.http_status_code && d.http_status_code >= 400)).length,
   };
 
+  const portfolioTabs = [
+    { label: 'Dashboard', value: 'dashboard', href: '/portfolio' },
+    { label: 'Domini', value: 'domini', active: true, href: '/portfolio/domains' },
+    { label: 'Brand & Zone', value: 'zones', href: '/portfolio/zones' },
+    { label: 'Server', value: 'servers', href: '/portfolio/servers' },
+  ];
+
   return (
     <TooltipProvider>
-      <div className="space-y-4">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/portfolio">
-                <ArrowLeft className="h-4 w-4" />
-              </Link>
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">Gestione Domini</h1>
-              <p className="text-sm text-muted-foreground">
-                {filteredDomains.length} domini
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {selectedIds.size > 0 && (
-              <>
-                <Button onClick={checkSelectedDomains} disabled={isChecking} variant="outline">
-                  {isChecking ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Scan className="h-4 w-4 mr-2" />
-                  )}
-                  Verifica {selectedIds.size}
-                </Button>
-                <Button onClick={openBulkEdit}>
-                  <CheckSquare className="h-4 w-4 mr-2" />
-                  Modifica {selectedIds.size}
-                </Button>
-              </>
-            )}
-            <Button
-              variant="outline"
-              onClick={() => fetchDomains(true)}
-              disabled={isRefreshing}
-            >
-              {isRefreshing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
+      <div>
+        <PageHeader
+          title="Portfolio"
+          description={`${filteredDomains.length} domini`}
+          tabs={portfolioTabs}
+          actions={
+            <div className="flex items-center gap-2">
+              {selectedIds.size > 0 && (
+                <>
+                  <Button size="sm" className="h-8 text-sm" onClick={checkSelectedDomains} disabled={isChecking} variant="outline">
+                    {isChecking ? (
+                      <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                    ) : (
+                      <Scan className="h-3.5 w-3.5 mr-1.5" />
+                    )}
+                    Verifica {selectedIds.size}
+                  </Button>
+                  <Button size="sm" className="h-8 text-sm" onClick={openBulkEdit}>
+                    <CheckSquare className="h-3.5 w-3.5 mr-1.5" />
+                    Modifica {selectedIds.size}
+                  </Button>
+                </>
               )}
-            </Button>
-          </div>
-        </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-sm"
+                onClick={() => fetchDomains(true)}
+                disabled={isRefreshing}
+              >
+                {isRefreshing ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+              </Button>
+            </div>
+          }
+        />
+      <div className="p-6 space-y-4">
 
         {/* Stats Quick Overview */}
         <div className="flex flex-wrap gap-2">
@@ -849,23 +851,23 @@ export default function DomainsPage() {
         )}
 
         {/* Table */}
-        <div className="rounded-md border">
+        <div className="bg-white dark:bg-[#0c0c0c] border border-zinc-200 dark:border-white/5 rounded-lg overflow-hidden">
           <ScrollArea className="h-[calc(100vh-480px)]">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
+                <TableRow className="bg-zinc-50 dark:bg-white/[0.02] border-b border-zinc-200 dark:border-white/5 hover:bg-zinc-50 dark:hover:bg-white/[0.02]">
+                  <TableHead className="w-10 px-3 py-2">
                     <Checkbox
                       checked={selectedIds.size === paginatedDomains.length && paginatedDomains.length > 0}
                       onCheckedChange={toggleSelectAll}
                     />
                   </TableHead>
-                  <TableHead>Dominio</TableHead>
-                  <TableHead className="hidden md:table-cell">Stato HTTP</TableHead>
-                  <TableHead className="hidden md:table-cell">Destinazione</TableHead>
-                  <TableHead className="hidden lg:table-cell">Brand</TableHead>
-                  <TableHead className="hidden xl:table-cell">Stato</TableHead>
-                  <TableHead className="w-12"></TableHead>
+                  <TableHead className="px-3 py-2 text-[10px] uppercase tracking-wider text-zinc-500 font-medium">Dominio</TableHead>
+                  <TableHead className="px-3 py-2 text-[10px] uppercase tracking-wider text-zinc-500 font-medium hidden md:table-cell">Stato HTTP</TableHead>
+                  <TableHead className="px-3 py-2 text-[10px] uppercase tracking-wider text-zinc-500 font-medium hidden md:table-cell">Destinazione</TableHead>
+                  <TableHead className="px-3 py-2 text-[10px] uppercase tracking-wider text-zinc-500 font-medium hidden lg:table-cell">Brand</TableHead>
+                  <TableHead className="px-3 py-2 text-[10px] uppercase tracking-wider text-zinc-500 font-medium hidden xl:table-cell">Stato</TableHead>
+                  <TableHead className="w-10 px-3 py-2"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -874,18 +876,18 @@ export default function DomainsPage() {
                   const isBeingChecked = checkingIds.has(domain.id);
 
                   return (
-                    <TableRow key={domain.id} className={selectedIds.has(domain.id) ? 'bg-muted/50' : ''}>
-                      <TableCell>
+                    <TableRow key={domain.id} className={`text-sm hover:bg-zinc-50 dark:hover:bg-white/[0.02] ${selectedIds.has(domain.id) ? 'bg-zinc-50 dark:bg-white/[0.02]' : ''}`}>
+                      <TableCell className="px-3 py-2">
                         <Checkbox
                           checked={selectedIds.has(domain.id)}
                           onCheckedChange={() => toggleSelect(domain.id)}
                         />
                       </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-1">
+                      <TableCell className="px-3 py-2">
+                        <div className="flex flex-col gap-0.5">
                           <div className="flex items-center gap-2">
                             <RelationIcon relation={domain.domain_relation} size="xs" />
-                            <span className="font-medium">{domain.name || getDomainDisplay(domain.url)}</span>
+                            <span className="font-medium text-sm">{domain.name || getDomainDisplay(domain.url)}</span>
                             {domain.is_primary_for_brand && (
                               <Badge variant="secondary" className="text-[10px] px-1 bg-yellow-100 text-yellow-700">
                                 Principale
@@ -1327,6 +1329,7 @@ export default function DomainsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      </div>
       </div>
     </TooltipProvider>
   );

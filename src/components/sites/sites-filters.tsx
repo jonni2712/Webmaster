@@ -191,56 +191,25 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
 
   return (
     <div className="space-y-4">
-      {/* Row 1: Search + Actions */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      {/* Filters bar */}
+      <div className="bg-white dark:bg-[#0c0c0c] border border-zinc-200 dark:border-white/5 rounded-lg p-3 flex flex-wrap items-center gap-2">
+        {/* Search */}
+        <div className="relative flex-1 min-w-[160px] max-w-xs">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
           <Input
             placeholder="Cerca siti..."
-            className="pl-9 h-9 sm:h-10"
+            className="pl-8 h-8 text-sm"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 sm:h-10"
-            onClick={handleSyncAll}
-            disabled={isSyncing}
-          >
-            {isSyncing ? (
-              <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
-            ) : (
-              <RefreshCw className="h-4 w-4 sm:mr-2" />
-            )}
-            <span className="hidden sm:inline">Sync</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 sm:h-10"
-            onClick={handleResetUpdates}
-            disabled={isCleaningUp}
-          >
-            {isCleaningUp ? (
-              <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
-            ) : (
-              <Trash2 className="h-4 w-4 sm:mr-2" />
-            )}
-            <span className="hidden sm:inline">Reset</span>
-          </Button>
-        </div>
-      </div>
 
-      {/* Row 2: Filters Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2">
+        {/* Dropdowns */}
         {clients.length > 0 && (
           <Select value={clientFilter} onValueChange={setClientFilter}>
-            <SelectTrigger className="h-9">
-              <div className="flex items-center gap-2 truncate">
-                <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <SelectTrigger className="h-8 text-sm w-auto min-w-[120px]">
+              <div className="flex items-center gap-1.5 truncate">
+                <Building2 className="h-3.5 w-3.5 text-zinc-400 flex-shrink-0" />
                 <SelectValue placeholder="Cliente" />
               </div>
             </SelectTrigger>
@@ -257,9 +226,9 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
         )}
 
         <Select value={tagFilter} onValueChange={setTagFilter}>
-          <SelectTrigger className="h-9">
-            <div className="flex items-center gap-2 truncate">
-              <Tag className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          <SelectTrigger className="h-8 text-sm w-auto min-w-[100px]">
+            <div className="flex items-center gap-1.5 truncate">
+              <Tag className="h-3.5 w-3.5 text-zinc-400 flex-shrink-0" />
               <SelectValue placeholder="Tag" />
             </div>
           </SelectTrigger>
@@ -285,9 +254,9 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
         </Select>
 
         <Select value={siteTypeFilter} onValueChange={(value) => setSiteTypeFilter(value as SiteTypeFilter)}>
-          <SelectTrigger className="h-9">
-            <div className="flex items-center gap-2 truncate">
-              <Network className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          <SelectTrigger className="h-8 text-sm w-auto min-w-[100px]">
+            <div className="flex items-center gap-1.5 truncate">
+              <Network className="h-3.5 w-3.5 text-zinc-400 flex-shrink-0" />
               <SelectValue placeholder="Tipo" />
             </div>
           </SelectTrigger>
@@ -301,9 +270,9 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
 
         {servers.length > 0 && (
           <Select value={serverFilter} onValueChange={setServerFilter}>
-            <SelectTrigger className="h-9">
-              <div className="flex items-center gap-2 truncate">
-                <Server className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <SelectTrigger className="h-8 text-sm w-auto min-w-[100px]">
+              <div className="flex items-center gap-1.5 truncate">
+                <Server className="h-3.5 w-3.5 text-zinc-400 flex-shrink-0" />
                 <SelectValue placeholder="Server" />
               </div>
             </SelectTrigger>
@@ -320,9 +289,9 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
         )}
 
         <Select value={lifecycleFilter} onValueChange={setLifecycleFilter}>
-          <SelectTrigger className="h-9">
-            <div className="flex items-center gap-2 truncate">
-              <Activity className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          <SelectTrigger className="h-8 text-sm w-auto min-w-[100px]">
+            <div className="flex items-center gap-1.5 truncate">
+              <Activity className="h-3.5 w-3.5 text-zinc-400 flex-shrink-0" />
               <SelectValue placeholder="Stato" />
             </div>
           </SelectTrigger>
@@ -337,7 +306,7 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
         </Select>
 
         <Select value={redirectFilter} onValueChange={setRedirectFilter}>
-          <SelectTrigger className="h-9">
+          <SelectTrigger className="h-8 text-sm w-auto min-w-[90px]">
             <SelectValue placeholder="Redirect" />
           </SelectTrigger>
           <SelectContent>
@@ -346,23 +315,74 @@ export function SitesFilters({ sites, clients }: SitesFiltersProps) {
             <SelectItem value="no_redirect">No Redirect</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Action buttons */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 text-xs"
+          onClick={handleSyncAll}
+          disabled={isSyncing}
+        >
+          {isSyncing ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+          ) : (
+            <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+          )}
+          Sync
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 text-xs"
+          onClick={handleResetUpdates}
+          disabled={isCleaningUp}
+        >
+          {isCleaningUp ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+          ) : (
+            <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+          )}
+          Reset
+        </Button>
+
+        {/* Clear filters */}
+        {(search || clientFilter !== 'all' || tagFilter !== 'all' || siteTypeFilter !== 'all' || serverFilter !== 'all' || lifecycleFilter !== 'all' || redirectFilter !== 'all') && (
+          <button
+            onClick={() => {
+              setSearch('');
+              setClientFilter('all');
+              setTagFilter('all');
+              setSiteTypeFilter('all');
+              setServerFilter('all');
+              setLifecycleFilter('all');
+              setRedirectFilter('all');
+            }}
+            className="text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors"
+          >
+            Pulisci
+          </button>
+        )}
       </div>
 
       {cleanupMessage && (
-        <p className={`text-sm ${cleanupMessage.includes('Errore') ? 'text-red-500' : 'text-green-600'}`}>
+        <p className={`text-xs ${cleanupMessage.includes('Errore') ? 'text-red-500' : 'text-green-600'}`}>
           {cleanupMessage}
         </p>
       )}
 
       {syncMessage && (
-        <p className={`text-sm ${syncMessage.includes('Errore') ? 'text-red-500' : 'text-green-600'}`}>
+        <p className={`text-xs ${syncMessage.includes('Errore') ? 'text-red-500' : 'text-green-600'}`}>
           {syncMessage}
         </p>
       )}
 
       {/* Results info */}
       {(search || clientFilter !== 'all' || tagFilter !== 'all' || siteTypeFilter !== 'all' || serverFilter !== 'all' || lifecycleFilter !== 'all' || redirectFilter !== 'all') && (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs text-zinc-500">
           {filteredSites.length} {filteredSites.length === 1 ? 'sito trovato' : 'siti trovati'}
           {search && ` per "${search}"`}
           {clientFilter !== 'all' && clientFilter !== 'no_client' && (

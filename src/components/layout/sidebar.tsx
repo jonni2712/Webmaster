@@ -9,23 +9,23 @@ import {
   Settings,
   Plus,
   Upload,
-  ChevronLeft,
-  ChevronRight,
   Puzzle,
   Menu,
-  X,
   Users,
   Map,
   FolderKanban,
   Server,
   Activity,
+  LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { signOut, useSession } from 'next-auth/react';
 
-const navigation = [
+const menuNavigation = [
   {
     name: 'Dashboard',
     href: '/dashboard',
@@ -41,6 +41,14 @@ const navigation = [
       { name: 'Importa CSV', href: '/sites/import', icon: Upload },
     ],
   },
+  {
+    name: 'Alert',
+    href: '/alerts',
+    icon: Bell,
+  },
+];
+
+const gestioneNavigation = [
   {
     name: 'Clienti',
     href: '/clients',
@@ -62,11 +70,9 @@ const navigation = [
       { name: 'Importa Domini', href: '/portfolio/import', icon: Upload },
     ],
   },
-  {
-    name: 'Alert',
-    href: '/alerts',
-    icon: Bell,
-  },
+];
+
+const altroNavigation = [
   {
     name: 'Plugin WP',
     href: '/plugin',
@@ -84,55 +90,128 @@ const navigation = [
   },
 ];
 
-function SidebarContent({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
+function NavItem({
+  item,
+  pathname,
+  onNavigate,
+}: {
+  item: (typeof menuNavigation)[number];
+  pathname: string;
+  onNavigate?: () => void;
+}) {
+  const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+
+  return (
+    <div>
+      <Link
+        href={item.href}
+        onClick={onNavigate}
+        className={cn(
+          'flex items-center gap-2.5 px-3 py-1.5 text-sm rounded-md transition-colors',
+          isActive
+            ? 'bg-zinc-100 dark:bg-white/[0.06] text-zinc-900 dark:text-white font-medium'
+            : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/[0.04] hover:text-zinc-900 dark:hover:text-white'
+        )}
+      >
+        <item.icon className="h-4 w-4 flex-shrink-0" />
+        <span>{item.name}</span>
+      </Link>
+
+      {/* Submenu */}
+      {'children' in item && item.children && isActive && (
+        <div className="ml-4 mt-0.5 border-l border-zinc-200 dark:border-white/5 pl-3 space-y-0.5">
+          {item.children.map((child) => (
+            <Link
+              key={child.href}
+              href={child.href}
+              onClick={onNavigate}
+              className={cn(
+                'flex items-center gap-2 px-2 py-1 text-sm rounded-md transition-colors',
+                pathname === child.href
+                  ? 'text-zinc-900 dark:text-white font-medium'
+                  : 'text-zinc-500 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
+              )}
+            >
+              {'icon' in child && child.icon && <child.icon className="h-3.5 w-3.5 flex-shrink-0" />}
+              <span>{child.name}</span>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
-    <nav className="flex-1 space-y-1 p-2">
-      {navigation.map((item) => {
-        const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+    <nav className="flex-1 overflow-y-auto px-2 py-2">
+      {/* MENU section */}
+      <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1 mt-2 px-3">Menu</p>
+      <div className="space-y-0.5">
+        {menuNavigation.map((item) => (
+          <NavItem key={item.name} item={item} pathname={pathname} onNavigate={onNavigate} />
+        ))}
+      </div>
 
-        return (
-          <div key={item.name}>
-            <Link
-              href={item.href}
-              onClick={onNavigate}
-              className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-100 border-l-2 border-emerald-500'
-                  : 'text-muted-foreground hover:bg-emerald-50 dark:hover:bg-emerald-950/20 hover:text-foreground'
-              )}
-            >
-              <item.icon className={cn('h-5 w-5 flex-shrink-0', isActive ? 'text-emerald-600 dark:text-emerald-400' : '')} />
-              {!collapsed && <span>{item.name}</span>}
-            </Link>
+      {/* GESTIONE section */}
+      <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1 mt-6 px-3">Gestione</p>
+      <div className="space-y-0.5">
+        {gestioneNavigation.map((item) => (
+          <NavItem key={item.name} item={item} pathname={pathname} onNavigate={onNavigate} />
+        ))}
+      </div>
 
-            {/* Submenu */}
-            {!collapsed && item.children && isActive && (
-              <div className="ml-8 mt-1 space-y-1">
-                {item.children.map((child) => (
-                  <Link
-                    key={child.href}
-                    href={child.href}
-                    onClick={onNavigate}
-                    className={cn(
-                      'flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors',
-                      pathname === child.href
-                        ? 'text-primary font-medium'
-                        : 'text-muted-foreground hover:text-foreground'
-                    )}
-                  >
-                    {child.icon && <child.icon className="h-4 w-4" />}
-                    <span>{child.name}</span>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {/* ALTRO section */}
+      <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1 mt-6 px-3">Altro</p>
+      <div className="space-y-0.5">
+        {altroNavigation.map((item) => (
+          <NavItem key={item.name} item={item} pathname={pathname} onNavigate={onNavigate} />
+        ))}
+      </div>
     </nav>
+  );
+}
+
+function UserFooter({ onNavigate }: { onNavigate?: () => void }) {
+  const { data: session } = useSession();
+
+  const userName = session?.user?.name || session?.user?.email?.split('@')[0] || 'Utente';
+  const userEmail = session?.user?.email || '';
+  const initials = userName
+    .split(' ')
+    .map((w: string) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+
+  function handleLogout() {
+    if (onNavigate) onNavigate();
+    signOut({ callbackUrl: '/login' });
+  }
+
+  return (
+    <div className="border-t border-zinc-200 dark:border-white/5 p-3">
+      <div className="flex items-center gap-2.5 group">
+        <Avatar className="h-6 w-6 flex-shrink-0">
+          <AvatarFallback className="text-[10px] bg-zinc-100 dark:bg-white/10 text-zinc-700 dark:text-zinc-300">
+            {initials}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium text-zinc-900 dark:text-white truncate">{userName}</p>
+          <p className="text-[10px] text-zinc-500 truncate">{userEmail}</p>
+        </div>
+        <button
+          onClick={handleLogout}
+          className="flex-shrink-0 p-1 rounded text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-white/[0.04] transition-colors"
+          title="Esci"
+        >
+          <LogOut className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -143,27 +222,23 @@ export function MobileSidebar() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="lg:hidden">
-          <Menu className="h-6 w-6" />
+        <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8">
+          <Menu className="h-4 w-4" />
           <span className="sr-only">Apri menu</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-72 p-0">
+      <SheetContent side="left" className="w-56 p-0 bg-white dark:bg-[#0A0A0A] border-r border-zinc-200 dark:border-white/5">
         <SheetTitle className="sr-only">Menu navigazione</SheetTitle>
-        <div className="flex h-16 items-center border-b px-4">
+        <div className="flex h-12 items-center border-b border-zinc-200 dark:border-white/5 px-4">
           <Link href="/dashboard" className="flex items-center gap-2" onClick={() => setOpen(false)}>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500">
-              <Activity className="h-5 w-5 text-white" />
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500">
+              <Activity className="h-4 w-4 text-white" />
             </div>
-            <span className="font-bold text-lg">Webmaster</span>
+            <span className="text-sm font-semibold text-zinc-900 dark:text-white">Webmaster Monitor</span>
           </Link>
         </div>
-        <SidebarContent collapsed={false} onNavigate={() => setOpen(false)} />
-        <div className="border-t p-4">
-          <p className="text-xs text-muted-foreground text-center">
-            Webmaster Monitor v1.0
-          </p>
-        </div>
+        <SidebarContent onNavigate={() => setOpen(false)} />
+        <UserFooter onNavigate={() => setOpen(false)} />
       </SheetContent>
     </Sheet>
   );
@@ -171,57 +246,23 @@ export function MobileSidebar() {
 
 // Desktop Sidebar
 export function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false);
-
   return (
-    <aside
-      className={cn(
-        'hidden lg:flex flex-col border-r bg-background transition-all duration-300',
-        collapsed ? 'w-16' : 'w-64'
-      )}
-    >
+    <aside className="hidden lg:flex flex-col w-56 flex-shrink-0 bg-white dark:bg-[#0A0A0A] border-r border-zinc-200 dark:border-white/5">
       {/* Logo */}
-      <div className="flex h-16 items-center justify-between border-b px-4">
-        {!collapsed && (
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500">
-              <Activity className="h-5 w-5 text-white" />
-            </div>
-            <span className="font-bold text-lg">Webmaster</span>
-          </Link>
-        )}
-        {collapsed && (
-          <Link href="/dashboard">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 mx-auto">
-              <Activity className="h-5 w-5 text-white" />
-            </div>
-          </Link>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => setCollapsed(!collapsed)}
-        >
-          {collapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
-        </Button>
+      <div className="flex h-12 items-center border-b border-zinc-200 dark:border-white/5 px-4">
+        <Link href="/dashboard" className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500">
+            <Activity className="h-4 w-4 text-white" />
+          </div>
+          <span className="text-sm font-semibold text-zinc-900 dark:text-white">Webmaster Monitor</span>
+        </Link>
       </div>
 
       {/* Navigation */}
-      <SidebarContent collapsed={collapsed} />
+      <SidebarContent />
 
-      {/* Footer */}
-      {!collapsed && (
-        <div className="border-t p-4">
-          <p className="text-xs text-muted-foreground text-center">
-            Webmaster Monitor v1.0
-          </p>
-        </div>
-      )}
+      {/* User Footer */}
+      <UserFooter />
     </aside>
   );
 }

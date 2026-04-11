@@ -18,6 +18,7 @@ import { Server, RefreshCw, Loader2, Wand2, CheckCircle, XCircle, AlertCircle } 
 import Link from 'next/link';
 import { toast } from 'sonner';
 import type { DomainPortfolioSummary, ServerWithStats, ExpiringDomain } from '@/types/database';
+import { PageHeader } from '@/components/layout/page-header';
 
 interface PortfolioData {
   summary: DomainPortfolioSummary;
@@ -153,48 +154,58 @@ export default function PortfolioPage() {
 
   const hasUnassignedSites = (data?.summary.domains_without_server || 0) > 0;
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Portfolio Domini</h1>
-          <p className="text-muted-foreground">
-            Panoramica completa del portfolio di {data?.summary.total_domains || 0} domini
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {hasUnassignedSites && (
-            <Button
-              variant="default"
-              onClick={() => {
-                setAutoAssignResults(null);
-                setIsAutoAssignOpen(true);
-              }}
-            >
-              <Wand2 className="h-4 w-4 mr-2" />
-              Auto-assegna Server
-            </Button>
-          )}
-          <Button variant="outline" asChild>
-            <Link href="/portfolio/servers">
-              <Server className="h-4 w-4 mr-2" />
-              Gestisci Server
-            </Link>
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => fetchData(true)}
-            disabled={isRefreshing}
-          >
-            {isRefreshing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
-      </div>
+  const portfolioTabs = [
+    { label: 'Dashboard', value: 'dashboard', active: true, href: '/portfolio' },
+    { label: 'Domini', value: 'domini', href: '/portfolio/domains' },
+    { label: 'Brand & Zone', value: 'zones', href: '/portfolio/zones' },
+    { label: 'Server', value: 'servers', href: '/portfolio/servers' },
+  ];
 
+  return (
+    <div>
+      <PageHeader
+        title="Portfolio"
+        description={`Panoramica completa del portfolio di ${data?.summary.total_domains || 0} domini`}
+        tabs={portfolioTabs}
+        actions={
+          <div className="flex items-center gap-2">
+            {hasUnassignedSites && (
+              <Button
+                size="sm"
+                className="h-8 text-sm"
+                onClick={() => {
+                  setAutoAssignResults(null);
+                  setIsAutoAssignOpen(true);
+                }}
+              >
+                <Wand2 className="h-3.5 w-3.5 mr-1.5" />
+                Auto-assegna Server
+              </Button>
+            )}
+            <Button variant="outline" size="sm" className="h-8 text-sm" asChild>
+              <Link href="/portfolio/servers">
+                <Server className="h-3.5 w-3.5 mr-1.5" />
+                Server
+              </Link>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-sm"
+              onClick={() => fetchData(true)}
+              disabled={isRefreshing}
+            >
+              {isRefreshing ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+            </Button>
+          </div>
+        }
+      />
+
+      <div className="p-6 space-y-4">
       {data && (
         <PortfolioStats
           summary={data.summary}
@@ -334,6 +345,7 @@ export default function PortfolioPage() {
           )}
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }

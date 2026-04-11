@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { SitesGrid } from '@/components/dashboard/sites-grid';
 import { SitesFilters } from '@/components/sites/sites-filters';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/layout/page-header';
 import { Plus, Upload } from 'lucide-react';
 import type { SiteWithStatus, Client } from '@/types';
 
@@ -106,35 +107,33 @@ export default async function SitesPage() {
   const { sites, clients } = await getSitesData();
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Siti Monitorati</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
-            Siti connessi con plugin ({sites.length} siti)
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="sm:size-default" asChild>
+    <div>
+      <PageHeader
+        title="Siti"
+        description="Gestisci e monitora tutti i tuoi siti web"
+        actions={
+          <div className="flex items-center gap-2">
             <Link href="/sites/import">
-              <Upload className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Importa CSV</span>
+              <Button variant="outline" size="sm">
+                <Upload className="h-4 w-4 mr-1.5" />
+                Importa CSV
+              </Button>
             </Link>
-          </Button>
-          <Button size="sm" className="sm:size-default" asChild>
             <Link href="/sites/new">
-              <Plus className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Aggiungi Sito</span>
+              <Button size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white">
+                <Plus className="h-4 w-4 mr-1.5" />
+                Aggiungi sito
+              </Button>
             </Link>
-          </Button>
-        </div>
+          </div>
+        }
+      />
+      <div className="p-6 space-y-4">
+        {/* Filters and Grid */}
+        <Suspense fallback={<SitesGrid sites={[]} isLoading />}>
+          <SitesFilters sites={sites} clients={clients} />
+        </Suspense>
       </div>
-
-      {/* Filters and Grid */}
-      <Suspense fallback={<SitesGrid sites={[]} isLoading />}>
-        <SitesFilters sites={sites} clients={clients} />
-      </Suspense>
     </div>
   );
 }

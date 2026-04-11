@@ -79,6 +79,7 @@ import {
 } from '@/components/ui/tabs';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/layout/page-header';
 import {
   DOMAIN_RELATION_CONFIG,
   WEGLOT_LANGUAGES,
@@ -463,44 +464,44 @@ export default function BrandsPage() {
     );
   }
 
+  const portfolioTabs = [
+    { label: 'Dashboard', value: 'dashboard', href: '/portfolio' },
+    { label: 'Domini', value: 'domini', href: '/portfolio/domains' },
+    { label: 'Brand & Zone', value: 'zones', active: true, href: '/portfolio/zones' },
+    { label: 'Server', value: 'servers', href: '/portfolio/servers' },
+  ];
+
   return (
     <TooltipProvider>
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/portfolio">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Brand & Zone Domini</h1>
-            <p className="text-sm text-muted-foreground">
-              {brands.length} brand, {unassignedDomains.length} domini non assegnati
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={() => setIsCreateOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+    <div>
+      <PageHeader
+        title="Portfolio"
+        description={`${brands.length} brand, ${unassignedDomains.length} domini non assegnati`}
+        tabs={portfolioTabs}
+        actions={
+          <div className="flex items-center gap-2">
+          <Button size="sm" className="h-8 text-sm" onClick={() => setIsCreateOpen(true)}>
+            <Plus className="h-3.5 w-3.5 mr-1.5" />
             Nuovo Brand
           </Button>
           <Button
             variant="outline"
-            size="icon"
+            size="sm"
+            className="h-8 text-sm"
             onClick={() => fetchData(true)}
             disabled={isRefreshing}
           >
             {isRefreshing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className="h-3.5 w-3.5" />
             )}
           </Button>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
+      <div className="p-6 space-y-4">
       {/* View Selector & Search */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         {/* View Tabs */}
@@ -1664,6 +1665,7 @@ export default function BrandsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
     </TooltipProvider>
   );

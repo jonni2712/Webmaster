@@ -46,6 +46,7 @@ import {
 import Link from 'next/link';
 import { toast } from 'sonner';
 import type { ServerWithStats } from '@/types/database';
+import { PageHeader } from '@/components/layout/page-header';
 
 export default function ServersPage() {
   const [servers, setServers] = useState<ServerWithStats[]>([]);
@@ -129,151 +130,145 @@ export default function ServersPage() {
     );
   }
 
+  const portfolioTabs = [
+    { label: 'Dashboard', value: 'dashboard', href: '/portfolio' },
+    { label: 'Domini', value: 'domini', href: '/portfolio/domains' },
+    { label: 'Brand & Zone', value: 'zones', href: '/portfolio/zones' },
+    { label: 'Server', value: 'servers', active: true, href: '/portfolio/servers' },
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/portfolio">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">Server</h1>
-            <p className="text-muted-foreground">
-              Gestisci i server per organizzare il portfolio domini
-            </p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => fetchServers(true)}
-            disabled={isRefreshing}
-          >
-            {isRefreshing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-          </Button>
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Nuovo Server
-              </Button>
-            </DialogTrigger>
+    <div>
+      <PageHeader
+        title="Portfolio"
+        description="Gestisci i server per organizzare il portfolio domini"
+        tabs={portfolioTabs}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-sm"
+              onClick={() => fetchServers(true)}
+              disabled={isRefreshing}
+            >
+              {isRefreshing ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+            </Button>
+            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="h-8 text-sm">
+                  <Plus className="h-3.5 w-3.5 mr-1.5" />
+                  Nuovo Server
+                </Button>
+              </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
                 <DialogTitle>Nuovo Server</DialogTitle>
               </DialogHeader>
               <ServerForm onSuccess={handleFormSuccess} />
             </DialogContent>
-          </Dialog>
-        </div>
-      </div>
+            </Dialog>
+          </div>
+        }
+      />
 
+      <div className="p-6 space-y-4">
       {servers.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Server className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-4">Nessun server configurato</p>
-            <Button onClick={() => setIsCreateOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Aggiungi il primo server
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="bg-white dark:bg-[#0c0c0c] border border-zinc-200 dark:border-white/5 rounded-lg flex flex-col items-center justify-center py-12">
+          <Server className="h-10 w-10 text-zinc-300 dark:text-zinc-600 mb-3" />
+          <p className="text-sm text-zinc-500 mb-3">Nessun server configurato</p>
+          <Button size="sm" className="h-8 text-sm" onClick={() => setIsCreateOpen(true)}>
+            <Plus className="h-3.5 w-3.5 mr-1.5" />
+            Aggiungi il primo server
+          </Button>
+        </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {servers.map((server) => (
-            <Card
+            <div
               key={server.server_id}
-              className={`${!server.is_active ? 'opacity-60' : ''} ${(server as any).panel_type ? 'cursor-pointer hover:border-primary/50 transition-colors' : ''}`}
+              className={`bg-white dark:bg-[#0c0c0c] border border-zinc-200 dark:border-white/5 rounded-lg p-4 hover:border-zinc-300 dark:hover:border-white/10 transition-colors ${!server.is_active ? 'opacity-60' : ''} ${(server as any).panel_type ? 'cursor-pointer' : ''}`}
               onClick={() => (server as any).panel_type && setViewingServer(server)}
             >
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <Server className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <CardTitle className="text-base">{server.server_name}</CardTitle>
-                      {server.provider && (
-                        <CardDescription>{server.provider}</CardDescription>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {!server.is_active && (
-                      <Badge variant="outline" className="text-xs">Inattivo</Badge>
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Server className="h-4 w-4 text-zinc-400 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-zinc-900 dark:text-white truncate">{server.server_name}</p>
+                    {server.provider && (
+                      <p className="text-xs text-zinc-500">{server.provider}</p>
                     )}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setEditingServer(server)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Modifica
-                        </DropdownMenuItem>
-                        {(server as any).panel_type && (
-                          <DropdownMenuItem onClick={() => setViewingServer(server)}>
-                            <Monitor className="h-4 w-4 mr-2" />
-                            Pannello Agente
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem
-                          className="text-red-600"
-                          onClick={() => setDeletingServer(server)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Elimina
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent>
-                {server.hostname && (
-                  <p className="text-sm text-muted-foreground mb-3 font-mono">
-                    {server.hostname}
-                  </p>
-                )}
-                {(server as any).panel_type && (
-                  <div className="flex items-center gap-1.5 mb-3">
-                    <Monitor className="h-4 w-4 text-muted-foreground" />
-                    <Badge variant="outline" className="text-xs">
-                      {(server as any).panel_type === 'cpanel' ? 'cPanel' : 'Plesk'}
-                    </Badge>
-                    <Badge
-                      variant={(server as any).agent_status === 'online' ? 'default' : 'secondary'}
-                      className="text-[10px] h-5"
-                    >
-                      {(server as any).agent_status === 'online' ? '🟢 Online' :
-                       (server as any).agent_status === 'offline' ? '🔴 Offline' :
-                       '⚪ Non installato'}
-                    </Badge>
-                  </div>
-                )}
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1.5">
-                    <Globe className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">{server.sites_count}</span>
-                    <span className="text-sm text-muted-foreground">siti</span>
-                  </div>
-                  {server.active_sites !== server.sites_count && (
-                    <div className="text-sm text-muted-foreground">
-                      ({server.active_sites} attivi)
-                    </div>
+                <div className="flex items-center gap-1.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                  {!server.is_active && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">Inattivo</Badge>
                   )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7">
+                        <MoreVertical className="h-3.5 w-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setEditingServer(server)}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Modifica
+                      </DropdownMenuItem>
+                      {(server as any).panel_type && (
+                        <DropdownMenuItem onClick={() => setViewingServer(server)}>
+                          <Monitor className="h-4 w-4 mr-2" />
+                          Pannello Agente
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem
+                        className="text-red-600"
+                        onClick={() => setDeletingServer(server)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Elimina
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+
+              {server.hostname && (
+                <p className="text-xs text-zinc-500 font-mono mb-2 truncate">{server.hostname}</p>
+              )}
+
+              {(server as any).panel_type && (
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Monitor className="h-3.5 w-3.5 text-zinc-400" />
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
+                    {(server as any).panel_type === 'cpanel' ? 'cPanel' : 'Plesk'}
+                  </Badge>
+                  <Badge
+                    variant={(server as any).agent_status === 'online' ? 'default' : 'secondary'}
+                    className="text-[10px] h-4 px-1.5"
+                  >
+                    {(server as any).agent_status === 'online' ? 'Online' :
+                     (server as any).agent_status === 'offline' ? 'Offline' :
+                     'Non installato'}
+                  </Badge>
+                </div>
+              )}
+
+              <div className="flex items-center gap-3 pt-2 border-t border-zinc-100 dark:border-white/5 mt-2">
+                <div className="flex items-center gap-1.5">
+                  <Globe className="h-3.5 w-3.5 text-zinc-400" />
+                  <span className="text-sm font-mono font-medium text-zinc-900 dark:text-white">{server.sites_count}</span>
+                  <span className="text-xs text-zinc-500">siti</span>
+                </div>
+                {server.active_sites !== server.sites_count && (
+                  <span className="text-xs text-zinc-500">({server.active_sites} attivi)</span>
+                )}
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -349,6 +344,7 @@ export default function ServersPage() {
           )}
         </SheetContent>
       </Sheet>
+      </div>
     </div>
   );
 }

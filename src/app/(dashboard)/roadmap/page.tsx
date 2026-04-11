@@ -20,6 +20,8 @@ import {
   Smartphone,
   Calendar,
 } from 'lucide-react';
+import { PageHeader } from '@/components/layout/page-header';
+import { StatCard } from '@/components/layout/stat-card';
 
 interface RoadmapFeature {
   name: string;
@@ -215,55 +217,53 @@ function VersionCard({ item }: { item: RoadmapVersion }) {
   const completedCount = item.features.filter(f => f.completed).length;
 
   return (
-    <Card className={`transition-all ${item.status === 'released' ? 'border-green-200 dark:border-green-800' : item.status === 'in-progress' ? 'border-blue-200 dark:border-blue-800' : ''}`}>
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-              item.status === 'released' ? 'bg-green-100 dark:bg-green-900/50' :
-              item.status === 'in-progress' ? 'bg-blue-100 dark:bg-blue-900/50' :
-              'bg-muted'
-            }`}>
-              <Icon className={`h-5 w-5 ${
-                item.status === 'released' ? 'text-green-600 dark:text-green-400' :
-                item.status === 'in-progress' ? 'text-blue-600 dark:text-blue-400' :
-                'text-muted-foreground'
-              }`} />
-            </div>
-            <div>
-              <CardTitle className="text-base flex items-center gap-2">
-                {item.version}
-                <span className="font-normal text-muted-foreground">-</span>
-                {item.title}
-              </CardTitle>
-              <CardDescription className="text-xs mt-0.5">
-                {completedCount}/{item.features.length} completate
-              </CardDescription>
-            </div>
+    <div className={`bg-white dark:bg-[#0c0c0c] border rounded-lg p-4 transition-colors ${
+      item.status === 'released' ? 'border-emerald-200 dark:border-emerald-800/50' :
+      item.status === 'in-progress' ? 'border-blue-200 dark:border-blue-800/50' :
+      'border-zinc-200 dark:border-white/5'
+    }`}>
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2.5">
+          <div className={`h-7 w-7 rounded-md flex items-center justify-center flex-shrink-0 ${
+            item.status === 'released' ? 'bg-emerald-100 dark:bg-emerald-900/30' :
+            item.status === 'in-progress' ? 'bg-blue-100 dark:bg-blue-900/30' :
+            'bg-zinc-100 dark:bg-white/5'
+          }`}>
+            <Icon className={`h-3.5 w-3.5 ${
+              item.status === 'released' ? 'text-emerald-600 dark:text-emerald-400' :
+              item.status === 'in-progress' ? 'text-blue-600 dark:text-blue-400' :
+              'text-zinc-400'
+            }`} />
           </div>
-          <StatusBadge status={item.status} />
+          <div>
+            <p className="text-sm font-semibold text-zinc-900 dark:text-white">
+              <span className="font-mono">{item.version}</span>
+              <span className="font-normal text-zinc-400 mx-1.5">—</span>
+              {item.title}
+            </p>
+            <p className="text-xs text-zinc-500 mt-0.5 font-mono">{completedCount}/{item.features.length} completate</p>
+          </div>
         </div>
-        {item.status !== 'planned' && (
-          <Progress value={item.progress} className="h-1.5 mt-3" />
-        )}
-      </CardHeader>
-      <CardContent className="pt-0">
-        <ul className="space-y-1.5">
-          {item.features.map((feature, index) => (
-            <li key={index} className="flex items-center gap-2 text-sm">
-              {feature.completed ? (
-                <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
-              ) : (
-                <Circle className="h-4 w-4 text-muted-foreground/50 flex-shrink-0" />
-              )}
-              <span className={feature.completed ? 'text-muted-foreground line-through' : ''}>
-                {feature.name}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
+        <StatusBadge status={item.status} />
+      </div>
+      {item.status !== 'planned' && (
+        <Progress value={item.progress} className="h-1 mb-3" />
+      )}
+      <ul className="space-y-1">
+        {item.features.map((feature, index) => (
+          <li key={index} className="flex items-center gap-2 text-xs">
+            {feature.completed ? (
+              <CheckCircle2 className="h-3 w-3 text-emerald-500 flex-shrink-0" />
+            ) : (
+              <Circle className="h-3 w-3 text-zinc-300 dark:text-zinc-600 flex-shrink-0" />
+            )}
+            <span className={feature.completed ? 'text-zinc-400 line-through' : 'text-zinc-600 dark:text-zinc-400'}>
+              {feature.name}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -273,76 +273,69 @@ export default function RoadmapPage() {
   const overallProgress = Math.round((completedFeatures / totalFeatures) * 100);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold">Roadmap</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          Scopri le funzionalita' in arrivo e lo stato di sviluppo della piattaforma
-        </p>
-      </div>
+    <div>
+      <PageHeader
+        title="Roadmap"
+        description="Scopri le funzionalita' in arrivo e lo stato di sviluppo della piattaforma"
+      />
 
-      {/* Overall Progress */}
-      <Card>
-        <CardContent className="p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Calendar className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold">Progresso Generale</h3>
-                <p className="text-sm text-muted-foreground">
-                  {completedFeatures} di {totalFeatures} funzionalita' completate
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Progress value={overallProgress} className="w-32 h-2" />
-              <span className="text-sm font-medium w-10">{overallProgress}%</span>
-            </div>
+      <div className="p-6 space-y-4">
+        {/* Stats row */}
+        <div className="grid grid-cols-3 gap-3">
+          <StatCard
+            label="Funzionalita' completate"
+            value={completedFeatures}
+            icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+          />
+          <StatCard
+            label="Totale funzionalita'"
+            value={totalFeatures}
+            icon={<Calendar className="h-4 w-4 text-zinc-400" />}
+          />
+          <StatCard
+            label="Progresso generale"
+            value={`${overallProgress}%`}
+            change={{ value: `${completedFeatures} di ${totalFeatures} completate` }}
+          />
+        </div>
+
+        {/* Legend */}
+        <div className="flex flex-wrap gap-4">
+          <div className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            <span className="text-xs text-zinc-500">Rilasciato</span>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Legend */}
-      <div className="flex flex-wrap gap-4 text-sm">
-        <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded-full bg-green-500" />
-          <span className="text-muted-foreground">Rilasciato</span>
+          <div className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-blue-500" />
+            <span className="text-xs text-zinc-500">In Sviluppo</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-zinc-300 dark:bg-zinc-600" />
+            <span className="text-xs text-zinc-500">Pianificato</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded-full bg-blue-500" />
-          <span className="text-muted-foreground">In Sviluppo</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded-full bg-gray-400" />
-          <span className="text-muted-foreground">Pianificato</span>
-        </div>
-      </div>
 
-      {/* Versions Grid */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {roadmapData.map((item) => (
-          <VersionCard key={item.version} item={item} />
-        ))}
-      </div>
+        {/* Versions Grid */}
+        <div className="grid gap-3 md:grid-cols-2">
+          {roadmapData.map((item) => (
+            <VersionCard key={item.version} item={item} />
+          ))}
+        </div>
 
-      {/* Feedback Section */}
-      <Card className="bg-muted/50">
-        <CardContent className="p-4 sm:p-6 text-center">
-          <h3 className="font-semibold mb-2">Hai suggerimenti?</h3>
-          <p className="text-sm text-muted-foreground mb-4">
+        {/* Feedback */}
+        <div className="bg-white dark:bg-[#0c0c0c] border border-zinc-200 dark:border-white/5 rounded-lg p-4 text-center">
+          <p className="text-sm font-medium text-zinc-900 dark:text-white mb-0.5">Hai suggerimenti?</p>
+          <p className="text-xs text-zinc-500 mb-3">
             Siamo sempre alla ricerca di feedback per migliorare la piattaforma.
           </p>
           <a
             href="mailto:support@webmaster-monitor.com?subject=Feedback%20Roadmap"
-            className="text-primary hover:underline text-sm font-medium"
+            className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline font-medium"
           >
             Invia il tuo feedback
           </a>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
