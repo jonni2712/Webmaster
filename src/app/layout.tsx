@@ -39,11 +39,6 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
-  },
   manifest: '/manifest.json',
   openGraph: {
     type: 'website',
@@ -52,20 +47,11 @@ export const metadata: Metadata = {
     siteName: 'Webmaster Monitor',
     title: 'Webmaster Monitor - Monitoraggio Siti Web 24/7',
     description: 'Piattaforma professionale di monitoraggio per siti WordPress e PrestaShop. Uptime, SSL, performance e notifiche in tempo reale.',
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'Webmaster Monitor - Monitoraggio Siti Web',
-      },
-    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Webmaster Monitor - Monitoraggio Siti Web 24/7',
     description: 'Piattaforma professionale di monitoraggio per siti WordPress e PrestaShop. Uptime, SSL, performance e notifiche in tempo reale.',
-    images: ['/og-image.png'],
     creator: '@webmastermon',
   },
   robots: {

@@ -4,23 +4,18 @@
   "description": "Piattaforma professionale di monitoraggio per siti WordPress e PrestaShop",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0f172a",
+  "background_color": "#0A0A0A",
+  "theme_color": "#10B981",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "48x48",
-      "type": "image/x-icon"
-    },
-    {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
+      "src": "/icon",
+      "sizes": "32x32",
       "type": "image/png"
     },
     {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
+      "src": "/apple-icon",
+      "sizes": "180x180",
       "type": "image/png"
     }
   ],
