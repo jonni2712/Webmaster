@@ -10,7 +10,8 @@ export const size = {
 };
 export const contentType = 'image/png';
 
-// Image generation
+// Image generation — matches the navbar logo exactly:
+// solid emerald-500 (#10B981) rounded square with white Activity icon
 export default function Icon() {
   return new ImageResponse(
     (
@@ -21,14 +22,13 @@ export default function Icon() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, #10B981 0%, #0EA5E9 100%)',
+          background: '#10B981',
           borderRadius: 7,
         }}
       >
-        {/* Activity/heartbeat icon as SVG paths */}
         <svg
-          width="22"
-          height="22"
+          width="20"
+          height="20"
           viewBox="0 0 24 24"
           fill="none"
           stroke="white"

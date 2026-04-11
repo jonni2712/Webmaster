@@ -3,14 +3,14 @@ import { ImageResponse } from 'next/og';
 export const runtime = 'edge';
 
 export const size = {
-  width: 180,
-  height: 180,
+  width: 192,
+  height: 192,
 };
 export const contentType = 'image/png';
 
-// Apple Touch Icon for iOS home screen.
+// 192x192 icon for Android home screen, PWA install, etc.
 // Matches the navbar logo: solid emerald-500 with white Activity icon.
-export default function AppleIcon() {
+export default function Icon192() {
   return new ImageResponse(
     (
       <div
@@ -21,12 +21,12 @@ export default function AppleIcon() {
           alignItems: 'center',
           justifyContent: 'center',
           background: '#10B981',
-          borderRadius: 40,
+          borderRadius: 42,
         }}
       >
         <svg
-          width="110"
-          height="110"
+          width="120"
+          height="120"
           viewBox="0 0 24 24"
           fill="none"
           stroke="white"
