@@ -7,6 +7,7 @@ import { AuthProvider } from '@/lib/auth/providers';
 import { Toaster } from '@/components/ui/sonner';
 import { CookieBanner } from '@/components/cookie-banner';
 import { Analytics } from '@vercel/analytics/next';
+import { GoogleAnalytics } from '@next/third-parties/google';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -108,6 +109,7 @@ export default function RootLayout({
           </ThemeProvider>
         </AuthProvider>
         <Analytics />
+        <GoogleAnalytics gaId="G-94L37D7TW9" />
       </body>
     </html>
   );
