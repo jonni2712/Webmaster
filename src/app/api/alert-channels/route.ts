@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { z } from 'zod';
+import { assertCanUseChannel, PlanLimitError } from '@/lib/billing/limits';
 
 const channelSchema = z.object({
   name: z.string().min(1),
@@ -85,6 +86,20 @@ export async function POST(request: NextRequest) {
         { error: 'Non hai i permessi per creare canali' },
         { status: 403 }
       );
+    }
+
+    // Enforce notification channel plan restriction.
+    const channelType = validation.data.type;
+    try {
+      await assertCanUseChannel(user.current_tenant_id, channelType);
+    } catch (err) {
+      if (err instanceof PlanLimitError) {
+        return NextResponse.json(
+          { error: `Il canale ${channelType} non e' disponibile con il tuo piano. Effettua l'upgrade.` },
+          { status: 403 }
+        );
+      }
+      throw err;
     }
 
     const { data, error } = await supabase

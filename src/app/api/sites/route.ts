@@ -6,7 +6,7 @@ import { processWordPressUpdates } from '@/lib/updates/processor';
 import { getSiteAccessFilter } from '@/lib/supabase/helpers';
 import { logActivity } from '@/lib/activity/logger';
 import { encrypt } from '@/lib/crypto';
-import { assertCanAddSite, PlanLimitError } from '@/lib/billing/limits';
+import { assertCanAddSite, clampCheckInterval, PlanLimitError } from '@/lib/billing/limits';
 import { z } from 'zod';
 
 const siteSchema = z.object({
@@ -21,6 +21,7 @@ const siteSchema = z.object({
   performance_check_enabled: z.boolean().optional().default(true),
   updates_check_enabled: z.boolean().optional().default(true),
   ecommerce_check_enabled: z.boolean().optional().default(false),
+  check_interval: z.number().int().min(1).optional(),
   tags: z.array(z.string()).optional().default([]),
   notes: z.string().optional(),
   // Domain management fields
@@ -196,6 +197,13 @@ export async function POST(request: NextRequest) {
         );
       }
       throw err;
+    }
+
+    // Clamp check interval to the plan minimum so tenants cannot set a
+    // polling frequency faster than their plan allows.
+    if (typeof validation.data.check_interval === 'number') {
+      (validation.data as Record<string, unknown>).check_interval =
+        await clampCheckInterval(user.current_tenant_id, validation.data.check_interval);
     }
 
     const {

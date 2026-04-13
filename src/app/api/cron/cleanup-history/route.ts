@@ -146,6 +146,48 @@ async function deleteOldResolvedAlerts(
   return totalDeleted;
 }
 
+async function deleteOldActivityLogs(
+  supabase: ReturnType<typeof createAdminClient>,
+  tenantId: string,
+  cutoffIso: string
+): Promise<number> {
+  // Delete all activity log entries older than the retention cutoff.
+  // activity_logs carries tenant_id directly so no site join is needed.
+  let totalDeleted = 0;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const { data: doomed, error: selectError } = await supabase
+      .from('activity_logs')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .lt('created_at', cutoffIso)
+      .limit(BATCH_SIZE);
+
+    if (selectError) {
+      console.error('[cleanup-history] select activity_logs failed:', selectError);
+      break;
+    }
+    if (!doomed || doomed.length === 0) break;
+
+    const ids = doomed.map((r) => (r as { id: string }).id);
+
+    const { error: deleteError, count } = await supabase
+      .from('activity_logs')
+      .delete({ count: 'exact' })
+      .in('id', ids);
+
+    if (deleteError) {
+      console.error('[cleanup-history] delete activity_logs failed:', deleteError);
+      break;
+    }
+
+    totalDeleted += count ?? ids.length;
+    if (doomed.length < BATCH_SIZE) break;
+  }
+
+  return totalDeleted;
+}
+
 export async function GET(request: Request) {
   // Verify Vercel Cron secret
   const authHeader = request.headers.get('authorization');
@@ -214,6 +256,13 @@ export async function GET(request: Request) {
 
       // Alerts are tenant-scoped directly.
       deletedByTable['alerts'] = await deleteOldResolvedAlerts(
+        supabase,
+        tenantId,
+        cutoffIso
+      );
+
+      // Activity logs are tenant-scoped directly.
+      deletedByTable['activity_logs'] = await deleteOldActivityLogs(
         supabase,
         tenantId,
         cutoffIso

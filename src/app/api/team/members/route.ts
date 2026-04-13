@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logActivity } from '@/lib/activity/logger';
+import { assertCanAddTeamMember, PlanLimitError } from '@/lib/billing/limits';
 import { sendEmail } from '@/lib/email/client';
 import { TeamInviteTemplate } from '@/lib/email/templates/team-invite';
 import { absoluteUrl } from '@/lib/urls';
@@ -142,6 +143,19 @@ export async function POST(request: NextRequest) {
         { error: 'Non hai i permessi per invitare membri' },
         { status: 403 }
       );
+    }
+
+    // Enforce team member limit before creating an invitation.
+    try {
+      await assertCanAddTeamMember(user.current_tenant_id);
+    } catch (err) {
+      if (err instanceof PlanLimitError) {
+        return NextResponse.json(
+          { error: `Limite del piano raggiunto: ${err.current}/${err.max} membri del team. Aggiorna il piano per aggiungerne altri.` },
+          { status: 403 }
+        );
+      }
+      throw err;
     }
 
     const body = await request.json();

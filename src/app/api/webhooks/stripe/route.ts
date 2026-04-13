@@ -2,7 +2,23 @@ import { NextRequest } from 'next/server';
 import { stripe } from '@/lib/stripe/client';
 import { syncSubscriptionToTenant } from '@/lib/stripe/helpers';
 import { createAdminClient } from '@/lib/supabase/admin';
+import {
+  sendUpgradeEmail,
+  sendCancellationEmail,
+  sendPaymentFailedEmail,
+} from '@/lib/email/billing-emails';
 import type Stripe from 'stripe';
+
+async function getTenantOwnerEmail(tenantId: string): Promise<string | null> {
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from('user_tenants')
+    .select('users(email)')
+    .eq('tenant_id', tenantId)
+    .eq('role', 'owner')
+    .single();
+  return (data?.users as { email?: string } | null)?.email ?? null;
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.text(); // RAW text — required for Stripe signature verification
@@ -57,6 +73,25 @@ export async function POST(request: NextRequest) {
         );
 
         console.log(`[stripe webhook] checkout.session.completed: synced subscription ${subscriptionId} for customer ${customerId}`);
+
+        // Send upgrade confirmation email
+        try {
+          const supabase = createAdminClient();
+          const { data: tenant } = await supabase
+            .from('tenants')
+            .select('id, plan_id')
+            .eq('stripe_customer_id', customerId)
+            .single();
+          if (tenant) {
+            const email = await getTenantOwnerEmail(tenant.id);
+            if (email) {
+              await sendUpgradeEmail(email, tenant.plan_id ?? 'Pro');
+            }
+          }
+        } catch (emailErr) {
+          console.error('[stripe webhook] checkout.session.completed: failed to send upgrade email', emailErr);
+        }
+
         break;
       }
 
@@ -107,6 +142,17 @@ export async function POST(request: NextRequest) {
           .eq('id', tenant.id);
 
         console.log(`[stripe webhook] customer.subscription.deleted: tenant ${tenant.id} downgraded to free`);
+
+        // Send cancellation confirmation email
+        try {
+          const email = await getTenantOwnerEmail(tenant.id);
+          if (email) {
+            await sendCancellationEmail(email);
+          }
+        } catch (emailErr) {
+          console.error('[stripe webhook] customer.subscription.deleted: failed to send cancellation email', emailErr);
+        }
+
         break;
       }
 
@@ -136,6 +182,16 @@ export async function POST(request: NextRequest) {
               .eq('id', tenant.id);
 
             console.log(`[stripe webhook] invoice.payment_failed: tenant ${tenant.id} marked as past_due`);
+
+            // Send payment failed notification email
+            try {
+              const email = await getTenantOwnerEmail(tenant.id);
+              if (email) {
+                await sendPaymentFailedEmail(email);
+              }
+            } catch (emailErr) {
+              console.error('[stripe webhook] invoice.payment_failed: failed to send payment failed email', emailErr);
+            }
           }
         }
         break;

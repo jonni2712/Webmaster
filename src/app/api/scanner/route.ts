@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { assertHasFeature, PlanLimitError } from '@/lib/billing/limits';
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
@@ -11,6 +12,19 @@ export async function GET(request: Request) {
 
   const user = session.user as { current_tenant_id?: string };
   const supabase = createAdminClient();
+
+  // Enforce scanner feature gate.
+  try {
+    await assertHasFeature(user.current_tenant_id!, 'scanner');
+  } catch (err) {
+    if (err instanceof PlanLimitError) {
+      return NextResponse.json(
+        { ok: false, error: "Funzionalita' scanner non disponibile con il tuo piano. Effettua l'upgrade." },
+        { status: 403 }
+      );
+    }
+    throw err;
+  }
 
   const { data, error } = await supabase
     .from('external_scan_results')

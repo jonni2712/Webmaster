@@ -6,6 +6,7 @@ import { userCanAccessSite } from '@/lib/supabase/helpers';
 import { logActivity } from '@/lib/activity/logger';
 import { encrypt } from '@/lib/crypto';
 import { z } from 'zod';
+import { clampCheckInterval, PlanLimitError } from '@/lib/billing/limits';
 
 const alertSettingsSchema = z.object({
   alerts_enabled: z.boolean(),
@@ -28,6 +29,7 @@ const updateSiteSchema = z.object({
   performance_check_enabled: z.boolean().optional(),
   updates_check_enabled: z.boolean().optional(),
   ecommerce_check_enabled: z.boolean().optional(),
+  check_interval: z.number().int().min(1).optional(),
   tags: z.array(z.string()).optional(),
   notes: z.string().optional(),
   alert_settings: alertSettingsSchema.optional(),
@@ -180,6 +182,13 @@ export async function PUT(
 
     if (!existingSite) {
       return NextResponse.json({ error: 'Site not found' }, { status: 404 });
+    }
+
+    // Clamp check interval to the plan minimum so tenants cannot set a
+    // polling frequency faster than their plan allows.
+    if (typeof validation.data.check_interval === 'number') {
+      (validation.data as Record<string, unknown>).check_interval =
+        await clampCheckInterval(user.current_tenant_id, validation.data.check_interval);
     }
 
     const {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth/config';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { assertHasFeature, PlanLimitError } from '@/lib/billing/limits';
 import { collectDomains } from '@/lib/scanner/domain-collector';
 import { scanDns } from '@/lib/scanner/dns-scanner';
 import { scanSsl } from '@/lib/scanner/ssl-scanner';
@@ -20,6 +21,19 @@ export async function GET(request: Request, { params }: RouteContext) {
   const { domain } = await params;
   const user = session.user as { current_tenant_id?: string };
   const supabase = createAdminClient();
+
+  // Enforce scanner feature gate.
+  try {
+    await assertHasFeature(user.current_tenant_id!, 'scanner');
+  } catch (err) {
+    if (err instanceof PlanLimitError) {
+      return NextResponse.json(
+        { ok: false, error: "Funzionalita' scanner non disponibile con il tuo piano. Effettua l'upgrade." },
+        { status: 403 }
+      );
+    }
+    throw err;
+  }
 
   const { data, error } = await supabase
     .from('external_scan_results')
@@ -47,6 +61,19 @@ export async function POST(request: Request, { params }: RouteContext) {
   const user = session.user as { current_tenant_id?: string };
   const tenantId = user.current_tenant_id!;
   const supabase = createAdminClient();
+
+  // Enforce scanner feature gate.
+  try {
+    await assertHasFeature(tenantId, 'scanner');
+  } catch (err) {
+    if (err instanceof PlanLimitError) {
+      return NextResponse.json(
+        { ok: false, error: "Funzionalita' scanner non disponibile con il tuo piano. Effettua l'upgrade." },
+        { status: 403 }
+      );
+    }
+    throw err;
+  }
 
   // Find the domain entry
   const domains = await collectDomains(tenantId);
