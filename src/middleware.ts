@@ -72,6 +72,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Salta controllo per Stripe webhook (deve essere accessibile senza autenticazione)
+  if (pathname === '/api/webhooks/stripe') {
+    return NextResponse.next();
+  }
+
   // Salta controllo per agent routes che usano Bearer token auth (non NextAuth session)
   // /api/agent/register e /api/agent/imports richiedono sessione utente e NON sono qui
   if (

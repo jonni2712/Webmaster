@@ -21,11 +21,13 @@ import {
   Trash2,
   Save,
   RefreshCw,
+  CreditCard,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout/page-header';
 import { ChannelFormDialog } from '@/components/settings/channel-form-dialog';
 import { DigestPreferencesForm } from '@/components/settings/digest-preferences-form';
+import { BillingTab } from '@/components/settings/billing-tab';
 import {
   TeamMembersList,
   InviteMemberDialog,
@@ -241,6 +243,10 @@ export default function SettingsPage() {
             <Users className="h-3.5 w-3.5" />
             Team
           </TabsTrigger>
+          <TabsTrigger value="billing" className="flex items-center gap-1.5 text-xs sm:text-sm px-3">
+            <CreditCard className="h-3.5 w-3.5" />
+            Abbonamento
+          </TabsTrigger>
         </TabsList>
 
         {/* Profile Tab */}
@@ -398,6 +404,11 @@ export default function SettingsPage() {
               </div>
               <DigestPreferencesForm userEmail={session?.user?.email || ''} />
             </div>
+        </TabsContent>
+
+        {/* Billing Tab */}
+        <TabsContent value="billing">
+          <BillingTab />
         </TabsContent>
 
         {/* Team Tab */}
