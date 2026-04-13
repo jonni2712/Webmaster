@@ -16,8 +16,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_tenants_stripe_customer
 CREATE UNIQUE INDEX IF NOT EXISTS idx_tenants_stripe_subscription
   ON tenants(stripe_subscription_id) WHERE stripe_subscription_id IS NOT NULL;
 
--- Update the tenant_plan_limits view to include stripe columns
-CREATE OR REPLACE VIEW tenant_plan_limits AS
+-- Recreate the tenant_plan_limits view with stripe columns.
+-- Must DROP first because CREATE OR REPLACE cannot reorder columns.
+DROP VIEW IF EXISTS tenant_plan_limits;
+CREATE VIEW tenant_plan_limits AS
 SELECT
     t.id                          AS tenant_id,
     t.name                        AS tenant_name,
