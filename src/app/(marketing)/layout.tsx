@@ -9,7 +9,7 @@ export default function MarketingLayout({
   return (
     <div className="landing-dark min-h-screen bg-[#0A0A0A] text-white">
       <MarketingNavbar />
-      <main>{children}</main>
+      <main id="main-content">{children}</main>
       <MarketingFooter />
     </div>
   );

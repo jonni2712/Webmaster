@@ -41,6 +41,7 @@ export function MarketingNavbar({ links = defaultLinks }: MarketingNavbarProps) 
 
   return (
     <nav
+      aria-label="Navigazione principale"
       className={`sticky top-0 z-50 transition-all duration-300 ${
         scrolled
           ? 'bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-white/5'

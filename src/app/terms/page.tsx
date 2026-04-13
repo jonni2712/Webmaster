@@ -205,7 +205,35 @@ export default function TermsPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">14. Contatti</h2>
+            <h2 className="text-xl font-semibold mb-4">14. Abbonamenti e Pagamenti</h2>
+            <p className="text-muted-foreground mb-4">
+              I piani a pagamento (Pro, Business, Agency) prevedono un periodo di prova gratuito
+              di 14 giorni. Al termine del periodo di prova, l'abbonamento si rinnova
+              automaticamente al prezzo del piano selezionato.
+            </p>
+            <p className="text-muted-foreground mb-4">
+              Puoi cancellare l'abbonamento in qualsiasi momento dalla sezione Impostazioni &gt;
+              Abbonamento. La cancellazione ha effetto alla fine del periodo di fatturazione corrente.
+            </p>
+            <p className="text-muted-foreground mb-4">
+              In caso di mancato pagamento, l'account verra' declassato al piano Starter gratuito
+              dopo 7 giorni di grazia.
+            </p>
+            <p className="text-muted-foreground">
+              I prezzi possono essere modificati con preavviso di 30 giorni via email.
+            </p>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">15. Rimborsi</h2>
+            <p className="text-muted-foreground">
+              Non offriamo rimborsi per periodi parziali. Se cancelli a meta' del mese, hai accesso
+              alle funzionalita' del piano fino alla fine del periodo gia' pagato.
+            </p>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">16. Contatti</h2>
             <p className="text-muted-foreground">
               Per domande sui Termini di Servizio, contattaci a:
               <a href="mailto:legal@webmaster-monitor.com" className="text-primary hover:underline ml-1">legal@webmaster-monitor.com</a>

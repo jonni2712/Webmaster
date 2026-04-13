@@ -172,6 +172,24 @@ export default function PrivacyPage() {
               dei Dati Personali (www.garanteprivacy.it).
             </p>
           </section>
+
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">12. Pagamenti e Fatturazione</h2>
+            <p className="text-muted-foreground mb-4">
+              I pagamenti sono gestiti da Stripe Inc., un fornitore certificato PCI-DSS Livello 1.
+            </p>
+            <p className="text-muted-foreground mb-4">
+              Non conserviamo i dati della tua carta di credito sui nostri server. Tutte le
+              informazioni di pagamento sono gestite direttamente da Stripe.
+            </p>
+            <p className="text-muted-foreground mb-4">
+              I dati condivisi con Stripe includono: nome, email, indirizzo di fatturazione.
+            </p>
+            <p className="text-muted-foreground">
+              Per maggiori informazioni, consulta la Privacy Policy di Stripe:
+              <a href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline ml-1">https://stripe.com/privacy</a>
+            </p>
+          </section>
         </div>
       </main>
 
