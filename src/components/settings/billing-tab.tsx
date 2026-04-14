@@ -7,6 +7,8 @@ import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { AlertCircle, CreditCard, ExternalLink, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { BillingInfoForm } from './billing-info-form';
 
 interface BillingData {
   plan: {
@@ -146,6 +148,18 @@ export function BillingTab() {
       .then((data) => setBilling(data))
       .catch(() => setError(true))
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'true') {
+      toast.success('Abbonamento attivato con successo!');
+      window.history.replaceState({}, '', '/settings?tab=billing');
+    }
+    if (params.get('canceled') === 'true') {
+      toast('Checkout annullato', { description: 'Puoi riprovare quando vuoi.' });
+      window.history.replaceState({}, '', '/settings?tab=billing');
+    }
   }, []);
 
   async function handleUpgrade(planId: string) {
@@ -361,6 +375,11 @@ export function BillingTab() {
           />
         </div>
       </div>
+
+      {/* Italian Billing Info Form — only shown once user has a Stripe subscription */}
+      {billing?.subscription?.stripeSubscriptionId && (
+        <BillingInfoForm />
+      )}
 
       {/* Plan Comparison Grid */}
       <div

@@ -129,11 +129,17 @@ export async function POST(request: NextRequest) {
         ...(hadPreviousSub ? {} : { trial_period_days: 14 }),
         metadata: { tenant_id: tenantId, plan_id: planId },
       },
-      // Prevent duplicate customers from being created
+      // Collect billing address (required for invoicing)
+      billing_address_collection: 'required',
+      // Allow users to enter VAT/Tax ID during checkout
+      tax_id_collection: { enabled: true },
+      // Auto-update customer name and address from checkout
       customer_update: {
-        address: 'auto',
         name: 'auto',
+        address: 'auto',
       },
+      // Allow promotional codes
+      allow_promotion_codes: true,
       success_url: `${appUrl}/settings?tab=billing&success=true`,
       cancel_url: `${appUrl}/settings?tab=billing&canceled=true`,
       metadata: { tenant_id: tenantId },
