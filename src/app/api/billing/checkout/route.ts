@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
   });
   const hadPreviousSub = existingSubs.data.length > 0;
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://webmaster-monitor.it';
 
   try {
     const checkoutSession = await stripe.checkout.sessions.create({

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -54,6 +55,8 @@ const channelIcons = {
 };
 
 export default function SettingsPage() {
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'profile';
   const { data: session, status, update } = useSession();
 
   const [loading, setLoading] = useState(false);
@@ -225,7 +228,7 @@ export default function SettingsPage() {
       />
 
       <div className="p-6 space-y-6">
-      <Tabs defaultValue="profile" className="space-y-6">
+      <Tabs defaultValue={initialTab} className="space-y-6">
         <TabsList className="w-full sm:w-auto flex flex-wrap h-auto gap-1 p-1">
           <TabsTrigger value="profile" className="flex items-center gap-1.5 text-xs sm:text-sm px-3">
             <User className="h-3.5 w-3.5" />

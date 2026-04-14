@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Nessun abbonamento attivo' }, { status: 400 });
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://webmaster-monitor.it';
 
   // Create Stripe Customer Portal session
   let portalSession: Awaited<ReturnType<typeof stripe.billingPortal.sessions.create>>;
