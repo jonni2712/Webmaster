@@ -9,6 +9,14 @@ import type { PlanId } from '@/lib/billing/plans';
 
 const PAID_PLANS: PlanId[] = ['pro', 'business', 'agency'];
 
+// Annual Stripe price IDs (created by scripts/stripe-setup-products.mjs).
+// Monthly prices live in the DB (plans.stripe_price_id).
+const ANNUAL_PRICE_IDS: Record<string, string> = {
+  pro: 'price_1TLgsWRvnkGxlG3g0bHlCxbh',       // €180/year
+  business: 'price_1TLgsXRvnkGxlG3gXOta0jwv',  // €492/year
+  agency: 'price_1TLgsXRvnkGxlG3gZEwvfBTd',    // €1308/year
+};
+
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -70,6 +78,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Prezzo Stripe non configurato' }, { status: 500 });
     }
 
+    // Use annual price if requested, otherwise monthly
+    const targetPriceId = annual ? ANNUAL_PRICE_IDS[planId] : plan.stripePriceId;
+    if (annual && !targetPriceId) {
+      return NextResponse.json({ error: 'Prezzo annuale non disponibile' }, { status: 500 });
+    }
+
     try {
       // Get current subscription to find the item ID
       const sub = await stripe.subscriptions.retrieve(tenant.stripe_subscription_id);
@@ -81,7 +95,7 @@ export async function POST(request: NextRequest) {
 
       // Update the subscription (prorate by default)
       await stripe.subscriptions.update(tenant.stripe_subscription_id, {
-        items: [{ id: itemId, price: plan.stripePriceId }],
+        items: [{ id: itemId, price: targetPriceId }],
         proration_behavior: 'create_prorations',
         metadata: { tenant_id: tenantId, plan_id: planId },
       });
@@ -99,6 +113,12 @@ export async function POST(request: NextRequest) {
   const plan = await getPlan(planId as PlanId);
   if (!plan?.stripePriceId) {
     return NextResponse.json({ error: 'Prezzo Stripe non configurato' }, { status: 500 });
+  }
+
+  // Use annual price if requested, otherwise monthly (from DB)
+  const stripePriceId = annual ? ANNUAL_PRICE_IDS[planId] : plan.stripePriceId;
+  if (annual && !stripePriceId) {
+    return NextResponse.json({ error: 'Prezzo annuale non disponibile' }, { status: 500 });
   }
 
   let customerId: string;
@@ -123,7 +143,7 @@ export async function POST(request: NextRequest) {
     const checkoutSession = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
-      line_items: [{ price: plan.stripePriceId, quantity: 1 }],
+      line_items: [{ price: stripePriceId, quantity: 1 }],
       subscription_data: {
         // Only give trial if this is truly a first-time subscriber
         ...(hadPreviousSub ? {} : { trial_period_days: 14 }),

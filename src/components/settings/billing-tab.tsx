@@ -31,36 +31,32 @@ interface BillingData {
 
 const PLANS = [
   {
-    id: 'starter',
+    id: 'free',
     name: 'Starter',
-    priceEurCents: 0,
-    maxSites: 3,
-    maxTeamMembers: 1,
-    features: ['3 siti', '1 membro', 'Monitoraggio base', 'Notifiche email'],
+    priceMonthly: 0,
+    priceAnnual: 0,
+    features: ['5 siti', 'Check ogni 15 min', 'Notifiche email', 'Storico 7 giorni'],
   },
   {
     id: 'pro',
     name: 'Pro',
-    priceEurCents: 1900,
-    maxSites: 25,
-    maxTeamMembers: 5,
-    features: ['25 siti', '5 membri', 'SSL & WHOIS', 'Slack, Telegram'],
+    priceMonthly: 19,
+    priceAnnual: 15,
+    features: ['30 siti', 'Check ogni 5 min', 'Multi-canale', 'Scanner DNS/SSL', 'Team 5 membri'],
   },
   {
     id: 'business',
     name: 'Business',
-    priceEurCents: 4900,
-    maxSites: 100,
-    maxTeamMembers: 15,
-    features: ['100 siti', '15 membri', 'API access', 'Priorità supporto'],
+    priceMonthly: 49,
+    priceAnnual: 41,
+    features: ['100 siti', 'Check ogni 3 min', 'CRM clienti', 'API pubblica', 'Team 10 membri'],
   },
   {
     id: 'agency',
     name: 'Agency',
-    priceEurCents: 9900,
-    maxSites: -1,
-    maxTeamMembers: -1,
-    features: ['Siti illimitati', 'Team illimitato', 'White label', 'SLA garantito'],
+    priceMonthly: 129,
+    priceAnnual: 109,
+    features: ['300 siti', 'Check ogni 1 min', 'Agent cPanel', 'API avanzata', 'Team 50 membri'],
   },
 ];
 
@@ -138,6 +134,7 @@ export function BillingTab() {
   const [error, setError] = useState(false);
   const [upgrading, setUpgrading] = useState<string | null>(null);
   const [managingPortal, setManagingPortal] = useState(false);
+  const [annual, setAnnual] = useState(false);
 
   useEffect(() => {
     fetch('/api/billing/current')
@@ -168,7 +165,7 @@ export function BillingTab() {
       const res = await fetch('/api/billing/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId, annual: false }),
+        body: JSON.stringify({ planId, annual }),
       });
       const data = await res.json();
       if (data.url) {
@@ -386,13 +383,39 @@ export function BillingTab() {
         id="billing-plan-grid"
         className="bg-white dark:bg-[#0c0c0c] border border-zinc-200 dark:border-white/5 rounded-lg overflow-hidden"
       >
-        <div className="px-6 py-4 border-b border-zinc-100 dark:border-white/5">
-          <p className="text-sm font-semibold text-zinc-900 dark:text-white">
-            Confronto piani
-          </p>
-          <p className="text-xs text-zinc-500 mt-0.5">
-            Scegli il piano più adatto alle tue esigenze
-          </p>
+        <div className="px-6 py-4 border-b border-zinc-100 dark:border-white/5 flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <p className="text-sm font-semibold text-zinc-900 dark:text-white">
+              Confronto piani
+            </p>
+            <p className="text-xs text-zinc-500 mt-0.5">
+              Scegli il piano più adatto alle tue esigenze
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-xs">
+            <span className={cn(!annual ? 'text-zinc-900 dark:text-white font-medium' : 'text-zinc-500')}>
+              Mensile
+            </span>
+            <button
+              onClick={() => setAnnual(!annual)}
+              className={cn(
+                'relative w-10 h-5 rounded-full transition-colors',
+                annual ? 'bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-700'
+              )}
+              aria-label="Toggle mensile/annuale"
+            >
+              <span
+                className={cn(
+                  'absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform',
+                  annual && 'translate-x-5'
+                )}
+              />
+            </button>
+            <span className={cn(annual ? 'text-zinc-900 dark:text-white font-medium' : 'text-zinc-500')}>
+              Annuale
+            </span>
+            <span className="text-emerald-600 dark:text-emerald-400 font-medium">-17%</span>
+          </div>
         </div>
 
         <div className="grid grid-cols-4 divide-x divide-zinc-100 dark:divide-white/5">
@@ -400,10 +423,8 @@ export function BillingTab() {
             const isCurrent = plan.id === currentPlanId;
             const isHigher = idx > currentPlanIndex;
             const isLower = idx < currentPlanIndex;
-            const planPrice =
-              plan.priceEurCents === 0
-                ? 'Gratuito'
-                : `€${(plan.priceEurCents / 100).toFixed(0)}/mo`;
+            const displayPrice = annual ? plan.priceAnnual : plan.priceMonthly;
+            const planPrice = displayPrice === 0 ? 'Gratuito' : `€${displayPrice}/mo`;
 
             return (
               <div
