@@ -62,6 +62,24 @@ export async function POST(request: NextRequest) {
           break;
         }
 
+        // Persisti SDI/PEC compilati nei custom_fields su customer.metadata
+        // per essere riutilizzati nei checkout futuri (prefill).
+        try {
+          const sdiField = checkoutSession.custom_fields?.find((f) => f.key === 'sdi_code');
+          const pecField = checkoutSession.custom_fields?.find((f) => f.key === 'pec_email');
+          const sdiVal = sdiField?.text?.value?.trim();
+          const pecVal = pecField?.text?.value?.trim();
+          const metadataUpdate: Record<string, string> = {};
+          if (sdiVal) metadataUpdate.sdi_code = sdiVal;
+          if (pecVal) metadataUpdate.pec_email = pecVal;
+          if (Object.keys(metadataUpdate).length > 0) {
+            await stripe.customers.update(customerId, { metadata: metadataUpdate });
+            console.log(`[stripe webhook] persisted fiscal fields on customer ${customerId}:`, Object.keys(metadataUpdate));
+          }
+        } catch (fiscalErr) {
+          console.error('[stripe webhook] failed to persist fiscal fields on customer', fiscalErr);
+        }
+
         // Retrieve the subscription to get full details (price, status, trial)
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
         const priceId = subscription.items.data[0]?.price?.id ?? null;

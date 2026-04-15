@@ -6,6 +6,7 @@ import { stripe } from '@/lib/stripe/client';
 import { getOrCreateStripeCustomer } from '@/lib/stripe/helpers';
 import { getPlan } from '@/lib/billing/plans';
 import type { PlanId } from '@/lib/billing/plans';
+import type Stripe from 'stripe';
 
 const PAID_PLANS: PlanId[] = ['pro', 'business', 'agency'];
 
@@ -94,10 +95,20 @@ export async function POST(request: NextRequest) {
       }
 
       // Update the subscription (prorate by default)
+      // Propaghiamo i metadati di fatturazione centralizzata anche su upgrade,
+      // così invoice.paid del ciclo prorazionale genera FatturaPA.
       await stripe.subscriptions.update(tenant.stripe_subscription_id, {
         items: [{ id: itemId, price: targetPriceId }],
         proration_behavior: 'create_prorations',
-        metadata: { tenant_id: tenantId, plan_id: planId },
+        metadata: {
+          tenant_id: tenantId,
+          plan_id: planId,
+          project_code: 'WEBMASTER-MONITOR',
+          source_app: 'webmaster-monitor.it',
+          order_reference: `WM-${tenantId}-${planId}-${annual ? 'yr' : 'mo'}-upgrade-${Date.now()}`,
+          customer_type: 'business',
+          fiscal_profile: 'b2b',
+        },
       });
 
       // The webhook will handle updating the DB when Stripe confirms
@@ -137,7 +148,71 @@ export async function POST(request: NextRequest) {
   });
   const hadPreviousSub = existingSubs.data.length > 0;
 
+  // Pre-compila dati fiscali noti dal Customer Stripe per evitare
+  // che il cliente li reinserisca ad ogni checkout.
+  // Fonti: customer.name (ragione sociale), customer.tax_ids[] (P.IVA),
+  //        customer.metadata.sdi_code, customer.metadata.pec_email.
+  let prefilledFiscal: {
+    legal_name?: string;
+    vat_number?: string;
+    sdi_code?: string;
+    pec_email?: string;
+  } = {};
+  try {
+    const customer = await stripe.customers.retrieve(customerId, {
+      expand: ['tax_ids'],
+    });
+    if (customer && !customer.deleted) {
+      const euVat = (customer.tax_ids?.data || []).find(
+        (t) => t.type === 'eu_vat'
+      );
+      prefilledFiscal = {
+        ...(customer.name ? { legal_name: customer.name } : {}),
+        ...(euVat?.value ? { vat_number: String(euVat.value).replace(/^IT/i, '') } : {}),
+        ...(customer.metadata?.sdi_code ? { sdi_code: customer.metadata.sdi_code } : {}),
+        ...(customer.metadata?.pec_email ? { pec_email: customer.metadata.pec_email } : {}),
+      };
+    }
+  } catch (err) {
+    console.warn('[billing/checkout] prefill fiscal data failed (non-fatal):', err);
+  }
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'https://webmaster-monitor.it';
+
+  // ── Metadata per fatturazione centralizzata (billings.i-creativi.it) ──
+  // Il backend di fatturazione riceve gli stessi webhook Stripe e genera
+  // la FatturaPA automaticamente usando questi metadata.
+  // Il nostro webhook /api/webhooks/stripe resta indipendente (gestisce DB interno).
+  const billingMetadata: Record<string, string> = {
+    project_code: 'WEBMASTER-MONITOR',
+    source_app: 'webmaster-monitor.it',
+    order_reference: `WM-${tenantId}-${planId}-${annual ? 'yr' : 'mo'}-${Date.now()}`,
+    customer_type: 'business',
+    fiscal_profile: 'b2b',
+    ...prefilledFiscal, // legal_name / vat_number / sdi_code / pec_email dal Customer Stripe
+  };
+
+  // I custom_fields Stripe vengono mostrati solo se i dati NON sono già
+  // noti dal Customer. Così per i cliente ricorrenti il form è più pulito.
+  type CustomField = NonNullable<Stripe.Checkout.SessionCreateParams['custom_fields']>[number];
+  const customFields: CustomField[] = [];
+  if (!prefilledFiscal.sdi_code) {
+    customFields.push({
+      key: 'sdi_code',
+      label: { type: 'custom', custom: 'Codice SDI (se azienda)' },
+      type: 'text',
+      optional: true,
+      text: { minimum_length: 6, maximum_length: 7 },
+    });
+  }
+  if (!prefilledFiscal.pec_email) {
+    customFields.push({
+      key: 'pec_email',
+      label: { type: 'custom', custom: 'PEC fattura (se azienda)' },
+      type: 'text',
+      optional: true,
+    });
+  }
 
   try {
     const checkoutSession = await stripe.checkout.sessions.create({
@@ -147,22 +222,19 @@ export async function POST(request: NextRequest) {
       subscription_data: {
         // Only give trial if this is truly a first-time subscriber
         ...(hadPreviousSub ? {} : { trial_period_days: 14 }),
-        metadata: { tenant_id: tenantId, plan_id: planId },
+        metadata: { tenant_id: tenantId, plan_id: planId, ...billingMetadata },
       },
-      // Collect billing address (required for invoicing)
       billing_address_collection: 'required',
-      // Allow users to enter VAT/Tax ID during checkout
       tax_id_collection: { enabled: true },
-      // Auto-update customer name and address from checkout
       customer_update: {
         name: 'auto',
         address: 'auto',
       },
-      // Allow promotional codes
+      ...(customFields.length > 0 ? { custom_fields: customFields } : {}),
       allow_promotion_codes: true,
       success_url: `${appUrl}/settings?tab=billing&success=true`,
       cancel_url: `${appUrl}/settings?tab=billing&canceled=true`,
-      metadata: { tenant_id: tenantId },
+      metadata: { tenant_id: tenantId, ...billingMetadata },
     });
 
     return NextResponse.json({ url: checkoutSession.url }, { status: 200 });
