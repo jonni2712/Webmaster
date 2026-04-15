@@ -97,6 +97,8 @@ export async function POST(request: NextRequest) {
       // Update the subscription (prorate by default)
       // Propaghiamo i metadati di fatturazione centralizzata anche su upgrade,
       // così invoice.paid del ciclo prorazionale genera FatturaPA.
+      // customer_type/fiscal_profile sono AUTO-DETECT dal backend billing:
+      // P.IVA presente → business, solo CF → private, niente → receipt-only.
       await stripe.subscriptions.update(tenant.stripe_subscription_id, {
         items: [{ id: itemId, price: targetPriceId }],
         proration_behavior: 'create_prorations',
@@ -106,8 +108,6 @@ export async function POST(request: NextRequest) {
           project_code: 'WEBMASTER-MONITOR',
           source_app: 'webmaster-monitor.it',
           order_reference: `WM-${tenantId}-${planId}-${annual ? 'yr' : 'mo'}-upgrade-${Date.now()}`,
-          customer_type: 'business',
-          fiscal_profile: 'b2b',
         },
       });
 
@@ -155,6 +155,7 @@ export async function POST(request: NextRequest) {
   let prefilledFiscal: {
     legal_name?: string;
     vat_number?: string;
+    tax_code?: string;
     sdi_code?: string;
     pec_email?: string;
   } = {};
@@ -169,6 +170,7 @@ export async function POST(request: NextRequest) {
       prefilledFiscal = {
         ...(customer.name ? { legal_name: customer.name } : {}),
         ...(euVat?.value ? { vat_number: String(euVat.value).replace(/^IT/i, '') } : {}),
+        ...(customer.metadata?.tax_code ? { tax_code: customer.metadata.tax_code } : {}),
         ...(customer.metadata?.sdi_code ? { sdi_code: customer.metadata.sdi_code } : {}),
         ...(customer.metadata?.pec_email ? { pec_email: customer.metadata.pec_email } : {}),
       };
@@ -187,15 +189,26 @@ export async function POST(request: NextRequest) {
     project_code: 'WEBMASTER-MONITOR',
     source_app: 'webmaster-monitor.it',
     order_reference: `WM-${tenantId}-${planId}-${annual ? 'yr' : 'mo'}-${Date.now()}`,
-    customer_type: 'business',
-    fiscal_profile: 'b2b',
-    ...prefilledFiscal, // legal_name / vat_number / sdi_code / pec_email dal Customer Stripe
+    // customer_type è auto-detect dal backend billing:
+    //   - P.IVA tax_id compilata  → business
+    //   - solo CF compilato       → private
+    //   - entrambi vuoti          → private
+    ...prefilledFiscal, // legal_name / vat_number / tax_code / sdi_code / pec_email dal Customer Stripe
   };
 
-  // I custom_fields Stripe vengono mostrati solo se i dati NON sono già
-  // noti dal Customer. Così per i cliente ricorrenti il form è più pulito.
+  // Custom fields Stripe (max 3). Mostrati solo se i dati NON sono già
+  // noti dal Customer — per i clienti ricorrenti il form è più pulito.
   type CustomField = NonNullable<Stripe.Checkout.SessionCreateParams['custom_fields']>[number];
   const customFields: CustomField[] = [];
+  if (!prefilledFiscal.tax_code) {
+    customFields.push({
+      key: 'tax_code',
+      label: { type: 'custom', custom: 'Codice Fiscale (se privato)' },
+      type: 'text',
+      optional: true,
+      text: { minimum_length: 11, maximum_length: 16 },
+    });
+  }
   if (!prefilledFiscal.sdi_code) {
     customFields.push({
       key: 'sdi_code',

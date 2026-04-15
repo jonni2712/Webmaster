@@ -62,14 +62,17 @@ export async function POST(request: NextRequest) {
           break;
         }
 
-        // Persisti SDI/PEC compilati nei custom_fields su customer.metadata
+        // Persisti CF/SDI/PEC compilati nei custom_fields su customer.metadata
         // per essere riutilizzati nei checkout futuri (prefill).
         try {
+          const taxCodeField = checkoutSession.custom_fields?.find((f) => f.key === 'tax_code');
           const sdiField = checkoutSession.custom_fields?.find((f) => f.key === 'sdi_code');
           const pecField = checkoutSession.custom_fields?.find((f) => f.key === 'pec_email');
+          const taxCodeVal = taxCodeField?.text?.value?.trim();
           const sdiVal = sdiField?.text?.value?.trim();
           const pecVal = pecField?.text?.value?.trim();
           const metadataUpdate: Record<string, string> = {};
+          if (taxCodeVal) metadataUpdate.tax_code = taxCodeVal;
           if (sdiVal) metadataUpdate.sdi_code = sdiVal;
           if (pecVal) metadataUpdate.pec_email = pecVal;
           if (Object.keys(metadataUpdate).length > 0) {
