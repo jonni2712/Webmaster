@@ -2,20 +2,16 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 /**
- * Daily history cleanup cron.
+ * Daily history cleanup cron — IO-optimized version.
  *
- * Iterates every tenant, looks up their plan's `retention_days`, and
- * deletes old monitoring data older than that cutoff:
- *   - uptime_checks
- *   - ssl_checks
- *   - performance_checks
- *   - alerts (only resolved ones)
- *   - external_scan_results
+ * Uses PostgreSQL functions (migration 033) that run entirely server-side:
+ *   - cleanup_old_rows_by_sites (uptime/ssl/performance/external_scan)
+ *   - cleanup_old_resolved_alerts
+ *   - cleanup_old_activity_logs
  *
- * Uses batched deletes (max 1000 rows per operation) to avoid long
- * lock contention on the Supabase primary.
- *
- * Schedule: daily at 04:00 UTC (vercel.json entry added alongside).
+ * Each call does a single round-trip with a CTE-based DELETE (no SELECT
+ * preamble), and uses a larger batch size (5000) to reduce the number of
+ * transactions and WAL writes — which directly lowers Supabase Disk IO.
  *
  * Idempotent: running twice in the same day has no effect after the
  * first run since nothing is older than the cutoff anymore.
@@ -23,13 +19,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 
 export const maxDuration = 300;
 
-const BATCH_SIZE = 1000;
+const BATCH_SIZE = 5000;
 
-/**
- * Tables that store per-site time-series data and are subject to the
- * per-plan retention policy. The `timestamp_column` is the column used
- * to compare against the cutoff date.
- */
 const RETENTION_TABLES = [
   { table: 'uptime_checks', timestamp_column: 'checked_at' },
   { table: 'ssl_checks', timestamp_column: 'checked_at' },
@@ -54,7 +45,7 @@ interface CleanupSummary {
   errors: string[];
 }
 
-async function deleteOldRowsViaSiteIds(
+async function deleteOldRowsByTable(
   supabase: ReturnType<typeof createAdminClient>,
   table: string,
   timestampColumn: string,
@@ -64,39 +55,25 @@ async function deleteOldRowsViaSiteIds(
   if (siteIds.length === 0) return 0;
 
   let totalDeleted = 0;
-  // Delete in passes — Supabase DELETE with eq returns the row count
-  // via the count option. We loop until nothing more gets removed.
+  // Loop until the function returns less than a full batch
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    // Step 1: select a batch of row IDs to delete (keeps the subsequent
-    // DELETE fast and chunked regardless of index performance).
-    const { data: doomed, error: selectError } = await supabase
-      .from(table)
-      .select('id')
-      .in('site_id', siteIds)
-      .lt(timestampColumn, cutoffIso)
-      .limit(BATCH_SIZE);
+    const { data, error } = await supabase.rpc('cleanup_old_rows_by_sites', {
+      p_table: table,
+      p_timestamp_column: timestampColumn,
+      p_site_ids: siteIds,
+      p_cutoff: cutoffIso,
+      p_batch_size: BATCH_SIZE,
+    });
 
-    if (selectError) {
-      console.error(`[cleanup-history] select ${table} failed:`, selectError);
-      break;
-    }
-    if (!doomed || doomed.length === 0) break;
-
-    const ids = doomed.map((r) => (r as { id: string | number }).id);
-
-    const { error: deleteError, count } = await supabase
-      .from(table)
-      .delete({ count: 'exact' })
-      .in('id', ids);
-
-    if (deleteError) {
-      console.error(`[cleanup-history] delete ${table} failed:`, deleteError);
+    if (error) {
+      console.error(`[cleanup-history] ${table} RPC failed:`, error);
       break;
     }
 
-    totalDeleted += count ?? ids.length;
-    if (doomed.length < BATCH_SIZE) break;
+    const deleted = (data as number) ?? 0;
+    totalDeleted += deleted;
+    if (deleted < BATCH_SIZE) break;
   }
 
   return totalDeleted;
@@ -107,40 +84,23 @@ async function deleteOldResolvedAlerts(
   tenantId: string,
   cutoffIso: string
 ): Promise<number> {
-  // Only delete alerts that are in a terminal state. Never delete an
-  // active/triggered alert, even if it's old — the user might still
-  // need to act on it.
   let totalDeleted = 0;
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    const { data: doomed, error: selectError } = await supabase
-      .from('alerts')
-      .select('id')
-      .eq('tenant_id', tenantId)
-      .in('status', ['resolved', 'auto_resolved', 'dismissed'])
-      .lt('created_at', cutoffIso)
-      .limit(BATCH_SIZE);
+    const { data, error } = await supabase.rpc('cleanup_old_resolved_alerts', {
+      p_tenant_id: tenantId,
+      p_cutoff: cutoffIso,
+      p_batch_size: BATCH_SIZE,
+    });
 
-    if (selectError) {
-      console.error('[cleanup-history] select alerts failed:', selectError);
-      break;
-    }
-    if (!doomed || doomed.length === 0) break;
-
-    const ids = doomed.map((r) => (r as { id: string }).id);
-
-    const { error: deleteError, count } = await supabase
-      .from('alerts')
-      .delete({ count: 'exact' })
-      .in('id', ids);
-
-    if (deleteError) {
-      console.error('[cleanup-history] delete alerts failed:', deleteError);
+    if (error) {
+      console.error('[cleanup-history] alerts RPC failed:', error);
       break;
     }
 
-    totalDeleted += count ?? ids.length;
-    if (doomed.length < BATCH_SIZE) break;
+    const deleted = (data as number) ?? 0;
+    totalDeleted += deleted;
+    if (deleted < BATCH_SIZE) break;
   }
 
   return totalDeleted;
@@ -151,45 +111,29 @@ async function deleteOldActivityLogs(
   tenantId: string,
   cutoffIso: string
 ): Promise<number> {
-  // Delete all activity log entries older than the retention cutoff.
-  // activity_logs carries tenant_id directly so no site join is needed.
   let totalDeleted = 0;
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    const { data: doomed, error: selectError } = await supabase
-      .from('activity_logs')
-      .select('id')
-      .eq('tenant_id', tenantId)
-      .lt('created_at', cutoffIso)
-      .limit(BATCH_SIZE);
+    const { data, error } = await supabase.rpc('cleanup_old_activity_logs', {
+      p_tenant_id: tenantId,
+      p_cutoff: cutoffIso,
+      p_batch_size: BATCH_SIZE,
+    });
 
-    if (selectError) {
-      console.error('[cleanup-history] select activity_logs failed:', selectError);
-      break;
-    }
-    if (!doomed || doomed.length === 0) break;
-
-    const ids = doomed.map((r) => (r as { id: string }).id);
-
-    const { error: deleteError, count } = await supabase
-      .from('activity_logs')
-      .delete({ count: 'exact' })
-      .in('id', ids);
-
-    if (deleteError) {
-      console.error('[cleanup-history] delete activity_logs failed:', deleteError);
+    if (error) {
+      console.error('[cleanup-history] activity_logs RPC failed:', error);
       break;
     }
 
-    totalDeleted += count ?? ids.length;
-    if (doomed.length < BATCH_SIZE) break;
+    const deleted = (data as number) ?? 0;
+    totalDeleted += deleted;
+    if (deleted < BATCH_SIZE) break;
   }
 
   return totalDeleted;
 }
 
 export async function GET(request: Request) {
-  // Verify Vercel Cron secret
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -200,8 +144,6 @@ export async function GET(request: Request) {
   const errors: string[] = [];
   const details: TenantCleanupResult[] = [];
 
-  // Fetch all tenants with their plan's retention_days in one query
-  // via the tenant_plan_limits view.
   const { data: tenantLimits, error: listError } = await supabase
     .from('tenant_plan_limits')
     .select('tenant_id, tenant_name, plan_retention_days');
@@ -220,19 +162,13 @@ export async function GET(request: Request) {
     const retentionDays =
       ((row as { plan_retention_days: number | null }).plan_retention_days) ?? 30;
 
-    // Defensive: never delete less than 1 day of history.
-    if (retentionDays <= 0) {
-      continue;
-    }
+    if (retentionDays <= 0) continue;
 
     const cutoffIso = new Date(
       Date.now() - retentionDays * 24 * 60 * 60 * 1000
     ).toISOString();
 
     try {
-      // Get the list of site IDs for this tenant — needed because the
-      // monitoring tables don't carry tenant_id directly, they reference
-      // sites which in turn belong to a tenant.
       const { data: tenantSites } = await supabase
         .from('sites')
         .select('id')
@@ -244,24 +180,21 @@ export async function GET(request: Request) {
       const deletedByTable: Record<string, number> = {};
 
       for (const { table, timestamp_column } of RETENTION_TABLES) {
-        const n = await deleteOldRowsViaSiteIds(
+        deletedByTable[table] = await deleteOldRowsByTable(
           supabase,
           table,
           timestamp_column,
           siteIds,
           cutoffIso
         );
-        deletedByTable[table] = n;
       }
 
-      // Alerts are tenant-scoped directly.
       deletedByTable['alerts'] = await deleteOldResolvedAlerts(
         supabase,
         tenantId,
         cutoffIso
       );
 
-      // Activity logs are tenant-scoped directly.
       deletedByTable['activity_logs'] = await deleteOldActivityLogs(
         supabase,
         tenantId,
